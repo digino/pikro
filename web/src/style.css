@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Dark palette ─────────────────────────────────────── */
+  --color-base:      #09090b;
+  --color-sidebar:   #0c0c0e;
+  --color-surface:   #111113;
+  --color-border:    #27272a;
+  --color-muted:     #3f3f46;
+
+  /* ── Text ─────────────────────────────────────────────── */
+  --color-text-primary:   #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted:     #52525b;
+
+  /* ── Accent — white/black (shadcn style) ─────────────── */
+  --color-accent:         #fafafa;
+  --color-accent-dim:     rgba(255,255,255,0.08);
+  --color-accent-hover:   #e4e4e7;
+
+  /* ── Status (kept for semantic meaning only) ─────────── */
+  --color-green:  #4cc38a;
+  --color-red:    #e5484d;
+  --color-amber:  #f59e0b;
+}
+
+/* ── Base resets ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  background: var(--color-base);
+  color: var(--color-text-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
+
+/* ── Selection ────────────────────────────────────────────── */
+::selection { background: rgba(255,255,255,0.15); color: #fafafa; }
+
+/* ── Buttons ──────────────────────────────────────────────── */
+@utility btn {
+  @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border
+         cursor-pointer transition-colors whitespace-nowrap no-underline
+         disabled:opacity-40 disabled:cursor-not-allowed;
+}
+@utility btn-sm {
+  @apply px-2.5 py-1 text-xs gap-1;
+}
+@utility btn-primary {
+  @apply border-transparent text-[#09090b] bg-[#fafafa] hover:bg-[#e4e4e7];
+}
+@utility btn-ghost {
+  @apply border-border text-text-secondary bg-transparent
+         hover:text-text-primary hover:bg-surface;
+}
+@utility btn-danger {
+  @apply border-transparent text-white bg-red hover:bg-[#c93d42];
+}
+
+/* ── Shared form inputs ───────────────────────────────────── */
+.input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-base);
+  color: var(--color-text-primary);
+  transition: outline 0.1s;
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+}
+.input:focus { outline-color: var(--color-accent); }
+.input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.input-select {
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-base);
+  color: var(--color-text-secondary);
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+  transition: outline 0.1s;
+}
+.input-select:focus { outline-color: var(--color-accent); }
+
+.input-bare {
+  padding: 8px 12px;
+  font-size: 14px;
+  background: var(--color-base);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+/* ── Spinner ──────────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  display: inline-block;
+  width: 20px; height: 20px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-text-secondary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.spinner--sm { width: 14px; height: 14px; }

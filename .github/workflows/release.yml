@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g. 1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install frontend dependencies
+        run: cd web && npm ci
+
+      - name: Build frontend
+        run: cd web && npm run build
+
+      - name: Create git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ github.event.inputs.version }}"
+          git push origin "v${{ github.event.inputs.version }}"
+
+      - name: Build binaries
+        run: |
+          VERSION="v${{ github.event.inputs.version }}"
+          LDFLAGS="-ldflags \"-X main.Version=${VERSION}\""
+          mkdir -p dist
+          GOOS=darwin  GOARCH=arm64  go build -ldflags "-X main.Version=${VERSION}" -o dist/mikroruler-mac-arm64 .
+          GOOS=darwin  GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/mikroruler-mac-intel .
+          GOOS=windows GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/mikroruler.exe .
+          GOOS=linux   GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/mikroruler-linux-amd64 .
+          GOOS=linux   GOARCH=arm64  go build -ldflags "-X main.Version=${VERSION}" -o dist/mikroruler-linux-arm64 .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: v${{ github.event.inputs.version }}
+          generate_release_notes: true
+          files: |
+            dist/mikroruler-mac-arm64
+            dist/mikroruler-mac-intel
+            dist/mikroruler.exe
+            dist/mikroruler-linux-amd64
+            dist/mikroruler-linux-arm64

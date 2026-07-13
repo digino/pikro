@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta http-equiv="expires" content="-1" />
+<meta http-equiv="refresh" content="2; url=$(link-redirect)" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Connecting…</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: #f9fafb; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 2rem;
+    width: 100%; max-width: 360px; box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+    display: flex; flex-direction: column; align-items: center; gap: 1.25rem; text-align: center;
+  }
+  .logo { display: flex; align-items: center; gap: .5rem; }
+  .logo svg { width: 20px; height: 20px; color: #111827; }
+  .logo-text { font-size: .875rem; font-weight: 700; color: #111827; letter-spacing: -.03em; }
+  .spinner { width: 28px; height: 28px; border: 2px solid #e5e7eb; border-top-color: #111827; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  h1 { font-size: 1rem; font-weight: 600; color: #111827; }
+  p { font-size: .8125rem; color: #9ca3af; }
+  a { color: #111827; }
+  .footer { font-size: .7rem; color: #d1d5db; }
+</style>
+<script>
+  function startClock() {
+    $(if popup == 'true')
+    open('$(link-status)', 'hotspot_status', 'toolbar=0,location=0,directories=0,status=0,menubars=0,resizable=1,width=360,height=400');
+    $(endif)
+    location.href = unescape('$(link-redirect-esc)');
+  }
+</script>
+</head>
+<body onload="startClock()">
+<div class="card">
+  <div class="logo">
+    <span class="logo-text">pikro</span>
+  </div>
+  <div class="spinner"></div>
+  <h1>You are connected!</h1>
+  <p>Redirecting you… <a href="$(link-redirect)">click here</a> if nothing happens.</p>
+  <p class="footer">Powered by Pikro</p>
+</div>
+</body>
+</html>

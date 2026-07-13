@@ -1,0 +1,10 @@
+pikro
+pikro.exe
+dist/
+web/dist/
+web/node_modules/
+.agents/
+.claude/
+skills-lock.json
+**/.DS_Store
+/docs.env.local

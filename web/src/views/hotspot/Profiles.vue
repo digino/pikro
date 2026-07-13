@@ -1,0 +1,410 @@
+<template>
+  <div>
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h2 class="text-sm font-semibold text-text-primary">User Profiles</h2>
+        <p class="text-sm text-text-muted mt-0.5">Define bandwidth, time, and pricing tiers for hotspot users.</p>
+      </div>
+      <button
+        class="btn btn-primary btn-sm"
+        @click="openCreate"
+      >
+        <PlusIcon class="size-3.5" />
+        New profile
+      </button>
+    </div>
+
+    <div v-if="!store.activeId" class="border border-dashed border-border rounded-xl py-12 text-center">
+      <p class="text-sm text-text-muted">Select a router to manage its hotspot profiles.</p>
+    </div>
+
+    <div v-else-if="loading" class="flex justify-center py-10">
+      <span class="spinner" />
+    </div>
+
+ <div v-else-if="error" class="flex items-center gap-2 p-4 rounded-xl text-sm border bg-red/8 border-red/20 text-red" >
+      <ExclamationTriangleIcon class="size-4 shrink-0" />
+      {{ error }}
+      <button class="ml-auto text-xs underline" @click="load">Retry</button>
+    </div>
+
+    <!-- Profile cards grid -->
+    <div v-else-if="profiles.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div
+        v-for="p in profiles"
+        :key="p['.id']"
+        class="border border-border rounded-xl p-4 flex flex-col gap-3 transition-colors hover:border-muted bg-surface"
+      >
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <p class="text-sm font-semibold text-text-primary">{{ p.name }}</p>
+            <p v-if="p['rate-limit']" class="text-xs text-text-muted font-mono mt-0.5">{{ p['rate-limit'] }}</p>
+          </div>
+          <div class="flex gap-1 shrink-0">
+            <button
+              class="p-1.5 rounded-lg transition-colors text-text-muted hover:text-text-primary hover:bg-muted"
+              title="Edit"
+              @click="openEdit(p)"
+            >
+              <PencilSquareIcon class="size-3.5" />
+            </button>
+            <button
+              class="p-1.5 rounded-lg transition-colors text-text-muted hover:text-red hover:bg-red/10"
+              title="Delete"
+              @click="remove(p)"
+            >
+              <TrashIcon class="size-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+          <span class="text-text-muted">Validity</span>
+          <span class="text-text-secondary">{{ profileMetas[p.name]?.validity || '—' }}</span>
+          <span class="text-text-muted">Shared users</span>
+          <span class="text-text-secondary">{{ p['shared-users'] || '1' }}</span>
+          <span class="text-text-muted">Price</span>
+          <span class="text-text-secondary">{{ profileMetas[p.name]?.price ? `${profileMetas[p.name].price} ${currency}` : '—' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="border border-dashed border-border rounded-xl py-16 text-center">
+      <RectangleGroupIcon class="size-8 text-text-muted mx-auto mb-3" />
+      <p class="text-sm font-medium text-text-secondary">No profiles yet</p>
+      <p class="text-sm text-text-muted mt-1">Create your first profile to define bandwidth and pricing tiers.</p>
+    </div>
+
+    <!-- Create / Edit dialog -->
+    <AppDialog :open="showForm" :title="editing ? 'Edit Profile' : 'New Profile'" @update:open="showForm = $event">
+      <TooltipProvider :delay-duration="200">
+        <form class="space-y-4" @submit.prevent="submit">
+
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium text-red">Name <span>*</span></span>
+            <input v-model="form.name" class="input" required :disabled="!!editing" placeholder="e.g. 1hour, daily, weekly" />
+          </label>
+
+          <div class="flex flex-col gap-1">
+            <FieldLabel label="Validity" tip="How long the account stays active after first login. Use: 30m, 2h, 1d, 1w, or combine: 1d12h. Leave blank for unlimited." />
+            <input
+              v-model="validityRaw"
+              class="input font-mono"
+              placeholder="e.g. 1h, 1d, 1w, 1d12h"
+              @blur="normalizeValidity"
+            />
+ <p v-if="validityRaw && !validityPreview" class="text-xs text-red" >
+              Invalid format — use: 30m, 2h, 1d, 1w or combinations like 1d12h
+            </p>
+            <p v-else-if="validityPreview" class="text-xs text-text-muted">
+              Sends to router: <span class="font-mono">{{ validityPreview }}</span>
+              <span class="text-text-muted ml-1 opacity-50">(ROS {{ rosVersion || '…' }})</span>
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <FieldLabel label="Rate limit" tip="Speed cap for this profile. Upload = client sending data. Download = client receiving data. Leave at 0 for unlimited." />
+            <div class="flex gap-2">
+              <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <span class="text-xs text-text-muted">Upload</span>
+                <div class="flex">
+                  <input v-model.number="rateUp" type="number" min="0" class="input rounded-r-none border-r-0 min-w-0 flex-1" placeholder="0" />
+                  <RateSelect v-model="rateUpUnit" />
+                </div>
+              </div>
+              <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <span class="text-xs text-text-muted">Download</span>
+                <div class="flex">
+                  <input v-model.number="rateDown" type="number" min="0" class="input rounded-r-none border-r-0 min-w-0 flex-1" placeholder="0" />
+                  <RateSelect v-model="rateDownUnit" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <FieldLabel label="Shared users" tip="How many devices can be logged in simultaneously with the same credentials." />
+              <input v-model="form.sharedUsers" type="number" min="1" class="input" placeholder="1" />
+            </div>
+            <label class="flex flex-col gap-1">
+              <span class="text-sm font-medium text-text-secondary">Price{{ currency ? ` (${currency})` : '' }}</span>
+              <input v-model="form.price" class="input" placeholder="e.g. 500" />
+            </label>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <FieldLabel label="Address pool" tip="IP address pool to assign to users of this profile. Leave blank to use the hotspot's default pool." />
+            <input v-model="form.addressPool" class="input" placeholder="e.g. hotspot-pool" />
+          </div>
+
+ <p v-if="formError" class="text-xs text-red" >{{ formError }}</p>
+
+          <div class="flex justify-end gap-2 pt-1 border-t border-border">
+            <button type="button" class="btn btn-ghost" @click="showForm = false">Cancel</button>
+            <button type="submit" class="btn btn-primary" :disabled="submitting || (!!validityRaw && !validityPreview) || (!rosVersion && !!validityPreview)">
+              <span v-if="submitting" class="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+              {{ editing ? 'Save' : 'Create' }}
+            </button>
+          </div>
+        </form>
+      </TooltipProvider>
+    </AppDialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch, defineComponent, h } from 'vue'
+import {
+  PlusIcon, TrashIcon, PencilSquareIcon, ExclamationTriangleIcon, RectangleGroupIcon,
+  QuestionMarkCircleIcon,
+} from '@heroicons/vue/24/outline'
+import {
+  TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent, TooltipPortal,
+  SelectRoot, SelectTrigger, SelectValue, SelectPortal, SelectContent,
+  SelectViewport, SelectItem, SelectItemText, SelectItemIndicator,
+} from 'reka-ui'
+import { CheckIcon } from '@heroicons/vue/20/solid'
+
+import { useRoutersStore } from '@/stores/routers'
+import {
+  listHotspotProfiles, createHotspotProfile, updateHotspotProfile, deleteHotspotProfile,
+  getHotspotSettings, getSystemResource, getProfileMetas, type ProfileMeta,
+} from '@/api'
+import { friendlyError } from '@/utils/errors'
+import AppDialog from '@/components/AppDialog.vue'
+
+const store = useRoutersStore()
+
+const FieldLabel = defineComponent({
+  props: { label: String, tip: String, iconOnly: Boolean },
+  setup(props) {
+    return () => h('div', { class: 'flex items-center gap-1' }, [
+      props.iconOnly ? null : h('span', { class: 'text-sm font-medium text-text-secondary' }, props.label),
+      h(TooltipRoot, {}, {
+        default: () => [
+          h(TooltipTrigger, { asChild: true }, {
+            default: () => h('button', { type: 'button', class: 'text-text-muted hover:text-text-secondary transition-colors' },
+              h(QuestionMarkCircleIcon, { class: 'size-3.5' })
+            ),
+          }),
+          h(TooltipPortal, {}, {
+            default: () => h(TooltipContent, {
+              class: 'z-50 max-w-xs px-3 py-2 text-xs rounded-lg shadow-lg leading-relaxed',
+              style: 'background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border);',
+              side: 'top', sideOffset: 6,
+            }, { default: () => props.tip }),
+          }),
+        ],
+      }),
+    ])
+  },
+})
+
+const RateSelect = defineComponent({
+  props: { modelValue: String },
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    const options = [{ value: 'k', label: 'kbps' }, { value: 'M', label: 'Mbps' }]
+    return () => h(SelectRoot, {
+      modelValue: props.modelValue,
+      'onUpdate:modelValue': (v: unknown) => emit('update:modelValue', String(v ?? '')),
+    }, {
+      default: () => [
+        h(SelectTrigger, {
+          class: 'flex items-center gap-1 px-2 py-2 text-xs border border-border rounded-r-lg transition-colors min-w-[60px]',
+          style: 'background: var(--color-surface); color: var(--color-text-secondary);',
+        }, {
+          default: () => [h(SelectValue), h('span', { class: 'text-text-muted ml-auto text-xs' }, '▾')],
+        }),
+        h(SelectPortal, {}, {
+          default: () => h(SelectContent, {
+            class: 'z-50 border border-border rounded-lg shadow-lg overflow-hidden',
+            style: 'background: var(--color-surface);',
+            position: 'popper', sideOffset: 4,
+          }, {
+            default: () => h(SelectViewport, { class: 'p-1' }, {
+              default: () => options.map(o => h(SelectItem, {
+                value: o.value,
+                class: 'flex items-center gap-2 px-3 py-1.5 text-xs rounded cursor-pointer text-text-secondary data-highlighted:bg-muted data-highlighted:text-text-primary focus:outline-none',
+              }, {
+                default: () => [h(SelectItemText, {}, { default: () => o.label }), h(SelectItemIndicator, {}, { default: () => h(CheckIcon, { class: 'size-3' }) })],
+              })),
+            }),
+          }),
+        }),
+      ],
+    })
+  },
+})
+
+const profiles = ref<Record<string, string>[]>([])
+const profileMetas = ref<Record<string, ProfileMeta>>({})
+const loading = ref(false)
+const error = ref('')
+const currency = ref('')
+const rosVersion = ref('')
+
+const showForm = ref(false)
+const editing = ref<string | null>(null)
+const submitting = ref(false)
+const formError = ref('')
+
+const rateUp = ref(0)
+const rateUpUnit = ref<'k' | 'M'>('M')
+const rateDown = ref(0)
+const rateDownUnit = ref<'k' | 'M'>('M')
+const validityRaw = ref('')
+
+const emptyForm = () => ({
+  name: '', addressPool: '', sharedUsers: '1', price: '',
+})
+const form = ref(emptyForm())
+
+const isMajorV7 = computed(() => rosVersion.value.startsWith('7'))
+
+function parseShorthand(s: string): { w: number; d: number; h: number; m: number } | null {
+  if (!s.trim()) return null
+  const re = /^(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?$/i
+  const m = s.trim().match(re)
+  if (!m || !m[0]) return null
+  const [, w, d, h, min] = m
+  if (!w && !d && !h && !min) return null
+  return { w: parseInt(w || '0'), d: parseInt(d || '0'), h: parseInt(h || '0'), m: parseInt(min || '0') }
+}
+
+const validityPreview = computed(() => {
+  const p = parseShorthand(validityRaw.value)
+  if (!p) return validityRaw.value ? '' : ''
+  const totalDays = p.w * 7 + p.d
+  const totalHours = p.h
+  const totalMins = p.m
+  if (!totalDays && !totalHours && !totalMins) return ''
+  if (isMajorV7.value) {
+    let s = 'P'
+    if (totalDays) s += `${totalDays}D`
+    if (totalHours || totalMins) {
+      s += 'T'
+      if (totalHours) s += `${totalHours}H`
+      if (totalMins) s += `${totalMins}M`
+    }
+    return s
+  }
+  return [totalDays ? `${totalDays}d` : '', totalHours ? `${totalHours}h` : '', totalMins ? `${totalMins}m` : ''].filter(Boolean).join('')
+})
+
+function normalizeValidity() {
+  const p = parseShorthand(validityRaw.value)
+  if (!p) return
+  validityRaw.value = [p.w ? `${p.w}w` : '', p.d ? `${p.d}d` : '', p.h ? `${p.h}h` : '', p.m ? `${p.m}m` : ''].filter(Boolean).join('')
+}
+
+const builtRateLimit = computed(() => {
+  const up = rateUp.value ? `${rateUp.value}${rateUpUnit.value}` : ''
+  const down = rateDown.value ? `${rateDown.value}${rateDownUnit.value}` : ''
+  if (!up && !down) return ''
+  return `${up || '0'}/${down || '0'}`
+})
+
+function validityToShorthand(s: string): string {
+  if (!s) return ''
+  const iso = s.match(/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/)
+  if (iso) {
+    const d = parseInt(iso[1] || '0')
+    const h = parseInt(iso[2] || '0')
+    const m = parseInt(iso[3] || '0')
+    const weeks = Math.floor(d / 7); const days = d % 7
+    return [weeks ? `${weeks}w` : '', days ? `${days}d` : '', h ? `${h}h` : '', m ? `${m}m` : ''].filter(Boolean).join('')
+  }
+  const d = s.match(/(\d+)d/i); const h = s.match(/(\d+)h/i); const m = s.match(/(\d+)m/i)
+  const days = d ? parseInt(d[1]) : 0
+  const hours = h ? parseInt(h[1]) : 0
+  const mins = m ? parseInt(m[1]) : 0
+  const weeks = Math.floor(days / 7); const remDays = days % 7
+  return [weeks ? `${weeks}w` : '', remDays ? `${remDays}d` : '', hours ? `${hours}h` : '', mins ? `${mins}m` : ''].filter(Boolean).join('')
+}
+
+async function load() {
+  if (!store.activeId) return
+  loading.value = true; error.value = ''
+  try {
+    const [p, s, res, m] = await Promise.all([
+      listHotspotProfiles(store.activeId),
+      getHotspotSettings(store.activeId).catch(() => ({ currency: '' })),
+      getSystemResource(store.activeId).catch(() => ({})),
+      getProfileMetas(store.activeId).catch(() => ({} as Record<string, ProfileMeta>)),
+    ])
+    profiles.value = p
+    profileMetas.value = m
+    currency.value = (s as any).currency ?? ''
+    rosVersion.value = (res as any)['ros-version'] ?? (res as any)['version'] ?? ''
+  } catch (e: any) {
+    error.value = friendlyError(e, 'Failed to load profiles')
+  } finally { loading.value = false }
+}
+
+function openCreate() {
+  editing.value = null
+  form.value = emptyForm()
+  rateUp.value = 0; rateUpUnit.value = 'M'
+  rateDown.value = 0; rateDownUnit.value = 'M'
+  validityRaw.value = ''
+  formError.value = ''
+  showForm.value = true
+}
+
+function openEdit(p: Record<string, string>) {
+  editing.value = p['.id']
+  const meta = profileMetas.value[p.name] ?? {}
+  form.value = {
+    name: p.name ?? '',
+    addressPool: p['address-pool'] ?? '',
+    sharedUsers: p['shared-users'] ?? '',
+    price: (meta as ProfileMeta).price ?? '',
+  }
+  const rl = p['rate-limit'] ?? ''
+  const [upStr, downStr] = rl.split('/')
+  parseRate(upStr ?? '', rateUp, rateUpUnit)
+  parseRate(downStr ?? '', rateDown, rateDownUnit)
+  validityRaw.value = validityToShorthand((meta as ProfileMeta).validity ?? '')
+  formError.value = ''
+  showForm.value = true
+}
+
+function parseRate(s: string, val: typeof rateUp, unit: typeof rateUpUnit) {
+  const m = s.match(/^(\d+)(k|M)$/i)
+  if (m) { val.value = parseInt(m[1]); unit.value = m[2].toUpperCase() === 'M' ? 'M' : 'k' }
+  else { val.value = 0 }
+}
+
+async function submit() {
+  if (!store.activeId) return
+  submitting.value = true; formError.value = ''
+  try {
+    const params = {
+      name: form.value.name,
+      addressPool: form.value.addressPool,
+      sharedUsers: form.value.sharedUsers,
+      rateLimit: builtRateLimit.value,
+      validity: validityRaw.value,
+      price: form.value.price,
+    }
+    if (editing.value) { await updateHotspotProfile(store.activeId, editing.value, params) }
+    else { await createHotspotProfile(store.activeId, params) }
+    showForm.value = false
+    await load()
+  } catch (e: any) {
+    formError.value = friendlyError(e, 'Failed to save profile')
+  } finally { submitting.value = false }
+}
+
+async function remove(p: Record<string, string>) {
+  if (!store.activeId || !confirm('Delete this profile? Users assigned to it will fall back to the default profile.')) return
+  try { await deleteHotspotProfile(store.activeId, p['.id'], p.name); await load() }
+  catch (e: any) { error.value = friendlyError(e, 'Failed to delete profile') }
+}
+
+watch(() => store.activeId, load, { immediate: true })
+</script>
+

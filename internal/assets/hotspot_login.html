@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta http-equiv="expires" content="-1" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{{.Title}}</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: #f9fafb;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+  }
+  .logo {
+    display: flex; align-items: center; gap: .5rem;
+    justify-content: center; margin-bottom: 1.75rem;
+  }
+  .logo svg { width: 20px; height: 20px; color: #111827; }
+  .logo-text { font-size: .875rem; font-weight: 700; color: #111827; letter-spacing: -.03em; }
+  h1 { font-size: 1.05rem; font-weight: 600; color: #111827; text-align: center; margin-bottom: .25rem; }
+  .subtitle { font-size: .75rem; color: #9ca3af; text-align: center; margin-bottom: 1.5rem; }
+  .error-box {
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
+    padding: .625rem .875rem; font-size: .75rem; color: #dc2626; margin-bottom: 1rem;
+  }
+  label { display: flex; flex-direction: column; gap: .3rem; margin-bottom: .75rem; }
+  .label-text { font-size: .75rem; font-weight: 500; color: #6b7280; }
+  input[type="text"], input[type="password"] {
+    width: 100%; padding: .5rem .75rem; font-size: .875rem; font-family: inherit;
+    border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; color: #111827;
+    outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  input[type="text"]:focus, input[type="password"]:focus {
+    border-color: {{.AccentColor}};
+    box-shadow: 0 0 0 3px color-mix(in srgb, {{.AccentColor}} 15%, transparent);
+  }
+  .btn {
+    display: block; width: 100%; padding: .625rem 1rem;
+    background: {{.AccentColor}}; color: #fff; border: none; border-radius: 8px;
+    font-size: .875rem; font-weight: 600; font-family: inherit;
+    cursor: pointer; margin-top: .5rem; transition: filter .15s;
+  }
+  .btn:hover { filter: brightness(1.12); }
+  .footer { font-size: .7rem; color: #d1d5db; text-align: center; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+
+$(if chap-id)
+<form name="sendin" action="$(link-login-only)" method="post" style="display:none">
+  <input type="hidden" name="username" />
+  <input type="hidden" name="password" />
+  <input type="hidden" name="dst" value="$(link-orig)" />
+  <input type="hidden" name="popup" value="true" />
+</form>
+<script src="/md5.js"></script>
+<script>
+  function doLogin() {
+    document.sendin.username.value = document.login.username.value;
+    document.sendin.password.value = hexMD5('$(chap-id)' + document.login.password.value + '$(chap-challenge)');
+    document.sendin.submit();
+    return false;
+  }
+</script>
+$(endif)
+
+<div class="card">
+  <div class="logo">
+    <span class="logo-text">{{.Title}}</span>
+  </div>
+  <p class="subtitle">{{.Subtitle}}</p>
+
+  $(if error)<div class="error-box">$(error)</div>$(endif)
+
+  <form name="login" action="$(link-login-only)" method="post" $(if chap-id)onsubmit="return doLogin()"$(endif)>
+    <input type="hidden" name="dst" value="$(link-orig)" />
+    <input type="hidden" name="popup" value="true" />
+    <label>
+      <span class="label-text">Username</span>
+      <input type="text" name="username" value="$(username)" autocomplete="username" autofocus />
+    </label>
+    <label>
+      <span class="label-text">Password</span>
+      <input type="password" name="password" autocomplete="current-password" />
+    </label>
+    <button type="submit" class="btn">Sign in</button>
+  </form>
+
+  <p class="footer">Powered by Pikro</p>
+</div>
+</body>
+</html>

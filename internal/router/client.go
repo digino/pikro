@@ -1,0 +1,590 @@
+package router
+
+import (
+	"crypto/tls"
+	"fmt"
+	"regexp"
+	"strconv"
+	"time"
+
+	ros "github.com/go-routeros/routeros/v3"
+)
+
+// Client wraps go-routeros to talk to the RouterOS native API (port 8728/8729).
+// This is the same protocol WinBox uses — more reliable than the REST API and
+// works on RouterOS v6 as well as v7.
+type Client struct {
+	host     string
+	port     int
+	username string
+	password string
+	useTLS   bool
+}
+
+func NewClient(host string, port int, username, password string, useTLS bool) *Client {
+	return &Client{host: host, port: port, username: username, password: password, useTLS: useTLS}
+}
+
+func (c *Client) address() string {
+	return fmt.Sprintf("%s:%d", c.host, c.port)
+}
+
+func (c *Client) connect() (*ros.Client, error) {
+	addr := c.address()
+	timeout := 10 * time.Second
+	if c.useTLS {
+		cfg := &tls.Config{InsecureSkipVerify: true}
+		return ros.DialTLSTimeout(addr, c.username, c.password, cfg, timeout)
+	}
+	return ros.DialTimeout(addr, c.username, c.password, timeout)
+}
+
+// Ping tests reachability by fetching /system/identity.
+func (c *Client) Ping() error {
+	conn, err := c.connect()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	_, err = conn.Run("/system/identity/print")
+	return err
+}
+
+// SystemResource returns CPU load, free memory, total memory, and uptime.
+func (c *Client) SystemResource() (map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	reply, err := conn.Run("/system/resource/print")
+	if err != nil {
+		return nil, err
+	}
+	if len(reply.Re) == 0 {
+		return map[string]any{}, nil
+	}
+	return sentenceToMap(reply.Re[0].Map), nil
+}
+
+// HotspotUsers returns all hotspot users.
+func (c *Client) HotspotUsers() ([]map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	reply, err := conn.Run("/ip/hotspot/user/print")
+	if err != nil {
+		return nil, err
+	}
+	return replyToList(reply), nil
+}
+
+// HotspotActive returns active hotspot sessions.
+func (c *Client) HotspotActive() ([]map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	reply, err := conn.Run("/ip/hotspot/active/print")
+	if err != nil {
+		return nil, err
+	}
+	return replyToList(reply), nil
+}
+
+// HotspotProfiles returns available hotspot user profiles.
+func (c *Client) HotspotProfiles() ([]map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	reply, err := conn.Run("/ip/hotspot/user/profile/print")
+	if err != nil {
+		return nil, err
+	}
+	return replyToList(reply), nil
+}
+
+// HotspotProfileParams holds the RouterOS fields for a hotspot user profile.
+// ValiditySecs, if > 0, causes an on-login script to be set on the profile that
+// stamps exp:<epoch> on the user's comment the first time they log in.
+type HotspotProfileParams struct {
+	Name         string
+	AddressPool  string
+	SharedUsers  string // e.g. "1", "2"
+	RateLimit    string // e.g. "2M/4M"
+	ValiditySecs int64  // 0 = no expiry, >0 = set on-login script
+	ROSVersion   string // detected from router, used to pick on-login script variant
+}
+
+// buildOnLoginScript returns a RouterOS on-login script that stamps
+// exp:<value> into the user comment the first time they log in.
+// On ROS 7.12+ it uses Unix epoch seconds; on v6/early v7 it uses
+// "YYYY-MM-DD HH:MM:SS" which the v6 cleanup script parses as an integer.
+func buildOnLoginScript(validitySecs int64, rosVersion string) string {
+	major, minor := 7, 0
+	fmt.Sscanf(rosVersion, "%d.%d", &major, &minor)
+	if major > 7 || (major == 7 && minor >= 12) {
+		return fmt.Sprintf(
+			`:local nowEpoch ([:tonsec [:timestamp]] / 1000000000)
+:local expEpoch ($nowEpoch + %d)
+:local uid [/ip/hotspot/user/find where name=$user]
+:if ([:len $uid] > 0) do={
+  :local c [:tostr [/ip/hotspot/user/get $uid comment]]
+  :if ([:len $c] < 5 || [:pick $c 0 4] != "exp:") do={
+    /ip/hotspot/user/set $uid comment="exp:$expEpoch"
+  }
+}`, validitySecs)
+	}
+	// v6 fallback: use Mikhmon's proven temp-scheduler trick to get "now + validity"
+	// as a RouterOS date string, then normalise it to YYYY-MM-DD HH:MM:SS.
+	// A temporary scheduler named after the user is created with interval=validity,
+	// its next-run field gives us the exact expiry datetime, then we remove it.
+	return fmt.Sprintf(
+		`:local uid [/ip/hotspot/user/find where name=$user]
+:if ([:len $uid] > 0) do={
+  :local c [:tostr [/ip/hotspot/user/get $uid comment]]
+  :if ([:len $c] < 5 || [:pick $c 0 4] != "exp:") do={
+    :local nd [/system clock get date]
+    :local year [:pick $nd 7 11]
+    /system scheduler add name=$user disabled=no start-date=$nd interval="%ds"
+    :delay 1s
+    :local exp [/system scheduler get [/system scheduler find where name=$user] next-run]
+    :local xlen [:len $exp]
+    :local expStr ""
+    :if ($xlen = 15) do={
+      :local mo [:tolower [:pick $exp 0 3]]
+      :local months {jan="01";feb="02";mar="03";apr="04";may="05";jun="06";jul="07";aug="08";sep="09";oct="10";nov="11";dec="12"}
+      :set expStr ($year."-".($months->$mo)."-".[:pick $exp 4 6]." ".[:pick $exp 7 15])
+    }
+    :if ($xlen > 15) do={ :set expStr $exp }
+    :if ($expStr != "") do={
+      /ip/hotspot/user/set $uid comment="exp:$expStr"
+    }
+    /system scheduler remove [find where name=$user]
+  }
+}`, validitySecs)
+}
+
+func (c *Client) rosVersion(conn *ros.Client) string {
+	if r, e := conn.Run("/system/resource/print"); e == nil && len(r.Re) > 0 {
+		return r.Re[0].Map["version"]
+	}
+	return "7.0"
+}
+
+func (c *Client) CreateHotspotProfile(p HotspotProfileParams) (map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	p.ROSVersion = c.rosVersion(conn)
+	args := append(buildProfileArgs("/ip/hotspot/user/profile/add", p), "=name="+p.Name)
+	reply, err := conn.RunArgs(args)
+	if err != nil {
+		return nil, err
+	}
+	if len(reply.Re) == 0 {
+		return map[string]any{}, nil
+	}
+	return sentenceToMap(reply.Re[0].Map), nil
+}
+
+func (c *Client) UpdateHotspotProfile(id string, p HotspotProfileParams) error {
+	conn, err := c.connect()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	p.ROSVersion = c.rosVersion(conn)
+	args := buildProfileArgs("/ip/hotspot/user/profile/set", p)
+	args = append(args, "=.id="+id)
+	_, err = conn.RunArgs(args)
+	return err
+}
+
+func buildProfileArgs(path string, p HotspotProfileParams) []string {
+	// Note: =name= is intentionally omitted here; callers add it only on create.
+	args := []string{path}
+	if p.AddressPool != "" {
+		args = append(args, "=address-pool="+p.AddressPool)
+	}
+	if p.SharedUsers != "" {
+		args = append(args, "=shared-users="+p.SharedUsers)
+	}
+	if p.RateLimit != "" {
+		args = append(args, "=rate-limit="+p.RateLimit)
+	}
+	if p.ValiditySecs > 0 {
+		args = append(args, "=on-login="+buildOnLoginScript(p.ValiditySecs, p.ROSVersion))
+	} else {
+		args = append(args, "=on-login=")
+	}
+	return args
+}
+
+func (c *Client) DeleteHotspotProfile(id string) error {
+	conn, err := c.connect()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	_, err = conn.Run("/ip/hotspot/user/profile/remove", "=.id="+id)
+	return err
+}
+
+// HotspotUserParams holds all fields for creating a hotspot user.
+type HotspotUserParams struct {
+	Name            string
+	Password        string
+	Profile         string
+	LimitUptime     string // e.g. "2h", "30m"
+	LimitBytesTotal string // bytes as string, e.g. "1073741824"
+	RateLimit       string // e.g. "2M/4M" (up/down)
+	Comment         string
+}
+
+// CreateHotspotUser creates a new hotspot user with optional limits.
+func (c *Client) CreateHotspotUser(p HotspotUserParams) (map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	args := []string{
+		"/ip/hotspot/user/add",
+		"=name=" + p.Name,
+		"=password=" + p.Password,
+	}
+	if p.Profile != "" {
+		args = append(args, "=profile="+p.Profile)
+	}
+	if p.LimitUptime != "" {
+		args = append(args, "=limit-uptime="+p.LimitUptime)
+	}
+	if p.LimitBytesTotal != "" {
+		args = append(args, "=limit-bytes-total="+p.LimitBytesTotal)
+	}
+	if p.RateLimit != "" {
+		args = append(args, "=rate-limit="+p.RateLimit)
+	}
+	if p.Comment != "" {
+		args = append(args, "=comment="+p.Comment)
+	}
+	reply, err := conn.RunArgs(args)
+	if err != nil {
+		return nil, err
+	}
+	if len(reply.Re) == 0 {
+		return map[string]any{}, nil
+	}
+	return sentenceToMap(reply.Re[0].Map), nil
+}
+
+// ToggleHotspotUser sets disabled=yes or disabled=no on a hotspot user.
+func (c *Client) ToggleHotspotUser(id string, disabled bool) error {
+	conn, err := c.connect()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	val := "no"
+	if disabled {
+		val = "yes"
+	}
+	_, err = conn.Run("/ip/hotspot/user/set", "=.id="+id, "=disabled="+val)
+	return err
+}
+
+// UpdateHotspotUserParams holds the editable fields for a hotspot user.
+type UpdateHotspotUserParams struct {
+	Password        string
+	Profile         string
+	LimitUptime     string
+	LimitBytesTotal string
+	Comment         string
+}
+
+// UpdateHotspotUser updates an existing hotspot user by RouterOS ID.
+func (c *Client) UpdateHotspotUser(id string, p UpdateHotspotUserParams) error {
+	conn, err := c.connect()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	args := []string{"/ip/hotspot/user/set", "=.id=" + id}
+	if p.Password != "" {
+		args = append(args, "=password="+p.Password)
+	}
+	if p.Profile != "" {
+		args = append(args, "=profile="+p.Profile)
+	}
+	// Always send limit-uptime so it can be cleared (empty string = no limit)
+	args = append(args, "=limit-uptime="+p.LimitUptime)
+	// Only send limit-bytes-total when non-empty — RouterOS requires an integer
+	if p.LimitBytesTotal != "" {
+		args = append(args, "=limit-bytes-total="+p.LimitBytesTotal)
+	}
+	// Send comment always so it can be cleared, but skip the "—" placeholder
+	if p.Comment != "—" {
+		args = append(args, "=comment="+p.Comment)
+	}
+	_, err = conn.RunArgs(args)
+	return err
+}
+
+// DeleteHotspotUser removes a hotspot user by its RouterOS ID (e.g. "*1").
+func (c *Client) DeleteHotspotUser(id string) error {
+	conn, err := c.connect()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	_, err = conn.Run("/ip/hotspot/user/remove", "=.id="+id)
+	return err
+}
+
+// BandwidthTest measures internet download speed from the router using /tool/fetch.
+// The target parameter selects the file size: "10", "50", or "100" (MB).
+// Downloads from Tele2's public speedtest CDN and computes throughput from the
+// duration reported by RouterOS.
+func (c *Client) BandwidthTest(sizeMB string) (map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	type testFile struct {
+		url  string
+		size int64
+	}
+	files := map[string]testFile{
+		"10":  {"http://speedtest.tele2.net/10MB.zip", 10 * 1024 * 1024},
+		"50":  {"http://speedtest.tele2.net/50MB.zip", 50 * 1024 * 1024},
+		"100": {"http://speedtest.tele2.net/100MB.zip", 100 * 1024 * 1024},
+	}
+	f, ok := files[sizeMB]
+	if !ok {
+		f = files["10"]
+	}
+
+	reply, err := conn.Run(
+		"/tool/fetch",
+		"=url="+f.url,
+		"=mode=http",
+		"=keep-result=no",
+	)
+	if err != nil {
+		return nil, fmt.Errorf("fetch failed: %w", err)
+	}
+
+	var durationStr string
+	for _, s := range reply.Re {
+		if d, ok := s.Map["duration"]; ok && d != "" {
+			durationStr = d
+			break
+		}
+	}
+
+	downloadBps := 0
+	if durationStr != "" {
+		dur := parseROSDuration(durationStr)
+		if dur > 0 {
+			downloadBps = int(float64(f.size) / dur.Seconds())
+		}
+	}
+
+	return map[string]any{
+		"rx-speed":  fmt.Sprintf("%d", downloadBps),
+		"tx-speed":  "0",
+		"duration":  durationStr,
+		"test-url":  f.url,
+		"file-size": fmt.Sprintf("%d", f.size),
+	}, nil
+}
+
+// parseROSDuration parses RouterOS duration strings like "2s430ms", "834ms", "1m2s".
+func parseROSDuration(s string) time.Duration {
+	var total time.Duration
+	re := regexp.MustCompile(`(\d+)(h|m|s|ms)`)
+	for _, m := range re.FindAllStringSubmatch(s, -1) {
+		n, _ := strconv.Atoi(m[1])
+		switch m[2] {
+		case "h":
+			total += time.Duration(n) * time.Hour
+		case "m":
+			total += time.Duration(n) * time.Minute
+		case "s":
+			total += time.Duration(n) * time.Second
+		case "ms":
+			total += time.Duration(n) * time.Millisecond
+		}
+	}
+	return total
+}
+
+// sentenceToMap converts a proto.Sentence word map (all string values) to map[string]any.
+func sentenceToMap(m map[string]string) map[string]any {
+	out := make(map[string]any, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
+}
+
+func replyToList(reply *ros.Reply) []map[string]any {
+	out := make([]map[string]any, 0, len(reply.Re))
+	for _, s := range reply.Re {
+		out = append(out, sentenceToMap(s.Map))
+	}
+	return out
+}
+
+const cleanupScriptName = "pikro-cleanup"
+
+// cleanupScriptV7 uses [:tonsec [:timestamp]] available on RouterOS 7.12+.
+// exp: comments store Unix epoch seconds written by the on-login profile script.
+const cleanupScriptV7 = `:local nowEpoch ([:tonsec [:timestamp]] / 1000000000)
+:foreach u in=[/ip/hotspot/user/find] do={
+  :local comment [:tostr [/ip/hotspot/user/get $u comment]]
+  :if ([:len $comment] > 4 && [:pick $comment 0 4] = "exp:") do={
+    :local expEpoch [:tonum [:pick $comment 4 [:len $comment]]]
+    :if ($expEpoch > 0 && $expEpoch < $nowEpoch) do={
+      /ip/hotspot/user/remove $u
+    }
+  }
+}`
+
+// cleanupScriptV6 is the fallback for RouterOS 6 / early v7 without [:tonsec].
+// exp: comments store "YYYY-MM-DD HH:MM:SS" (ISO, written by our on-login script).
+// Uses Mikhmon-style dateint/timeint functions for proven v6 compatibility.
+const cleanupScriptV6 = `:local dateint do={
+  :local days [:pick $d 8 10]
+  :local month [:pick $d 5 7]
+  :local year [:pick $d 0 4]
+  :return [:tonum ("$year$month$days")]
+}
+:local timeint do={
+  :local hours [:pick $t 0 2]
+  :local minutes [:pick $t 3 5]
+  :return ($hours * 60 + $minutes)
+}
+:local date [/system clock get date]
+:local time [/system clock get time]
+:local today [$dateint d=$date]
+:local curtime [$timeint t=$time]
+:foreach u in=[/ip/hotspot/user/find] do={
+  :local comment [:tostr [/ip/hotspot/user/get $u comment]]
+  :if ([:len $comment] > 18 && [:pick $comment 0 4] = "exp:") do={
+    :local s [:pick $comment 4 23]
+    :if ([:pick $s 4 5] = "-" && [:pick $s 7 8] = "-" && [:pick $s 10 11] = " ") do={
+      :local expd [$dateint d=$s]
+      :local expt [$timeint t=[:pick $s 11 19]]
+      :if (($expd < $today) || ($expd = $today && $expt < $curtime)) do={
+        /ip/hotspot/user/remove $u
+      }
+    }
+  }
+}`
+
+// cleanupScriptBody returns the appropriate script for the detected RouterOS version.
+// rosVersion should be the string from /system/resource get version, e.g. "7.19.6 (stable)".
+func cleanupScriptBody(rosVersion string) string {
+	// Extract major.minor version number
+	major, minor := 7, 0
+	fmt.Sscanf(rosVersion, "%d.%d", &major, &minor)
+	if major > 7 || (major == 7 && minor >= 12) {
+		return cleanupScriptV7
+	}
+	return cleanupScriptV6
+}
+
+// CleanupSchedulerStatus returns whether the cleanup scheduler is installed and its interval.
+func (c *Client) CleanupSchedulerStatus() (installed bool, interval string, err error) {
+	conn, err := c.connect()
+	if err != nil {
+		return false, "", err
+	}
+	defer conn.Close()
+
+	reply, err := conn.Run("/system/scheduler/print", "?name="+cleanupScriptName)
+	if err != nil {
+		return false, "", err
+	}
+	if len(reply.Re) == 0 {
+		return false, "", nil
+	}
+	return true, reply.Re[0].Map["interval"], nil
+}
+
+// InstallCleanupScheduler creates or replaces the cleanup scheduler entry.
+// It detects the RouterOS version and picks the appropriate script variant.
+func (c *Client) InstallCleanupScheduler(interval string) error {
+	conn, err := c.connect()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	// Detect RouterOS version to pick the right script variant.
+	rosVersion := "7.0"
+	if r, e := conn.Run("/system/resource/print"); e == nil && len(r.Re) > 0 {
+		rosVersion = r.Re[0].Map["version"]
+	}
+
+	// Remove existing entry if present.
+	existing, err := conn.Run("/system/scheduler/print", "?name="+cleanupScriptName)
+	if err != nil {
+		return err
+	}
+	if len(existing.Re) > 0 {
+		id := existing.Re[0].Map[".id"]
+		if _, err := conn.Run("/system/scheduler/remove", "=.id="+id); err != nil {
+			return err
+		}
+	}
+
+	_, err = conn.Run("/system/scheduler/add",
+		"=name="+cleanupScriptName,
+		"=interval="+interval,
+		"=on-event="+cleanupScriptBody(rosVersion),
+		"=comment=Auto-cleanup expired hotspot users (by Pikro)",
+	)
+	return err
+}
+
+// RemoveCleanupScheduler removes the cleanup scheduler entry.
+func (c *Client) RemoveCleanupScheduler() error {
+	conn, err := c.connect()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	existing, err := conn.Run("/system/scheduler/print", "?name="+cleanupScriptName)
+	if err != nil {
+		return err
+	}
+	if len(existing.Re) == 0 {
+		return nil // already gone
+	}
+	id := existing.Re[0].Map[".id"]
+	_, err = conn.Run("/system/scheduler/remove", "=.id="+id)
+	return err
+}

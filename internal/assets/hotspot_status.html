@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+$(if refresh-timeout)
+<meta http-equiv="refresh" content="$(refresh-timeout-secs)">
+$(endif)
+<meta charset="UTF-8" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta http-equiv="expires" content="-1" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Connected</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: #f9fafb; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 2rem;
+    width: 100%; max-width: 360px; box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+    display: flex; flex-direction: column; gap: 1.25rem;
+  }
+  .logo { display: flex; align-items: center; gap: .5rem; justify-content: center; }
+  .logo svg { width: 20px; height: 20px; color: #111827; }
+  .logo-text { font-size: .875rem; font-weight: 700; color: #111827; letter-spacing: -.03em; }
+  .status-badge {
+    display: flex; align-items: center; justify-content: center; gap: .4rem;
+    font-size: .8125rem; font-weight: 600; color: #16a34a;
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+  h1 { font-size: 1rem; font-weight: 600; color: #111827; text-align: center; }
+  .rows { display: flex; flex-direction: column; gap: .5rem; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; font-size: .8125rem; }
+  .row .lbl { color: #9ca3af; }
+  .row .val { font-weight: 500; color: #111827; font-variant-numeric: tabular-nums; }
+  .btn {
+    display: block; width: 100%; padding: .625rem 1rem;
+    background: #111827; color: #fff; border: none; border-radius: 8px;
+    font-size: .875rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: filter .15s;
+  }
+  .btn:hover { filter: brightness(1.15); }
+  .footer { font-size: .7rem; color: #d1d5db; text-align: center; }
+</style>
+<script>
+$(if advert-pending == 'yes')
+  var popup = '';
+  function focusAdvert() { if (window.focus) popup.focus(); }
+  function openAdvert() { popup = open('$(link-advert)', 'hotspot_advert', ''); setTimeout("focusAdvert()", 1000); }
+$(endif)
+  function openLogout() {
+    if (window.name !== 'hotspot_status') return true;
+    open('$(link-logout)', 'hotspot_logout', 'toolbar=0,location=0,directories=0,status=0,menubars=0,resizable=1,width=360,height=400');
+    window.close();
+    return false;
+  }
+</script>
+</head>
+<body $(if advert-pending == 'yes')onload="openAdvert()"$(endif)>
+<div class="card">
+  <div class="logo">
+    <span class="logo-text">pikro</span>
+  </div>
+
+  $(if login-by == 'trial')
+  <h1>Hi, trial user!</h1>
+  $(elif login-by != 'mac')
+  <h1>Hi, $(username)!</h1>
+  $(endif)
+
+  <div class="status-badge">
+    <span class="status-dot"></span>
+    Connected
+  </div>
+
+  <div class="rows">
+    <div class="row"><span class="lbl">IP address</span><span class="val">$(ip)</span></div>
+    $(if session-time-left)
+    <div class="row"><span class="lbl">Time used / left</span><span class="val">$(uptime) / $(session-time-left)</span></div>
+    $(else)
+    <div class="row"><span class="lbl">Session time</span><span class="val">$(uptime)</span></div>
+    $(endif)
+    <div class="row"><span class="lbl">Data ↑ / ↓</span><span class="val">$(bytes-in-nice) / $(bytes-out-nice)</span></div>
+    $(if blocked == 'yes')
+    <div class="row"><span class="lbl">Status</span><span class="val"><a href="$(link-advert)" target="hotspot_advert">Ad required</a></span></div>
+    $(elif refresh-timeout)
+    <div class="row"><span class="lbl">Refresh in</span><span class="val">$(refresh-timeout)</span></div>
+    $(endif)
+  </div>
+
+  $(if login-by-mac != 'yes')
+  <form action="$(link-logout)" name="logout" onsubmit="return openLogout()">
+    <button type="submit" class="btn">Log out</button>
+  </form>
+  $(endif)
+
+  <p class="footer">Powered by Pikro</p>
+</div>
+</body>
+</html>
