@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	ros "github.com/go-routeros/routeros/v3"
@@ -357,6 +358,199 @@ func (c *Client) DeleteHotspotUser(id string) error {
 
 	_, err = conn.Run("/ip/hotspot/user/remove", "=.id="+id)
 	return err
+}
+
+// PollSnapshot holds all data collected in a single RouterOS connection for the dashboard poll.
+type PollSnapshot struct {
+	Resource  map[string]string   `json:"resource"`
+	Traffic   []map[string]string `json:"traffic"`
+	Addresses []map[string]string `json:"addresses"`
+	Clock     map[string]string   `json:"clock"`
+}
+
+// Poll opens one connection and fetches resource, interface traffic, and clock together.
+// monitor-traffic with =once= blocks ~1s on the router side before returning.
+func (c *Client) Poll() (*PollSnapshot, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	snap := &PollSnapshot{
+		Resource:  map[string]string{},
+		Traffic:   []map[string]string{},
+		Addresses: []map[string]string{},
+		Clock:     map[string]string{},
+	}
+
+	// Resource
+	if r, err := conn.Run("/system/resource/print"); err == nil && len(r.Re) > 0 {
+		snap.Resource = r.Re[0].Map
+	}
+
+	// Interface names
+	ifReply, err := conn.Run("/interface/print")
+	if err == nil && len(ifReply.Re) > 0 {
+		names := make([]string, 0, len(ifReply.Re))
+		for _, s := range ifReply.Re {
+			if n := s.Map["name"]; n != "" {
+				names = append(names, n)
+			}
+		}
+		if len(names) > 0 {
+			args := []string{
+				"/interface/monitor-traffic",
+				"=interface=" + strings.Join(names, ","),
+				"=once=",
+			}
+			if tr, err := conn.Run(args...); err == nil {
+				for _, s := range tr.Re {
+					snap.Traffic = append(snap.Traffic, s.Map)
+				}
+			}
+		}
+	}
+
+	// IP addresses per interface
+	if r, err := conn.Run("/ip/address/print"); err == nil {
+		for _, s := range r.Re {
+			snap.Addresses = append(snap.Addresses, s.Map)
+		}
+	}
+
+	// Clock
+	if r, err := conn.Run("/system/clock/print"); err == nil && len(r.Re) > 0 {
+		snap.Clock = r.Re[0].Map
+	}
+
+	return snap, nil
+}
+
+// WanIP returns the IP address assigned to the WAN interface (the default-route interface).
+// Falls back to the first non-loopback, non-bridge address if no default route is found.
+func (c *Client) WanIP() (string, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+
+	// Find the interface that carries the default route.
+	routeReply, err := conn.Run("/ip/route/print", "?dst-address=0.0.0.0/0", "?active=true")
+	if err != nil {
+		return "", err
+	}
+	wanIface := ""
+	if len(routeReply.Re) > 0 {
+		wanIface = routeReply.Re[0].Map["interface"]
+	}
+
+	addrReply, err := conn.Run("/ip/address/print")
+	if err != nil {
+		return "", err
+	}
+	first := ""
+	for _, s := range addrReply.Re {
+		if s.Map["disabled"] == "true" || s.Map["dynamic"] == "false" {
+			continue
+		}
+		iface := s.Map["interface"]
+		addr := s.Map["address"]
+		if addr == "" {
+			continue
+		}
+		// Strip prefix length (e.g. "10.10.0.1/24" -> "10.10.0.1")
+		if i := strings.Index(addr, "/"); i >= 0 {
+			addr = addr[:i]
+		}
+		if wanIface != "" && iface == wanIface {
+			return addr, nil
+		}
+		if first == "" {
+			first = addr
+		}
+	}
+	return first, nil
+}
+
+// InterfaceTraffic returns current TX/RX bits-per-second for each interface.
+// It calls /interface/monitor-traffic with duration=1s which blocks for ~1s then
+// returns one sample. The caller should run this in a goroutine.
+func (c *Client) InterfaceTraffic() ([]map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	// First get all interface names.
+	ifReply, err := conn.Run("/interface/print")
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(ifReply.Re))
+	for _, s := range ifReply.Re {
+		if n := s.Map["name"]; n != "" {
+			names = append(names, n)
+		}
+	}
+	if len(names) == 0 {
+		return nil, nil
+	}
+
+	args := []string{
+		"/interface/monitor-traffic",
+		"=interface=" + strings.Join(names, ","),
+		"=once=",
+	}
+	reply, err := conn.Run(args...)
+	if err != nil {
+		return nil, err
+	}
+	return replyToList(reply), nil
+}
+
+// SystemClock returns the router's current date and time strings.
+func (c *Client) SystemClock() (map[string]string, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	reply, err := conn.Run("/system/clock/print")
+	if err != nil {
+		return nil, err
+	}
+	if len(reply.Re) == 0 {
+		return map[string]string{}, nil
+	}
+	return reply.Re[0].Map, nil
+}
+
+// SystemLogs returns the most recent N log entries.
+func (c *Client) SystemLogs(limit int) ([]map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	reply, err := conn.Run("/log/print")
+	if err != nil {
+		return nil, err
+	}
+	entries := replyToList(reply)
+	// Return last `limit` entries (RouterOS returns oldest first).
+	if limit > 0 && len(entries) > limit {
+		entries = entries[len(entries)-limit:]
+	}
+	// Reverse so newest is first.
+	for i, j := 0, len(entries)-1; i < j; i, j = i+1, j-1 {
+		entries[i], entries[j] = entries[j], entries[i]
+	}
+	return entries, nil
 }
 
 // BandwidthTest measures internet download speed from the router using /tool/fetch.

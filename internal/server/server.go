@@ -52,6 +52,11 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/routers/{id}/test", handlers.TestRouter)
 
 	mux.HandleFunc("GET /api/routers/{id}/system/resource", handlers.GetSystemResource)
+	mux.HandleFunc("GET /api/routers/{id}/system/poll", handlers.GetPollSnapshot)
+	mux.HandleFunc("GET /api/routers/{id}/system/wan-ip", handlers.GetWanIP)
+	mux.HandleFunc("GET /api/routers/{id}/system/traffic", handlers.GetInterfaceTraffic)
+	mux.HandleFunc("GET /api/routers/{id}/system/clock", handlers.GetSystemClock)
+	mux.HandleFunc("GET /api/routers/{id}/system/logs", handlers.GetSystemLogs)
 
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/preflight", handlers.HotspotPreflight)
 	mux.HandleFunc("POST /api/routers/{id}/hotspot/setup", handlers.SetupHotspot)

@@ -313,11 +313,11 @@ func (c *Client) stepCreateHotspotProfile(profileName, gateway, dnsName string) 
 	return SetupStepResult{Name: name, OK: true}
 }
 
-// stepInstallCleanupScheduler installs the cleanup scheduler with a daily interval.
+// stepInstallCleanupScheduler installs the cleanup scheduler with a weekly interval.
 // Non-fatal if it fails (e.g. device-mode restriction).
 func (c *Client) stepInstallCleanupScheduler() SetupStepResult {
 	name := "Install cleanup scheduler"
-	if err := c.InstallCleanupScheduler("1d"); err != nil {
+	if err := c.InstallCleanupScheduler("7d"); err != nil {
 		return SetupStepResult{Name: name, OK: true, Skipped: true}
 	}
 	return SetupStepResult{Name: name, OK: true}

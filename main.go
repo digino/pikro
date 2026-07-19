@@ -26,8 +26,9 @@ var embeddedWeb embed.FS
 var Version = "dev"
 
 func main() {
-	dev := flag.Bool("dev", false, "enable dev mode with request logging")
-	ver := flag.Bool("version", false, "print version and exit")
+	dev    := flag.Bool("dev", false, "enable dev mode with request logging")
+	noOpen := flag.Bool("no-open", false, "do not open browser on start")
+	ver    := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
 
 	if *ver {
@@ -42,10 +43,12 @@ func main() {
 	port := findAvailablePort(8080)
 	url := fmt.Sprintf("http://localhost:%d", port)
 
-	go func() {
-		time.Sleep(300 * time.Millisecond)
-		openBrowser(url)
-	}()
+	if !*noOpen {
+		go func() {
+			time.Sleep(300 * time.Millisecond)
+			openBrowser(url)
+		}()
+	}
 
 	handlers.AppVersion = Version
 	log.Printf("Pikro %s running at %s (press Ctrl+C to stop)\n", Version, url)

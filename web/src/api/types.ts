@@ -44,12 +44,14 @@ export interface LoginPageSettings {
   title?: string
   subtitle?: string
   accentColor?: string
+  template?: 'minimal' | 'bold'
 }
 
 export interface VoucherSettings {
   businessName?: string
   showValidity: boolean
   showPrice: boolean
+  layout?: 'card' | 'ticket'
 }
 
 export interface HotspotSettings {

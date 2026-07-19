@@ -88,7 +88,7 @@ import {
 import {
   ChevronDownIcon, CheckCircleIcon,
   Squares2X2Icon, CircleStackIcon,
-  BoltIcon, WrenchScrewdriverIcon, UsersIcon, RectangleGroupIcon, Cog6ToothIcon,
+  BoltIcon, WrenchScrewdriverIcon, UsersIcon, RectangleGroupIcon, Cog6ToothIcon, ClipboardDocumentListIcon,
 } from '@heroicons/vue/24/outline'
 import { useRoutersStore } from '@/stores/routers'
 
@@ -127,7 +127,8 @@ const navSections: NavSection[] = [
       { to: '/hotspot/setup',     icon: WrenchScrewdriverIcon, label: 'Setup' },
       { to: '/hotspot/users',     icon: UsersIcon,          label: 'Users' },
       { to: '/hotspot/profiles',  icon: RectangleGroupIcon, label: 'Profiles' },
-      { to: '/hotspot/settings',  icon: Cog6ToothIcon,      label: 'Settings' },
+      { to: '/hotspot/settings',  icon: Cog6ToothIcon,               label: 'Settings' },
+      { to: '/hotspot/logs',     icon: ClipboardDocumentListIcon,   label: 'Logs' },
     ],
   },
   {

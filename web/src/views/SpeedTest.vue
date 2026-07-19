@@ -1,9 +1,6 @@
 <template>
   <PageLayout title="Speed Test" subtitle="Internet download speed measured from the router">
-    <div v-if="!store.activeId" class="flex flex-col items-center justify-center py-16 gap-3">
-      <BoltIcon class="size-8 text-text-muted" />
-      <p class="text-sm text-text-secondary">Select a router first.</p>
-    </div>
+    <NoRouterSelected v-if="!store.activeId" />
 
     <template v-else>
  <div class="border border-border rounded-xl p-5 max-w-md bg-surface" >
@@ -55,6 +52,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { BoltIcon } from '@heroicons/vue/24/outline'
+import NoRouterSelected from '@/components/NoRouterSelected.vue'
 import { useRoutersStore } from '@/stores/routers'
 import { runSpeedTest } from '@/api'
 import PageLayout from '@/components/PageLayout.vue'

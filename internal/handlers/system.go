@@ -22,3 +22,73 @@ func GetSystemResource(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonOK(w, resource)
 }
+
+func GetPollSnapshot(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	snap, err := client.Poll()
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	jsonOK(w, snap)
+}
+
+func GetWanIP(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	ip, err := client.WanIP()
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	jsonOK(w, map[string]string{"ip": ip})
+}
+
+func GetInterfaceTraffic(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	traffic, err := client.InterfaceTraffic()
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	jsonOK(w, traffic)
+}
+
+func GetSystemClock(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	clock, err := client.SystemClock()
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	jsonOK(w, clock)
+}
+
+func GetSystemLogs(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	logs, err := client.SystemLogs(20)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	jsonOK(w, logs)
+}

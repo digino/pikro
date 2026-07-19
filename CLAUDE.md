@@ -96,6 +96,12 @@ Key gotchas:
   — those only work as classes in the template. In `<style scoped>`, use plain CSS
   `var(--color-*)` for custom token references; `@apply` is safe for structural
   Tailwind utilities only (`flex`, `items-center`, `gap-2`, etc.).
+- Use <script setup lang="ts"> with TypeScript; leverage defineProps, defineEmits, defineModel, and 
+  other macros for type-safe component APIs
+- Core reactivity includes ref, shallowRef, computed, watch, watchEffect, and lifecycle hooks; prefer shallowRef when deep
+  reactivity isn't needed
+- Built-in components cover Transition, Teleport, Suspense, KeepAlive, and directives like v-memo for advanced patterns
+- Always use Composition API over Options API; avoid reactive props destructuring to maintain reactivity
 
 ---
 

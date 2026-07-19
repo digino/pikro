@@ -9,11 +9,11 @@ LDFLAGS := -ldflags "-X main.Version=$(VERSION)"
 dev:
 	@trap 'kill 0' INT TERM; \
 	  echo ""; \
-	  echo "  Go backend  → http://localhost:8080  (API only, do not open)"; \
-	  echo "  UI dev      → http://localhost:5173  (open this one)"; \
+	  echo "  Go backend  → http://localhost:8080  (API only)"; \
+	  echo "  UI dev      → http://localhost:5173  (opening this one)"; \
 	  echo ""; \
-	  /usr/local/go/bin/go run . -dev & \
-	  cd web && npm run dev & \
+	  /usr/local/go/bin/go run . -dev -no-open & \
+	  cd web && npm run dev --open & \
 	  wait
 
 # Run only the Go backend (useful when Vite is already running separately)

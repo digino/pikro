@@ -18,12 +18,14 @@ type LoginPageSettings struct {
 	Title       string `json:"title,omitempty"`
 	Subtitle    string `json:"subtitle,omitempty"`
 	AccentColor string `json:"accentColor,omitempty"` // hex e.g. "#111827"
+	Template    string `json:"template,omitempty"`   // "minimal" | "bold"
 }
 
 type VoucherSettings struct {
 	BusinessName string `json:"businessName,omitempty"`
 	ShowValidity bool   `json:"showValidity"`
 	ShowPrice    bool   `json:"showPrice"`
+	Layout       string `json:"layout,omitempty"` // "card" | "ticket", default "card"
 }
 
 type HotspotSettings struct {

@@ -1,19 +1,15 @@
 <template>
-  <PageLayout title="Hotspot" subtitle="Captive portal management">
-    <div v-if="!store.activeId" class="border border-dashed border-border rounded-xl py-16 text-center">
-      <ServerIcon class="size-8 text-text-muted mx-auto mb-3" />
-      <p class="text-sm font-medium text-text-secondary">No router selected</p>
-      <p class="text-xs text-text-muted mt-1">Select a router from the sidebar dropdown</p>
-    </div>
-
-    <RouterView v-else />
+  <PageLayout v-if="!store.activeId" title="Hotspot" subtitle="Captive portal management">
+    <NoRouterSelected />
   </PageLayout>
+
+  <RouterView v-else />
 </template>
 
 <script setup lang="ts">
-import { ServerIcon } from '@heroicons/vue/24/outline'
 import { useRoutersStore } from '@/stores/routers'
 import PageLayout from '@/components/PageLayout.vue'
+import NoRouterSelected from '@/components/NoRouterSelected.vue'
 
 const store = useRoutersStore()
 </script>

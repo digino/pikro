@@ -1,11 +1,11 @@
 <template>
   <PageLayout title="Hotspot" subtitle="Users">
     <template #actions>
-      <button class="btn btn-ghost btn-sm" @click="openBatch">
+      <button class="btn btn-ghost" @click="openBatch">
         <TicketIcon class="size-3.5" />
-        Generate
+        Generate users
       </button>
-      <button class="btn btn-primary btn-sm" @click="openAdd">
+      <button class="btn btn-primary" @click="openAdd">
         <PlusIcon class="size-3.5" />
         New user
       </button>
@@ -27,7 +27,7 @@
         {{ t.label }}
         <span
           v-if="t.key === 'users' || active.length > 0"
-          class="ml-1 text-text-muted"
+          class="ml-1 text-text-secondary"
         >
           ({{ t.key === "users" ? filteredUsers.length : active.length }})
         </span>
@@ -85,14 +85,11 @@
       </div>
 
       <!-- Search & filters -->
-      <div class="flex items-center gap-2 flex-wrap">
+      <div class="flex items-center gap-2.5 flex-wrap">
         <div class="relative flex-1 min-w-40 max-w-xs">
-          <MagnifyingGlassIcon
-            class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-text-muted pointer-events-none"
-          />
           <input
             v-model="searchQuery"
-            class="input pl-8"
+            class="input pl-9"
             placeholder="Search username or comment…"
           />
         </div>
@@ -248,7 +245,7 @@
                 >
                 <span
                   v-else-if="userStatus(u) === 'expired'"
-                  class="text-xs px-2 py-0.5 rounded-full bg-muted text-text-muted border border-border"
+                  class="text-xs px-2 py-0.5 rounded-full bg-amber/10 text-amber"
                   >Expired</span
                 >
                 <span
@@ -260,14 +257,14 @@
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">
                   <button
-                    class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-colors text-text-muted hover:text-text-primary hover:bg-surface"
+                    class="btn btn-ghost btn-sm"
                     @click="openEdit(u)"
                   >
                     <PencilIcon class="size-3.5" />
                     Edit
                   </button>
                   <button
-                    class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-colors text-text-muted hover:text-red hover:bg-red/10"
+                    class="btn btn-sm btn-ghost hover:text-red hover:bg-red/10"
                     @click="removeUser(u['.id'])"
                   >
                     <TrashIcon class="size-3.5" />
@@ -330,68 +327,31 @@
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-border bg-surface">
-            <th
-              class="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wide"
-            >
-              User
-            </th>
-            <th
-              class="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wide"
-            >
-              IP
-            </th>
-            <th
-              class="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wide"
-            >
-              MAC
-            </th>
-            <th
-              class="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wide"
-            >
-              Uptime
-            </th>
-            <th
-              class="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wide"
-            >
-              Remaining
-            </th>
-            <th
-              class="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wide"
-            >
-              TX / RX
-            </th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">User</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">IP</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">MAC</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">Uptime</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">Down</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">Up</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">Left</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="active.length === 0">
-            <td colspan="6" class="text-center text-text-muted text-sm py-10">
-              No active sessions
-            </td>
+            <td colspan="7" class="text-center text-text-muted text-sm py-10">No active sessions</td>
           </tr>
           <tr
             v-for="s in pagedActive"
             :key="s['.id']"
             class="border-b border-border last:border-0 transition-colors hover:bg-surface"
           >
-            <td class="px-4 py-3 font-bold text-text-primary text-sm">
-              {{ s.user }}
-            </td>
-            <td class="px-4 py-3 font-mono text-sm text-text-secondary">
-              {{ s.address }}
-            </td>
-            <td class="px-4 py-3 font-mono text-sm text-text-secondary">
-              {{ s["mac-address"] }}
-            </td>
-            <td class="px-4 py-3 text-sm text-text-secondary">
-              {{ s.uptime }}
-            </td>
-            <td class="px-4 py-3 text-sm">
-              <span :class="remainingClass(s)">{{ remainingLabel(s) }}</span>
-            </td>
-            <td class="px-4 py-3 text-sm text-text-secondary">
-              {{ formatBytes(s["bytes-out"]) }} /
-              {{ formatBytes(s["bytes-in"]) }}
-            </td>
+            <td class="px-4 py-3 font-mono font-semibold text-text-primary text-xs">{{ s.user }}</td>
+            <td class="px-4 py-3 font-mono text-xs text-text-secondary">{{ s.address }}</td>
+            <td class="px-4 py-3 font-mono text-xs text-text-muted">{{ s["mac-address"] || "—" }}</td>
+            <td class="px-4 py-3 text-right font-mono text-xs text-text-secondary">{{ s.uptime || "—" }}</td>
+            <td class="px-4 py-3 text-right font-mono text-xs text-text-primary">{{ formatBytes(s["bytes-in"]) }}</td>
+            <td class="px-4 py-3 text-right font-mono text-xs text-text-secondary">{{ formatBytes(s["bytes-out"]) }}</td>
+            <td class="px-4 py-3 text-right font-mono text-xs text-text-secondary">{{ s["session-time-left"] || "—" }}</td>
           </tr>
         </tbody>
       </table>
@@ -449,7 +409,7 @@
     >
       <form @submit.prevent="submitEdit" class="space-y-4">
         <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-text-secondary">Password</span>
+          <span class="text-sm font-medium text-text-secondary">Password</span>
           <input
             v-model="editForm.password"
             class="input"
@@ -771,7 +731,7 @@
       <form v-else @submit.prevent="submitBatch" class="space-y-4">
         <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-red"
+            <span class="text-sm font-medium text-red"
               >Quantity <span>*</span></span
             >
             <input
@@ -787,7 +747,7 @@
             </p>
           </label>
           <label class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-text-secondary"
+            <span class="text-sm font-medium text-text-secondary"
               >Name length</span
             >
             <select v-model.number="batch.nameLength" class="input">
@@ -799,12 +759,12 @@
         </div>
 
         <div class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-text-secondary"
+          <span class="text-sm font-medium text-text-secondary"
             >Username characters</span
           >
           <div class="flex gap-2">
             <label
-              class="flex items-center gap-1.5 text-xs text-text-secondary cursor-pointer"
+              class="flex items-center gap-1.5 text-sm text-text-secondary cursor-pointer"
             >
               <input
                 type="checkbox"
@@ -814,7 +774,7 @@
               Letters (a-z)
             </label>
             <label
-              class="flex items-center gap-1.5 text-xs text-text-secondary cursor-pointer"
+              class="flex items-center gap-1.5 text-sm text-text-secondary cursor-pointer"
             >
               <input
                 type="checkbox"
@@ -830,7 +790,7 @@
         </div>
 
         <div class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-text-secondary">Password</span>
+          <span class="text-sm font-medium text-text-secondary">Password</span>
           <select v-model="batch.passwordMode" class="input">
             <option value="same">Same as username</option>
             <option value="random">Random (separate)</option>
@@ -845,7 +805,7 @@
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-text-secondary">Profile</span>
+          <span class="text-sm font-medium text-text-secondary">Profile</span>
           <select v-model="batch.profile" class="input">
             <option value="">default</option>
             <option v-for="p in profiles" :key="p['.id']" :value="p.name">
@@ -856,13 +816,13 @@
 
         <div class="border-t border-border pt-3 space-y-3">
           <p
-            class="text-xs font-semibold text-text-muted uppercase tracking-wide"
+            class="text-sm font-semibold text-text-muted uppercase tracking-wide"
           >
             Limits (override profile)
           </p>
 
           <div class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-text-secondary"
+            <span class="text-sm font-medium text-text-secondary"
               >Time limit</span
             >
             <input
@@ -873,13 +833,13 @@
             />
             <p
               v-if="batch.limitUptimeRaw && !batchUptimePreview"
-              class="text-xs text-red"
+              class="text-sm text-red"
             >
               Invalid format — use: 30m, 2h, 1d, 1w or combinations like 1d12h
             </p>
             <p
               v-else-if="batchUptimePreview"
-              class="text-xs"
+              class="text-sm"
               :class="batchUptimeWarning ? 'text-amber' : 'text-text-muted'"
             >
               <span v-if="batchUptimeWarning"
@@ -893,7 +853,7 @@
           </div>
 
           <div class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-text-secondary"
+            <span class="text-sm font-medium text-text-secondary"
               >Data limit</span
             >
             <div
@@ -918,7 +878,7 @@
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-text-secondary">Comment</span>
+          <span class="text-sm font-medium text-text-secondary">Comment</span>
           <input
             v-model="batch.comment"
             class="input"
@@ -1522,52 +1482,82 @@ function printVouchers(
   entries: { name: string; password: string; profile?: string }[],
 ) {
   const v = hotspotSettings.value.voucher;
-  const businessName =
-    v?.businessName ?? hotspotSettings.value.hotspotName ?? "";
+  const businessName = v?.businessName ?? hotspotSettings.value.hotspotName ?? "";
   const showValidity = v?.showValidity ?? true;
   const showPrice = v?.showPrice ?? true;
   const currency = hotspotSettings.value.currency ?? "";
+  const layout = v?.layout ?? "card";
 
-  const cards = entries
-    .map((r) => {
-      const profileName = r.profile || "default";
-      const meta = profileMetas.value[profileName];
-      const validity = meta?.validity ?? "";
-      const price = meta?.price ?? "";
-      const priceStr =
-        showPrice && price ? `${price}${currency ? " " + currency : ""}` : "";
-      const uptimeStr = showValidity && validity ? validity : "";
-      const headerLine = priceStr
-        ? `<div class="header uptime price"><span >${uptimeStr}</span><span >${priceStr}</span></div>`
-        : uptimeStr
-          ? `<div class="header uptime"><span >${uptimeStr}</span></div>`
-          : "";
-      const hotspotLine = businessName
-        ? `<div class="hotspot-name">${businessName}</div>`
+  const items = entries.map((r) => {
+    const meta = profileMetas.value[r.profile || "default"];
+    const validity = meta?.validity ?? "";
+    const price = meta?.price ?? "";
+    const priceStr = showPrice && price ? `${price}${currency ? " " + currency : ""}` : "";
+    const uptimeStr = showValidity && validity ? validity : "";
+    return { name: r.name, password: r.password, priceStr, uptimeStr };
+  });
+
+  let css = "";
+  let body = "";
+
+  if (layout === "ticket") {
+    css = `
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:ui-sans-serif,system-ui,sans-serif;background:#fff;padding:8mm;counter-reset:voucher}
+      .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88mm,1fr));gap:5mm}
+      .card{border:1px solid #d1d5db;border-radius:6px;overflow:hidden;page-break-inside:avoid;counter-increment:voucher}
+      .header{background:#111827;color:#fff;padding:3mm 5mm;display:flex;align-items:center;justify-content:space-between}
+      .biz{font-size:10pt;font-weight:700;letter-spacing:-.01em}
+      .price{font-size:10pt;font-weight:700}
+      .body{padding:4mm 5mm;display:flex;flex-direction:column;gap:0}
+      .row{display:flex;align-items:center;justify-content:space-between;padding:2.5mm 0}
+      .row+.row{border-top:1px solid #f3f4f6}
+      .lbl{font-size:7pt;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em}
+      .val{font-size:14pt;font-weight:700;color:#111827;font-family:ui-monospace,monospace}
+      .val-sm{font-size:9pt;font-weight:500;color:#374151;font-family:ui-sans-serif,system-ui,sans-serif}
+      .num{font-size:6pt;color:#d1d5db;margin-left:auto;padding-left:3mm}
+      @media print{body{padding:4mm}.grid{gap:4mm}}
+    `;
+    const cards = items.map(({ name, password, priceStr, uptimeStr }, i) => {
+      const validityRow = uptimeStr
+        ? `<div class="row"><span class="lbl">Valid for</span><span class="val-sm">${uptimeStr}</span></div>`
         : "";
-      return `<div class="card creds cred-col cred-label cred-value cred-divider cred-col cred-label cred-value">${headerLine}<div ><div ><div >Username</div><div >${r.name}</div></div><div ></div><div ><div >Password</div><div >${r.password}</div></div></div>${hotspotLine}</div>`;
-    })
-    .join("");
+      return `<div class="card"><div class="header"><span class="biz">${businessName || "WiFi Voucher"}</span>${priceStr ? `<span class="price">${priceStr}</span>` : ""}<span class="num">#${i + 1}</span></div><div class="body"><div class="row"><span class="lbl">Username</span><span class="val">${name}</span></div><div class="row"><span class="lbl">Password</span><span class="val">${password}</span></div>${validityRow}</div></div>`;
+    }).join("");
+    body = `<div class="grid">${cards}</div>`;
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Vouchers</title><style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:ui-sans-serif,system-ui,sans-serif;background:#fff;padding:8mm}
-    .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4mm}
-    .card{border:1px solid #d1d5db;border-radius:6px;padding:3mm 3.5mm;display:flex;flex-direction:column;gap:2.5mm;page-break-inside:avoid}
-    .header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:1.5mm}
-    .uptime{font-size:7pt;color:#6b7280}.price{font-size:8pt;font-weight:700;color:#111827}
-    .creds{display:grid;grid-template-columns:1fr 2px 1fr;gap:2mm;align-items:center}
-    .cred-col{display:flex;flex-direction:column;gap:0.5mm;align-items:center}
-    .cred-divider{width:1px;height:100%;background:#e5e7eb;align-self:stretch}
-    .cred-label{font-size:6pt;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em}
-    .cred-value{font-size:9pt;font-weight:700;color:#111827;font-family:ui-monospace,monospace}
-    .hotspot-name{font-size:7pt;color:#9ca3af;text-align:center;margin-top:auto;padding-top:1mm;border-top:1px solid #f3f4f6}
-    @media print{body{padding:4mm}.grid{gap:3mm}}
-  </style></head><body><div class="grid">${cards}</div></body></html>`;
+  } else {
+    // card (default) — 6-up compact grid
+    css = `
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:ui-sans-serif,system-ui,sans-serif;background:#fff;padding:8mm}
+      .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4mm}
+      .card{border:1px solid #d1d5db;border-radius:6px;padding:3mm 3.5mm;display:flex;flex-direction:column;gap:2.5mm;page-break-inside:avoid}
+      .header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:1.5mm}
+      .validity{font-size:7pt;color:#6b7280}.price{font-size:8pt;font-weight:700;color:#111827}
+      .creds{display:grid;grid-template-columns:1fr 1px 1fr;gap:2mm;align-items:center}
+      .cred-col{display:flex;flex-direction:column;gap:.5mm;align-items:center}
+      .divider{width:1px;background:#e5e7eb;align-self:stretch}
+      .lbl{font-size:6pt;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em}
+      .val{font-size:9pt;font-weight:700;color:#111827;font-family:ui-monospace,monospace}
+      .biz{font-size:7pt;color:#9ca3af;text-align:center;margin-top:auto;padding-top:1mm;border-top:1px solid #f3f4f6}
+      .num{font-size:6pt;color:#d1d5db;text-align:right;margin-top:auto;padding-top:1mm}
+      @media print{body{padding:4mm}.grid{gap:3mm}}
+    `;
+    const cards = items.map(({ name, password, priceStr, uptimeStr }, i) => {
+      const headerLine = priceStr || uptimeStr
+        ? `<div class="header"><span class="validity">${uptimeStr}</span><span class="price">${priceStr}</span></div>`
+        : "";
+      const bizLine = businessName ? `<div class="biz">${businessName}</div>` : "";
+      return `<div class="card">${headerLine}<div class="creds"><div class="cred-col"><div class="lbl">Username</div><div class="val">${name}</div></div><div class="divider"></div><div class="cred-col"><div class="lbl">Password</div><div class="val">${password}</div></div></div>${bizLine}<div class="num">#${i + 1}</div></div>`;
+    }).join("");
+    body = `<div class="grid">${cards}</div>`;
+  }
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Vouchers</title><style>${css}</style></head><body>${body}</body></html>`;
 
   const iframe = document.createElement("iframe");
-  iframe.style.cssText =
-    "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px";
+  iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px";
   document.body.appendChild(iframe);
   iframe.srcdoc = html;
   iframe.onload = () => {
@@ -1669,45 +1659,6 @@ function formatSeconds(secs: number): string {
   return `${m}m`;
 }
 
-type RemainingResult = { secs: number; source: "uptime" | "expiry" };
-
-function sessionRemaining(
-  session: Record<string, string>,
-): RemainingResult | null {
-  const userRecord = users.value.find((u) => u.name === session.user);
-  const usedSecs = parseUptimeSeconds(session.uptime);
-  const candidates: RemainingResult[] = [];
-  const limitUptime = userRecord?.["limit-uptime"];
-  if (limitUptime)
-    candidates.push({
-      secs: parseUptimeSeconds(limitUptime) - usedSecs,
-      source: "uptime",
-    });
-  const comment = userRecord?.comment ?? "";
-  const expMatch = comment.match(/^exp:(\d+)/);
-  if (expMatch)
-    candidates.push({
-      secs: parseInt(expMatch[1]) - Math.floor(Date.now() / 1000),
-      source: "expiry",
-    });
-  if (!candidates.length) return null;
-  return candidates.reduce((a, b) => (a.secs <= b.secs ? a : b));
-}
-
-function remainingLabel(session: Record<string, string>): string {
-  const r = sessionRemaining(session);
-  if (!r) return "—";
-  if (r.secs <= 0) return "expired";
-  return formatSeconds(r.secs);
-}
-
-function remainingClass(session: Record<string, string>): string {
-  const r = sessionRemaining(session);
-  if (!r) return "text-text-muted";
-  if (r.secs <= 0) return "text-red font-medium";
-  if (r.secs < 3600) return "text-amber";
-  return "text-text-secondary";
-}
 
 function displayComment(comment: string | undefined): string {
   if (!comment) return "—";

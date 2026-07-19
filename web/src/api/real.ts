@@ -32,6 +32,28 @@ export const testRouter = (id: string) =>
 export const getSystemResource = (id: string) =>
   api.get<Record<string, string>>(`/routers/${id}/system/resource`).then(r => r.data)
 
+export const getWanIP = (id: string) =>
+  api.get<{ ip: string }>(`/routers/${id}/system/wan-ip`).then(r => r.data.ip)
+
+export const getInterfaceTraffic = (id: string) =>
+  api.get<Record<string, string>[]>(`/routers/${id}/system/traffic`).then(r => r.data)
+
+export const getSystemClock = (id: string) =>
+  api.get<Record<string, string>>(`/routers/${id}/system/clock`).then(r => r.data)
+
+export interface PollSnapshot {
+  resource: Record<string, string>
+  traffic: Record<string, string>[]
+  addresses: Record<string, string>[]
+  clock: Record<string, string>
+}
+
+export const getPollSnapshot = (id: string) =>
+  api.get<PollSnapshot>(`/routers/${id}/system/poll`).then(r => r.data)
+
+export const getSystemLogs = (id: string) =>
+  api.get<Record<string, string>[]>(`/routers/${id}/system/logs`).then(r => r.data)
+
 // Hotspot users
 export const listHotspotUsers = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/hotspot/users`).then(r => r.data)

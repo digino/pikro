@@ -108,11 +108,59 @@ func collectResponses(conn net.PacketConn, timeout time.Duration) []Device {
 	return devices
 }
 
+// sendBroadcast sends an MNDP probe to every broadcast-capable IPv4 interface's
+// directed broadcast address (e.g. 192.168.1.255). This is more reliable than
+// 255.255.255.255 (limited broadcast), which fails with EHOSTUNREACH on macOS
+// and some Linux setups because the kernel finds no matching route.
 func sendBroadcast(conn net.PacketConn) error {
-	dst, _ := net.ResolveUDPAddr("udp4", "255.255.255.255:5678")
-	_, err := conn.WriteTo([]byte{0x00, 0x00, 0x00, 0x00}, dst)
+	probe := []byte{0x00, 0x00, 0x00, 0x00}
+	sent := false
+	var lastErr error
+
+	ifaces, err := net.Interfaces()
 	if err != nil {
-		return fmt.Errorf("send: %w", err)
+		// Fall back to limited broadcast if interface enumeration fails.
+		dst, _ := net.ResolveUDPAddr("udp4", "255.255.255.255:5678")
+		_, err = conn.WriteTo(probe, dst)
+		return err
+	}
+
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagBroadcast == 0 {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			ipNet, ok := addr.(*net.IPNet)
+			if !ok {
+				continue
+			}
+			ip := ipNet.IP.To4()
+			if ip == nil {
+				continue
+			}
+			// Compute directed broadcast: host bits all set to 1.
+			bcast := make(net.IP, 4)
+			for i := range bcast {
+				bcast[i] = ip[i] | ^ipNet.Mask[i]
+			}
+			dst := &net.UDPAddr{IP: bcast, Port: 5678}
+			if _, werr := conn.WriteTo(probe, dst); werr != nil {
+				lastErr = werr
+			} else {
+				sent = true
+			}
+		}
+	}
+
+	if !sent {
+		if lastErr != nil {
+			return fmt.Errorf("send: %w", lastErr)
+		}
+		return fmt.Errorf("send: no broadcast-capable IPv4 interface found")
 	}
 	return nil
 }

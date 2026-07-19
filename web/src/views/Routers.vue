@@ -33,16 +33,16 @@
           class="flex items-center gap-3 p-3 border border-border rounded-xl"
         >
           <div class="size-9 shrink-0 rounded-lg flex items-center justify-center border border-border bg-base">
-            <ServerIcon class="size-4 text-text-muted" />
+            <ServerIcon class="size-4 text-text-secondary" />
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-text-primary truncate">{{ d.identity || d.board || 'MikroTik' }}</p>
             <p class="text-xs text-text-secondary font-mono">{{ d.ip && d.ip !== '0.0.0.0' ? d.ip : 'No IP yet' }}<span v-if="d.mac"> · {{ d.mac }}</span></p>
-            <p v-if="d.board || d.version" class="text-xs text-text-muted mt-0.5">{{ [d.board, d.version].filter(Boolean).join(' · ') }}</p>
+            <p v-if="d.board || d.version" class="text-xs text-text-secondary mt-0.5">{{ [d.board, d.version].filter(Boolean).join(' · ') }}</p>
             <p v-if="!d.ip || d.ip === '0.0.0.0'" class="text-xs mt-0.5 text-amber">Factory reset — assign an IP via WinBox first</p>
           </div>
           <button
-            class="btn btn-sm btn-ghost shrink-0"
+            class="btn btn-ghost shrink-0"
             :class="isAlreadySaved(d.ip) ? 'cursor-default' : (!d.ip || d.ip === '0.0.0.0') ? 'opacity-40 cursor-not-allowed' : ''"
             :style="isAlreadySaved(d.ip) ? 'color: var(--color-green); border-color: rgba(76,195,138,0.3)' : ''"
             :disabled="isAlreadySaved(d.ip) || !d.ip || d.ip === '0.0.0.0'"
@@ -144,8 +144,8 @@
     <!-- Empty state -->
     <div v-else-if="!scanning && !scanned" class="border border-dashed border-border rounded-xl py-16 text-center">
       <ServerIcon class="size-8 text-text-muted mx-auto mb-3" />
-      <p class="text-sm font-medium text-text-secondary">No routers configured</p>
-      <p class="text-xs text-text-muted mt-1">Click <strong class="text-text-secondary">Scan</strong> to find devices on your network, or add one manually</p>
+      <p class="font-medium text-text-primary">No routers configured</p>
+      <p class="text-text-secondary mt-1">Click <strong class="text-text-primary">Scan</strong> to find devices on your network, or add one manually</p>
     </div>
 
     <AddRouterDialog v-model:open="showAdd" :prefill="prefill" @added="onAdded" />
@@ -154,8 +154,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import {
   PlusIcon, ServerIcon, ArrowPathIcon, BoltIcon, TrashIcon,
   CheckCircleIcon, XCircleIcon, MagnifyingGlassIcon,
@@ -169,6 +169,11 @@ import PageLayout from '@/components/PageLayout.vue'
 
 const store = useRoutersStore()
 const router = useRouter()
+const route = useRoute()
+
+onMounted(() => {
+  if (route.query.scan === '1') scan()
+})
 
 const testing = ref<Record<string, boolean>>({})
 const testResults = ref<Record<string, 'ok' | 'error'>>({})
