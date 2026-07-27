@@ -50,11 +50,11 @@ jobs:
           VERSION="v${{ github.event.inputs.version }}"
           LDFLAGS="-ldflags \"-X main.Version=${VERSION}\""
           mkdir -p dist
-          GOOS=darwin  GOARCH=arm64  go build -ldflags "-X main.Version=${VERSION}" -o dist/mikroruler-mac-arm64 .
-          GOOS=darwin  GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/mikroruler-mac-intel .
-          GOOS=windows GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/mikroruler.exe .
-          GOOS=linux   GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/mikroruler-linux-amd64 .
-          GOOS=linux   GOARCH=arm64  go build -ldflags "-X main.Version=${VERSION}" -o dist/mikroruler-linux-arm64 .
+          GOOS=darwin  GOARCH=arm64  go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-mac-arm64 .
+          GOOS=darwin  GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-mac-intel .
+          GOOS=windows GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro.exe .
+          GOOS=linux   GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-linux-amd64 .
+          GOOS=linux   GOARCH=arm64  go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-linux-arm64 .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -63,8 +63,8 @@ jobs:
           name: v${{ github.event.inputs.version }}
           generate_release_notes: true
           files: |
-            dist/mikroruler-mac-arm64
-            dist/mikroruler-mac-intel
-            dist/mikroruler.exe
-            dist/mikroruler-linux-amd64
-            dist/mikroruler-linux-arm64
+            dist/pikro-mac-arm64
+            dist/pikro-mac-intel
+            dist/pikro.exe
+            dist/pikro-linux-amd64
+            dist/pikro-linux-arm64

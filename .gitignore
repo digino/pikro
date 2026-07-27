@@ -1,10 +1,34 @@
+# Build artifacts
 pikro
 pikro.exe
 dist/
 web/dist/
 web/node_modules/
+
+# Tooling
 .agents/
-.claude/
 skills-lock.json
+
+# Claude Code: share rules/ and agents/ with contributors; keep local bits out
+.claude/*
+!.claude/rules/
+!.claude/agents/
+
+# Private strategy — keep in the working tree, never publish
+docs/roadmap.md
+
+# OS / editor junk
 **/.DS_Store
-/docs.env.local
+.idea/
+*.swp
+
+# Local env & secrets — never commit these
+.env
+.env.local
+.env.*.local
+web/.env.local
+*.pem
+*.key
+# Local Pikro config holds router credentials
+.pikro.json
+.mikroruler.json

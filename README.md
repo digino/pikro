@@ -1,16 +1,66 @@
-# Pikro
+# Pikro — a modern, open-source MikroTik hotspot manager
 
-A zero-install web app for managing MikroTik RouterOS devices.
-Run a single binary — your browser opens automatically.
+**Manage MikroTik RouterOS hotspots and vouchers from one zero-install app.**
+A single binary serves a clean web UI and talks to your router over the native
+RouterOS API (port 8728/8729 — the same protocol WinBox uses). No PHP, no web
+server to configure, no database. Download, run, done.
+
+> A free, open-source alternative to Mikhmon — built for café, hotel, and community
+> WiFi operators who sell hotspot vouchers. **Vouchers that actually expire correctly
+> on RouterOS v7**, without touching the router CLI.
 
 ---
 
-## Requirements
+## Features
 
-### End users
-Nothing. Download the binary and run it.
+- 🎫 **Hotspot voucher management** — generate, print, enable/disable, and bulk-manage
+  hotspot users and vouchers from a clean UI, no RouterOS CLI required.
+- ⏱️ **Vouchers that actually expire** — a cleanup scheduler installed on the router
+  enforces expiry reliably, fixing the well-known Mikhmon-on-RouterOS-v7 issue where
+  expired vouchers keep working.
+- 🪄 **Guided hotspot setup wizard** — one flow provisions IP pool, DHCP, NAT, walled
+  garden, DNS, login page, and the cleanup scheduler. Full teardown too.
+- 👤 **User & profile management** — create and edit hotspot profiles with validity,
+  price, bandwidth (rate-limit), and data-quota controls.
+- 🎨 **Custom login page & voucher templates** — brand the captive portal and printed
+  vouchers with your business name, colours, price, and validity.
+- 📡 **Live monitoring** — active sessions, per-interface traffic, bandwidth, WAN IP,
+  and system resource dashboard.
+- 🔎 **Automatic router discovery** — finds MikroTik devices on your LAN via MNDP.
+- 🖥️ **Multi-platform** — single ~9 MB binary for macOS, Windows, and Linux (incl.
+  Raspberry Pi / ARM).
+- 🔒 **Local-first & private** — runs on your machine, no cloud, no telemetry;
+  credentials never leave your computer.
 
-### Developers
+---
+
+## Quick start (end users)
+
+Nothing to install. Download the binary for your platform from
+[Releases](../../releases), then run it:
+
+```bash
+./pikro
+# Pikro running at http://localhost:8080  (your browser opens automatically)
+```
+
+On Windows, double-click `pikro.exe` (keep the console window open — closing it stops
+the server). See [Windows behavior](#windows-behavior) for details.
+
+---
+
+## Who it's for
+
+Small ISPs, café/hotel operators, and community-network admins in markets where
+MikroTik is dominant — anyone who sells or hands out WiFi hotspot vouchers and wants
+a simple, reliable tool instead of the router CLI or an aging PHP panel.
+
+---
+
+## Building from source
+
+### Requirements
+
 | Tool | Version | Install |
 |------|---------|---------|
 | Go   | 1.22+   | [golang.org/dl](https://golang.org/dl) |
@@ -136,8 +186,20 @@ Router profiles are stored at `~/.pikro.json`:
 ```
 
 The file is created automatically when you add your first router.
-Passwords are stored in plain text — the file is readable only by the
-current user (`chmod 600`).
+
+### A note on credential storage
+
+Router passwords are stored in plain text in `~/.pikro.json`, which Pikro writes
+with owner-only permissions (`0600`). This is a deliberate, local-first design:
+
+- Pikro runs on **your own machine** and talks to routers on **your own network** —
+  the threat model is "another user on this same computer," which `0600` addresses.
+- RouterOS credentials are not a new secret Pikro creates; they are the same
+  username/password you already type into WinBox/WebFig.
+- Pikro **never sends passwords to the browser** — the web UI receives router
+  profiles with the password field stripped.
+
+If your machine is shared or higher-risk, treat `~/.pikro.json` like an SSH key.
 
 ---
 
