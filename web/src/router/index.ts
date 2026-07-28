@@ -7,6 +7,7 @@ import HotspotUsers from '@/views/hotspot/Users.vue'
 import HotspotProfiles from '@/views/hotspot/Profiles.vue'
 import HotspotSettings from '@/views/hotspot/Settings.vue'
 import HotspotLogs from '@/views/hotspot/Logs.vue'
+import HotspotReports from '@/views/hotspot/Reports.vue'
 import SpeedTest from '@/views/SpeedTest.vue'
 import Routers from '@/views/Routers.vue'
 
@@ -25,6 +26,7 @@ export default createRouter({
         { path: 'profiles', component: HotspotProfiles },
         { path: 'settings', component: HotspotSettings },
         { path: 'logs',     component: HotspotLogs },
+        { path: 'reports',  component: HotspotReports },
       ],
     },
     { path: '/speedtest', component: SpeedTest },

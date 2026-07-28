@@ -72,8 +72,17 @@
     <div class="flex-1" />
 
     <!-- Footer -->
-    <div class="px-4 py-3 border-t border-border">
-      <span class="text-[11px] text-text-muted font-mono">{{ appVersion }}</span>
+    <div class="px-4 py-3 border-t border-border flex items-center justify-between">
+      <span class="text-xs text-text-muted font-mono">{{ appVersion }}</span>
+      <button
+        type="button"
+        class="size-7 flex items-center justify-center rounded-md text-text-muted hover:text-text-primary hover:bg-surface transition-colors"
+        :title="themeStore.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+        @click="themeStore.toggle()"
+      >
+        <SunIcon v-if="themeStore.theme === 'dark'" class="size-4" />
+        <MoonIcon v-else class="size-4" />
+      </button>
     </div>
   </aside>
 </template>
@@ -89,8 +98,12 @@ import {
   ChevronDownIcon, CheckCircleIcon,
   Squares2X2Icon, CircleStackIcon,
   BoltIcon, WrenchScrewdriverIcon, UsersIcon, RectangleGroupIcon, Cog6ToothIcon, ClipboardDocumentListIcon,
+  ChartBarIcon, SunIcon, MoonIcon,
 } from '@heroicons/vue/24/outline'
 import { useRoutersStore } from '@/stores/routers'
+import { useThemeStore } from '@/stores/theme'
+
+const themeStore = useThemeStore()
 
 defineProps<{ appVersion: string }>()
 
@@ -127,6 +140,7 @@ const navSections: NavSection[] = [
       { to: '/hotspot/setup',     icon: WrenchScrewdriverIcon, label: 'Setup' },
       { to: '/hotspot/users',     icon: UsersIcon,          label: 'Users' },
       { to: '/hotspot/profiles',  icon: RectangleGroupIcon, label: 'Profiles' },
+      { to: '/hotspot/reports',   icon: ChartBarIcon,                label: 'Reports' },
       { to: '/hotspot/settings',  icon: Cog6ToothIcon,               label: 'Settings' },
       { to: '/hotspot/logs',     icon: ClipboardDocumentListIcon,   label: 'Logs' },
     ],

@@ -1,7 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Dark palette ─────────────────────────────────────── */
+  /* ── Brand primary — theme-invariant amber-orange ─────── */
+  --color-primary:       #E67E22;
+  --color-primary-hover: #d97320;
+  --color-primary-fg:    #ffffff;
+
+  /* ── Dark palette (default) ───────────────────────────── */
   --color-base:      #09090b;
   --color-sidebar:   #0c0c0e;
   --color-surface:   #111113;
@@ -18,10 +23,31 @@
   --color-accent-dim:     rgba(255,255,255,0.08);
   --color-accent-hover:   #e4e4e7;
 
-  /* ── Status (kept for semantic meaning only) ─────────── */
+  /* ── Status ───────────────────────────────────────────── */
   --color-green:  #4cc38a;
   --color-red:    #e5484d;
   --color-amber:  #f59e0b;
+}
+
+/* ── Light theme overrides ────────────────────────────────── */
+[data-theme="light"] {
+  --color-base:      #f4f4f5;
+  --color-sidebar:   #e4e4e7;
+  --color-surface:   #ffffff;
+  --color-border:    #d4d4d8;
+  --color-muted:     #e4e4e7;
+
+  --color-text-primary:   #09090b;
+  --color-text-secondary: #52525b;
+  --color-text-muted:     #a1a1aa;
+
+  --color-accent:         #09090b;
+  --color-accent-dim:     rgba(0,0,0,0.06);
+  --color-accent-hover:   #27272a;
+
+  --color-green:  #16a34a;
+  --color-red:    #dc2626;
+  --color-amber:  #d97706;
 }
 
 /* ── Base resets ──────────────────────────────────────────── */
@@ -56,7 +82,7 @@ html, body, #app {
   @apply px-2.5 py-1 text-xs gap-1;
 }
 @utility btn-primary {
-  @apply border-transparent text-[#09090b] bg-[#fafafa] hover:bg-[#e4e4e7];
+  @apply border-transparent text-white bg-primary hover:bg-primary-hover;
 }
 @utility btn-ghost {
   @apply border-border text-text-secondary bg-transparent
@@ -79,7 +105,7 @@ html, body, #app {
   outline: 2px solid transparent;
   outline-offset: 1px;
 }
-.input:focus { outline-color: var(--color-accent); }
+.input:focus { outline-color: var(--color-primary); }
 .input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .input-select {
@@ -93,7 +119,7 @@ html, body, #app {
   outline-offset: 1px;
   transition: outline 0.1s;
 }
-.input-select:focus { outline-color: var(--color-accent); }
+.input-select:focus { outline-color: var(--color-primary); }
 
 .input-bare {
   padding: 8px 12px;

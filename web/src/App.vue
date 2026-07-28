@@ -12,11 +12,15 @@
 import { onMounted, ref } from 'vue'
 import { getAppVersion } from '@/api'
 import { useRoutersStore } from '@/stores/routers'
+import { useThemeStore } from '@/stores/theme'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AddRouterDialog from '@/components/AddRouterDialog.vue'
 
 const store = useRoutersStore()
 const appVersion = ref('dev')
+
+// Init theme on boot — applies stored preference to <html data-theme>.
+useThemeStore()
 
 onMounted(() => {
   store.load()

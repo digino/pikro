@@ -1461,6 +1461,8 @@ async function submitBatch() {
         rateLimit: "",
         comment: b.comment,
         expiryComment: "",
+        price: profileMetas.value[b.profile]?.price ?? "",
+        currency: hotspotSettings.value.currency ?? "",
       });
       batchResults.value.push({ name, password, ok: true });
     } catch (e: any) {

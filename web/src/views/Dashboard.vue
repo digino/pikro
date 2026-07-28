@@ -1,12 +1,5 @@
 <template>
   <PageLayout title="Dashboard" subtitle="Network Overview">
-    <template #actions>
-      <button class="btn btn-ghost" :disabled="polling" @click="refresh">
-        <ArrowPathIcon class="size-3.5" :class="{ 'animate-spin': polling }" />
-        Refresh
-      </button>
-    </template>
-
     <NoRouterSelected v-if="!store.activeId" />
 
     <div v-else class="grid gap-4">
@@ -377,7 +370,6 @@ import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { RouterLink } from "vue-router";
 import {
   ExclamationTriangleIcon,
-  ArrowPathIcon,
   CheckCircleIcon,
 } from "@heroicons/vue/24/outline";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
@@ -402,7 +394,6 @@ const resource = ref<Record<string, string>>({});
 const loading = ref(false);
 const error = ref("");
 const routerTime = ref("");
-const polling = ref(false);
 
 const allUsers = ref<Record<string, string>[]>([]);
 const activeList = ref<Record<string, string>[]>([]);
@@ -586,11 +577,6 @@ async function poll() {
   }
 }
 
-async function refresh() {
-  polling.value = true;
-  await Promise.all([loadStatic(), loadHotspot(), loadLogs(), poll()]);
-  polling.value = false;
-}
 
 let pollTimer: ReturnType<typeof setInterval>;
 let hotspotTimer: ReturnType<typeof setInterval>;

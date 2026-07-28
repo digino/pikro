@@ -5,7 +5,7 @@ import type {
   ProfileMeta, HotspotSettings, LoginPageSettings,
   CleanupSchedulerStatus, HotspotProfileParams,
   PreflightResult, SetupResult, TeardownResult,
-  DiscoveredDevice,
+  DiscoveredDevice, SaleEntry,
 } from './types'
 
 export type * from './types'
@@ -115,6 +115,10 @@ export const setupHotspot = (id: string, body: { lanIface: string; wanIface: str
 
 export const teardownHotspot = (id: string) =>
   api.delete<TeardownResult>(`/routers/${id}/hotspot/setup`).then(r => r.data)
+
+// Sales ledger
+export const getSalesLedger = (id: string, year: number) =>
+  api.get<SaleEntry[]>(`/routers/${id}/sales`, { params: { year } }).then(r => r.data)
 
 // Discovery
 export const discoverRouters = () =>

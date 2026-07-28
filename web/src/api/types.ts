@@ -25,6 +25,16 @@ export interface NewHotspotUser {
   rateLimit: string
   comment: string
   expiryComment?: string
+  price?: string
+  currency?: string
+}
+
+export interface SaleEntry {
+  at: string    // ISO UTC timestamp
+  profile: string
+  price: string
+  currency: string
+  count: number
 }
 
 export interface UpdateHotspotUser {

@@ -42,18 +42,25 @@ func main() {
 
 	port := findAvailablePort(8080)
 	url := fmt.Sprintf("http://localhost:%d", port)
-
-	if !*noOpen {
-		go func() {
-			time.Sleep(300 * time.Millisecond)
-			openBrowser(url)
-		}()
-	}
-
 	handlers.AppVersion = Version
 	log.Printf("Pikro %s running at %s (press Ctrl+C to stop)\n", Version, url)
-	if err := server.Start(port, embeddedWeb); err != nil {
-		log.Fatal(err)
+
+	startServer := func() error { return server.Start(port, embeddedWeb) }
+
+	if runtime.GOOS == "windows" {
+		// On Windows, runWithTray owns the lifecycle: it shows a tray icon,
+		// opens the browser, and starts the server — no console flash.
+		runWithTray(port, startServer)
+	} else {
+		if !*noOpen {
+			go func() {
+				time.Sleep(300 * time.Millisecond)
+				openBrowser(url)
+			}()
+		}
+		if err := startServer(); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 

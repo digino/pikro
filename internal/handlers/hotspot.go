@@ -3,8 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/digino/pikro/internal/router"
+	"github.com/digino/pikro/internal/sales"
 )
 
 func ListHotspotUsers(w http.ResponseWriter, r *http.Request) {
@@ -66,6 +68,9 @@ func CreateHotspotUser(w http.ResponseWriter, r *http.Request) {
 		// ExpiryComment is pre-formatted by the frontend as "exp:YYYY-MM-DD HH:MM:SS"
 		// using the router's current time + profile validity duration.
 		ExpiryComment string `json:"expiryComment"`
+		// Price and Currency are optional — sent by batch generation to record the sale.
+		Price    string `json:"price"`
+		Currency string `json:"currency"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		jsonError(w, "invalid body", http.StatusBadRequest)
@@ -96,6 +101,17 @@ func CreateHotspotUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
+	}
+	// Record in the local generation ledger. Non-fatal if it fails.
+	if body.Profile != "" {
+		routerID := r.PathValue("id")
+		_ = sales.Append(routerID, sales.SaleEntry{
+			At:       time.Now().UTC(),
+			Profile:  body.Profile,
+			Price:    body.Price,
+			Currency: body.Currency,
+			Count:    1,
+		})
 	}
 	w.WriteHeader(http.StatusCreated)
 	jsonOK(w, user)
