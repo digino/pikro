@@ -2,8 +2,8 @@
 
 @theme {
   /* ── Brand primary — theme-invariant amber-orange ─────── */
-  --color-primary:       #E67E22;
-  --color-primary-hover: #d97320;
+  --color-primary:       #ed7e15;
+  --color-primary-hover: #d4710f;
   --color-primary-fg:    #ffffff;
 
   /* ── Dark palette (default) ───────────────────────────── */

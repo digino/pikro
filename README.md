@@ -41,11 +41,17 @@ Nothing to install. Download the binary for your platform from
 
 ```bash
 ./pikro
-# Pikro running at http://localhost:8080  (your browser opens automatically)
+# Pikro running at http://localhost:8080
 ```
 
-On Windows, double-click `pikro.exe` (keep the console window open — closing it stops
-the server). See [Windows behavior](#windows-behavior) for details.
+On **macOS**, unzip `Pikro-mac-arm64.zip` (Apple Silicon) or `Pikro-mac-intel.zip`
+(Intel), drag `Pikro.app` to your Applications folder, and double-click it.
+A tray icon appears in the menu bar. Click **Open Pikro** to open the app in
+your browser, or **Quit** to stop the server.
+
+On **Windows**, double-click `pikro.exe` — a tray icon appears in the system tray,
+your browser opens automatically, and the server keeps running in the background.
+Right-click the tray icon to open the app or quit.
 
 ---
 
@@ -153,15 +159,15 @@ No cross-compilation toolchain needed — Go handles it natively.
 > **Windows 7 is not supported.** The binary is built with Go 1.21+ which dropped
 > Windows 7/8 support. The app requires Windows 10 or later.
 
-### Windows behavior
+### macOS and Windows behavior
 
-On Windows, double-clicking `pikro.exe` opens a console window showing the
-server address, then launches your browser automatically. **Keep the console window
-open** — closing it stops the server. To run it in the background, use:
+On both macOS and Windows, Pikro runs as a tray application — no terminal or
+console window. Starting it places an icon in the menu bar (macOS) or system
+tray (Windows). Click **Open Pikro** to open the app in your browser, or
+**Quit** to stop the server.
 
-```bat
-start /b pikro.exe
-```
+A firewall prompt may appear on first run — click **Allow** so Pikro can reach
+your router over the local network.
 
 ---
 

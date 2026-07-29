@@ -47,9 +47,9 @@ func main() {
 
 	startServer := func() error { return server.Start(port, embeddedWeb) }
 
-	if runtime.GOOS == "windows" {
-		// On Windows, runWithTray owns the lifecycle: it shows a tray icon,
-		// opens the browser, and starts the server — no console flash.
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		// On Windows and macOS, runWithTray owns the lifecycle: tray icon,
+		// browser open, server start — no terminal window.
 		runWithTray(port, startServer)
 	} else {
 		if !*noOpen {

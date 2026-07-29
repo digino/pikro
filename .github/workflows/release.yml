@@ -9,34 +9,87 @@ on:
         type: string
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
+  # Mac builds run on macos-latest so iconutil and .app bundling are available.
+  build-mac:
+    runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
-      - name: Install frontend dependencies
-        run: cd web && npm ci
+      - run: cd web && npm ci
+      - run: cd web && npm run build
 
-      - name: Build frontend
-        run: cd web && npm run build
+      - name: Build Mac binaries + .app bundles
+        run: |
+          VERSION="v${{ github.event.inputs.version }}"
+          mkdir -p dist
+          GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=${VERSION}" -o dist/.pikro-mac-arm64-bin .
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION}" -o dist/.pikro-mac-intel-bin .
+          make _bundle_app BIN=dist/.pikro-mac-arm64-bin  OUT=dist/Pikro-mac-arm64.zip  VERSION=${VERSION}
+          make _bundle_app BIN=dist/.pikro-mac-intel-bin  OUT=dist/Pikro-mac-intel.zip  VERSION=${VERSION}
+          rm -f dist/.pikro-mac-arm64-bin dist/.pikro-mac-intel-bin
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-zips
+          path: |
+            dist/Pikro-mac-arm64.zip
+            dist/Pikro-mac-intel.zip
+
+  # Windows and Linux build on ubuntu-latest — faster and cheaper.
+  build-other:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - run: cd web && npm ci
+      - run: cd web && npm run build
+
+      - name: Build Windows + Linux binaries
+        run: |
+          VERSION="v${{ github.event.inputs.version }}"
+          mkdir -p dist
+          GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro.exe .
+          GOOS=linux   GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-linux-amd64 .
+          GOOS=linux   GOARCH=arm64 go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-linux-arm64 .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: other-binaries
+          path: |
+            dist/pikro.exe
+            dist/pikro-linux-amd64
+            dist/pikro-linux-arm64
+
+  # Release job waits for both builds, tags, then publishes everything.
+  release:
+    needs: [build-mac, build-other]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Create git tag
         run: |
@@ -45,16 +98,15 @@ jobs:
           git tag "v${{ github.event.inputs.version }}"
           git push origin "v${{ github.event.inputs.version }}"
 
-      - name: Build binaries
-        run: |
-          VERSION="v${{ github.event.inputs.version }}"
-          LDFLAGS="-ldflags \"-X main.Version=${VERSION}\""
-          mkdir -p dist
-          GOOS=darwin  GOARCH=arm64  go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-mac-arm64 .
-          GOOS=darwin  GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-mac-intel .
-          GOOS=windows GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro.exe .
-          GOOS=linux   GOARCH=amd64  go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-linux-amd64 .
-          GOOS=linux   GOARCH=arm64  go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-linux-arm64 .
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-zips
+          path: dist/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: other-binaries
+          path: dist/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -63,8 +115,8 @@ jobs:
           name: v${{ github.event.inputs.version }}
           generate_release_notes: true
           files: |
-            dist/pikro-mac-arm64
-            dist/pikro-mac-intel
+            dist/Pikro-mac-arm64.zip
+            dist/Pikro-mac-intel.zip
             dist/pikro.exe
             dist/pikro-linux-amd64
             dist/pikro-linux-arm64

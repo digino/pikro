@@ -33,12 +33,40 @@ release:
 	@echo "Releasing $(VERSION)..."
 	@mkdir -p dist
 	@cd web && npm run build
-	GOOS=darwin  GOARCH=arm64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/$(BINARY)-mac-arm64 .
-	GOOS=darwin  GOARCH=amd64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/$(BINARY)-mac-intel .
+	GOOS=darwin  GOARCH=arm64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/.pikro-mac-arm64-bin .
+	GOOS=darwin  GOARCH=amd64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/.pikro-mac-intel-bin .
 	GOOS=windows GOARCH=amd64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/$(BINARY).exe .
 	GOOS=linux   GOARCH=amd64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/$(BINARY)-linux-amd64 .
 	GOOS=linux   GOARCH=arm64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/$(BINARY)-linux-arm64 .
-	@echo "Binaries in ./dist/ for $(VERSION)"
+	@$(MAKE) _bundle_app ARCH=arm64 BIN=dist/.pikro-mac-arm64-bin OUT=dist/Pikro-mac-arm64.zip
+	@$(MAKE) _bundle_app ARCH=amd64 BIN=dist/.pikro-mac-intel-bin OUT=dist/Pikro-mac-intel.zip
+	@rm -f dist/.pikro-mac-arm64-bin dist/.pikro-mac-intel-bin
+	@echo "Done → dist/ for $(VERSION)"
+
+# Internal: wrap a Darwin binary in a .app bundle and zip it.
+# Usage: make _bundle_app BIN=<binary> OUT=<zip>
+_bundle_app:
+	@APP=dist/Pikro.app; \
+	 rm -rf "$$APP"; \
+	 mkdir -p "$$APP/Contents/MacOS" "$$APP/Contents/Resources"; \
+	 cp $(BIN) "$$APP/Contents/MacOS/pikro"; \
+	 chmod +x "$$APP/Contents/MacOS/pikro"; \
+	 cp assets/brand/pikro.icns "$$APP/Contents/Resources/pikro.icns"; \
+	 printf '<?xml version="1.0" encoding="UTF-8"?>\n\
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n\
+<plist version="1.0"><dict>\n\
+  <key>CFBundleName</key><string>Pikro</string>\n\
+  <key>CFBundleIdentifier</key><string>com.pikro.app</string>\n\
+  <key>CFBundleVersion</key><string>$(VERSION)</string>\n\
+  <key>CFBundleShortVersionString</key><string>$(VERSION)</string>\n\
+  <key>CFBundleExecutable</key><string>pikro</string>\n\
+  <key>CFBundleIconFile</key><string>pikro</string>\n\
+  <key>CFBundlePackageType</key><string>APPL</string>\n\
+  <key>LSMinimumSystemVersion</key><string>11.0</string>\n\
+  <key>LSUIElement</key><true/>\n\
+</dict></plist>\n' > "$$APP/Contents/Info.plist"; \
+	 cd dist && zip -r ../$(OUT) Pikro.app --quiet; \
+	 rm -rf "$$APP"
 
 clean:
 	rm -f $(BINARY)

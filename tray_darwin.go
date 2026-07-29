@@ -1,12 +1,16 @@
-//go:build windows
+//go:build darwin
 
 package main
 
 import (
 	"fmt"
+	_ "embed"
 
 	"github.com/getlantern/systray"
 )
+
+//go:embed assets/brand/pikro.icns
+var iconBytes []byte
 
 func runWithTray(port int, startServer func() error) {
 	url := fmt.Sprintf("http://localhost:%d", port)
