@@ -92,3 +92,17 @@ func GetSystemLogs(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonOK(w, logs)
 }
+
+func GetDHCPLeases(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	leases, err := client.DHCPLeases()
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	jsonOK(w, leases)
+}

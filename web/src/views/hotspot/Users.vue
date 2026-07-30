@@ -12,26 +12,44 @@
     </template>
 
     <!-- Tabs -->
-    <div class="flex items-center gap-1 border-b border-border -mt-2">
-      <button
-        v-for="t in tabs"
-        :key="t.key"
-        class="px-3 py-2 text-sm font-medium border-b-2 transition-colors"
-        :class="
-          tab === t.key
-            ? 'border-text-primary text-text-primary'
-            : 'border-transparent text-text-muted hover:text-text-secondary'
-        "
-        @click="switchTab(t.key)"
-      >
-        {{ t.label }}
-        <span
-          v-if="t.key === 'users' || active.length > 0"
-          class="ml-1 text-text-secondary"
+    <div class="flex items-center justify-between border-b border-border -mt-2">
+      <div class="flex items-center gap-1">
+        <button
+          v-for="t in tabs"
+          :key="t.key"
+          class="px-3 py-2 text-sm font-medium border-b-2 transition-colors"
+          :class="
+            tab === t.key
+              ? 'border-text-primary text-text-primary'
+              : 'border-transparent text-text-muted hover:text-text-secondary'
+          "
+          @click="switchTab(t.key)"
         >
-          ({{ t.key === "users" ? filteredUsers.length : active.length }})
-        </span>
-      </button>
+          {{ t.label }}
+          <span
+            v-if="t.key === 'users' || active.length > 0"
+            class="ml-1 text-text-secondary"
+          >
+            ({{ t.key === "users" ? filteredUsers.length : active.length }})
+          </span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 pb-2">
+        <span class="text-sm text-text-secondary font-semibold"
+          >Auto-cleanup</span
+        >
+        <SwitchRoot
+          :model-value="cleanupInstalled === true"
+          :disabled="cleanupToggling"
+          class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors data-[state=checked]:bg-green data-[state=unchecked]:bg-border disabled:opacity-50"
+          @update:model-value="toggleCleanup"
+        >
+          <SwitchThumb
+            class="pointer-events-none block size-4 rounded-full bg-white shadow transform transition-transform translate-x-0.5 data-[state=checked]:translate-x-4"
+          />
+        </SwitchRoot>
+      </div>
     </div>
 
     <div v-if="loading" class="flex justify-center py-10">
@@ -57,15 +75,21 @@
       <!-- Bulk action bar -->
       <div
         v-if="selected.size > 0"
-        class="flex items-center gap-3 px-4 py-2.5 border border-border rounded-xl text-sm font-medium bg-surface"
+        class="flex items-center gap-3 px-3 py-2 border border-border rounded-xl text-sm font-medium bg-surface"
       >
-        <span class="text-text-secondary">{{ selected.size }} selected</span>
-        <button class="btn btn-ghost btn-sm ml-auto" @click="printSelected">
+        <span class="text-text-secondary font-semibold">{{ selected.size }} selected</span>
+        <button
+          class="ml-auto text-text-secondary hover:text-text-primary transition-colors cursor-pointer underline"
+          @click="selected = new Set()"
+        >
+          Cancel
+        </button>
+        <button class="btn btn-ghost" @click="openPrintSelected">
           <PrinterIcon class="size-3.5" />
           Print
         </button>
         <button
-          class="btn btn-danger btn-sm"
+          class="btn btn-danger"
           :disabled="bulkDeleting"
           @click="removeSelected"
         >
@@ -76,20 +100,14 @@
           <TrashIcon v-else class="size-3.5" />
           Delete {{ selected.size }}
         </button>
-        <button
-          class="text-text-muted hover:text-text-secondary transition-colors"
-          @click="selected = new Set()"
-        >
-          ✕
-        </button>
       </div>
 
       <!-- Search & filters -->
       <div class="flex items-center gap-2.5 flex-wrap">
-        <div class="relative flex-1 max-w-xs">
+        <div class="relative flex-1 max-w-xs bg-wh">
           <input
             v-model="searchQuery"
-            class="input pl-9"
+            class="input"
             placeholder="Search username or comment…"
           />
         </div>
@@ -97,7 +115,9 @@
           :model-value="filterProfile || undefined"
           @update:model-value="filterProfile = $event ?? ''"
         >
-          <SelectTrigger class="input-select flex items-center gap-1.5 cursor-pointer">
+          <SelectTrigger
+            class="input-select flex items-center gap-1.5 cursor-pointer"
+          >
             <SelectValue placeholder="All profiles" class="flex-1 text-left" />
             <ChevronDownIcon class="size-3.5 text-text-secondary shrink-0" />
           </SelectTrigger>
@@ -115,7 +135,9 @@
                   class="flex items-center justify-between p-2 text-sm rounded-md cursor-pointer text-text-secondary transition-colors hover:bg-muted hover:text-text-primary data-highlighted:bg-muted data-highlighted:text-text-primary data-[state=checked]:text-text-primary data-[state=checked]:font-medium"
                 >
                   <SelectItemText>{{ p.name }}</SelectItemText>
-                  <SelectItemIndicator><CheckCircleIcon class="size-4 text-green" /></SelectItemIndicator>
+                  <SelectItemIndicator
+                    ><CheckCircleIcon class="size-4 text-green"
+                  /></SelectItemIndicator>
                 </SelectItem>
               </SelectViewport>
             </SelectContent>
@@ -125,7 +147,9 @@
           :model-value="filterStatus || undefined"
           @update:model-value="filterStatus = $event ?? ''"
         >
-          <SelectTrigger class="input-select flex items-center gap-1.5 cursor-pointer">
+          <SelectTrigger
+            class="input-select flex items-center gap-1.5 cursor-pointer"
+          >
             <SelectValue placeholder="All statuses" class="flex-1 text-left" />
             <ChevronDownIcon class="size-3.5 text-text-secondary shrink-0" />
           </SelectTrigger>
@@ -143,22 +167,18 @@
                   class="flex items-center justify-between p-2 text-sm rounded-md cursor-pointer text-text-secondary transition-colors hover:bg-muted hover:text-text-primary data-highlighted:bg-muted data-highlighted:text-text-primary data-[state=checked]:text-text-primary data-[state=checked]:font-medium"
                 >
                   <SelectItemText>{{ opt.label }}</SelectItemText>
-                  <SelectItemIndicator><CheckCircleIcon class="size-4 text-green" /></SelectItemIndicator>
+                  <SelectItemIndicator
+                    ><CheckCircleIcon class="size-4 text-green"
+                  /></SelectItemIndicator>
                 </SelectItem>
               </SelectViewport>
             </SelectContent>
           </SelectPortal>
         </SelectRoot>
-        <span
-          v-if="searchQuery || filterProfile || filterStatus"
-          class="text-xs text-text-muted"
-          >{{ filteredUsers.length }} result{{
-            filteredUsers.length !== 1 ? "s" : ""
-          }}</span
-        >
+
         <button
           v-if="searchQuery || filterProfile || filterStatus"
-          class="text-sm text-text-muted hover:text-text-secondary transition-colors px-1"
+          class="btn"
           @click="
             searchQuery = '';
             filterProfile = '';
@@ -175,9 +195,9 @@
             <tr class="border-b border-border bg-surface">
               <th class="px-4 py-3 w-8">
                 <CheckboxRoot
-                  :checked="someSelected ? 'indeterminate' : allSelected"
+                  :model-value="someSelected ? 'indeterminate' : allSelected"
                   class="size-4 rounded border border-border bg-base flex items-center justify-center transition-colors data-[state=checked]:bg-text-primary data-[state=checked]:border-text-primary data-[state=indeterminate]:bg-text-primary data-[state=indeterminate]:border-text-primary hover:border-muted"
-                  @update:checked="toggleSelectAll"
+                  @update:model-value="toggleSelectAll"
                 >
                   <CheckboxIndicator>
                     <CheckIcon class="size-3 text-base" />
@@ -240,9 +260,9 @@
             >
               <td class="px-4 py-3">
                 <CheckboxRoot
-                  :checked="selected.has(u['.id'])"
+                  :model-value="selected.has(u['.id'])"
                   class="size-4 rounded border border-border bg-base flex items-center justify-center transition-colors data-[state=checked]:bg-text-primary data-[state=checked]:border-text-primary hover:border-muted"
-                  @update:checked="toggleSelect(u['.id'])"
+                  @update:model-value="toggleSelect(u['.id'])"
                 >
                   <CheckboxIndicator>
                     <CheckIcon class="size-3 text-base" />
@@ -274,36 +294,11 @@
                 {{ expiryLabel(u) }}
               </td>
               <td class="px-4 py-3">
-                <span
-                  v-if="userStatus(u) === 'active'"
-                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-green/10 text-green"
-                  >Active</span
-                >
-                <span
-                  v-else-if="userStatus(u) === 'waiting'"
-                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400"
-                  >Waiting</span
-                >
-                <span
-                  v-else-if="userStatus(u) === 'disabled'"
-                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-red/10 text-red"
-                  >Disabled</span
-                >
-                <span
-                  v-else-if="userStatus(u) === 'expired'"
-                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-red/10 text-red"
-                  >Expired</span
-                >
-                <span
-                  v-else-if="userStatus(u) === 'expires-soon'"
-                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-amber/10 text-amber"
-                  >Expires soon</span
-                >
-                <span
-                  v-else-if="userStatus(u) === 'limit-reached'"
-                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-amber/10 text-amber"
-                  >Limit reached</span
-                >
+                <StatusBadge
+                  variant="pill"
+                  :color="statusColor(u)"
+                  :label="statusLabel(u)"
+                />
               </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">
@@ -329,11 +324,11 @@
           class="flex items-center justify-between px-4 py-2.5 border-t border-border bg-surface"
         >
           <div class="flex items-center gap-1">
-            <span class="text-xs text-text-muted mr-1">Per page</span>
+            <span class="text-sm mr-2">Per page</span>
             <button
               v-for="n in PAGE_SIZES"
               :key="n"
-              class="px-2 py-0.5 text-xs rounded transition-colors"
+              class="btn btn-sm btn-ghost"
               :class="
                 usersPageSize === n
                   ? 'bg-muted text-text-primary'
@@ -344,28 +339,32 @@
               {{ n }}
             </button>
           </div>
-          <div class="flex items-center gap-1 text-xs text-text-muted">
-            <span
-              >{{ (usersPage - 1) * usersPageSize + 1 }}–{{
-                Math.min(usersPage * usersPageSize, filteredUsers.length)
-              }}
-              of {{ filteredUsers.length }}</span
-            >
-            <button
-              class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
-              :disabled="usersPage === 1"
-              @click="usersPage--"
-            >
-              <ChevronLeftIcon class="size-3.5" />
-            </button>
-            <button
-              class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
-              :disabled="usersPage >= usersPageCount"
-              @click="usersPage++"
-            >
-              <ChevronRightIcon class="size-3.5" />
-            </button>
-          </div>
+          <PaginationRoot
+            v-slot="{ page }"
+            :page="usersPage"
+            :items-per-page="usersPageSize"
+            :total="filteredUsers.length"
+            @update:page="usersPage = $event"
+          >
+            <div class="flex items-center gap-1 text-sm text-text-muted">
+              <span
+                >{{ (page - 1) * usersPageSize + 1 }}–{{
+                  Math.min(page * usersPageSize, filteredUsers.length)
+                }}
+                of {{ filteredUsers.length }}</span
+              >
+              <PaginationPrev
+                class="btn btn-sm btn-primary disabled:opacity-30"
+              >
+                <ChevronLeftIcon class="size-4" />
+              </PaginationPrev>
+              <PaginationNext
+                class="btn btn-sm btn-primary disabled:opacity-30"
+              >
+                <ChevronRightIcon class="size-4" />
+              </PaginationNext>
+            </div>
+          </PaginationRoot>
         </div>
       </div>
     </div>
@@ -478,28 +477,32 @@
             {{ n }}
           </button>
         </div>
-        <div class="flex items-center gap-1 text-xs text-text-muted">
-          <span
-            >{{ (activePage - 1) * activePageSize + 1 }}–{{
-              Math.min(activePage * activePageSize, active.length)
-            }}
-            of {{ active.length }}</span
-          >
-          <button
-            class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
-            :disabled="activePage === 1"
-            @click="activePage--"
-          >
-            <ChevronLeftIcon class="size-3.5" />
-          </button>
-          <button
-            class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
-            :disabled="activePage >= activePageCount"
-            @click="activePage++"
-          >
-            <ChevronRightIcon class="size-3.5" />
-          </button>
-        </div>
+        <PaginationRoot
+          v-slot="{ page }"
+          :page="activePage"
+          :items-per-page="activePageSize"
+          :total="active.length"
+          @update:page="activePage = $event"
+        >
+          <div class="flex items-center gap-1 text-xs text-text-muted">
+            <span
+              >{{ (page - 1) * activePageSize + 1 }}–{{
+                Math.min(page * activePageSize, active.length)
+              }}
+              of {{ active.length }}</span
+            >
+            <PaginationPrev
+              class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
+            >
+              <ChevronLeftIcon class="size-3.5" />
+            </PaginationPrev>
+            <PaginationNext
+              class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
+            >
+              <ChevronRightIcon class="size-3.5" />
+            </PaginationNext>
+          </div>
+        </PaginationRoot>
       </div>
     </div>
 
@@ -798,7 +801,7 @@
           >
             Close
           </button>
-          <button type="button" class="btn btn-primary" @click="printResults">
+          <button type="button" class="btn btn-primary" @click="openPrintResults">
             <PrinterIcon class="size-4" /> Print
           </button>
         </div>
@@ -832,6 +835,18 @@
         @submit="submitBatch"
       />
     </AppDialog>
+
+    <PrintTemplateDialog
+      :open="showPrintDialog"
+      :entries="printEntries"
+      :default-layout="hotspotSettings.voucher?.layout ?? 'card'"
+      :business-name="hotspotSettings.voucher?.businessName ?? hotspotSettings.hotspotName ?? ''"
+      :show-validity="hotspotSettings.voucher?.showValidity ?? true"
+      :show-price="hotspotSettings.voucher?.showPrice ?? true"
+      :currency="hotspotSettings.currency ?? ''"
+      :profile-metas="profileMetas"
+      @update:open="showPrintDialog = $event"
+    />
   </PageLayout>
 </template>
 
@@ -850,6 +865,11 @@ import {
   SelectItemIndicator,
   CheckboxRoot,
   CheckboxIndicator,
+  PaginationRoot,
+  PaginationPrev,
+  PaginationNext,
+  SwitchRoot,
+  SwitchThumb,
 } from "reka-ui";
 import {
   PlusIcon,
@@ -864,6 +884,7 @@ import {
   ChevronDownIcon,
   CheckCircleIcon,
 } from "@heroicons/vue/24/outline";
+import { RouterLink } from "vue-router";
 import { useRoutersStore } from "@/stores/routers";
 import {
   listHotspotUsers,
@@ -876,12 +897,16 @@ import {
   getProfileMetas,
   getHotspotSettings,
   getCleanupScheduler,
+  putCleanupScheduler,
   type ProfileMeta,
   type HotspotSettings,
 } from "@/api";
 import { friendlyError } from "@/utils/errors";
 import AppDialog from "@/components/AppDialog.vue";
 import PageLayout from "@/components/PageLayout.vue";
+import StatusBadge from "@/components/StatusBadge.vue";
+import PrintTemplateDialog from "@/components/PrintTemplateDialog.vue";
+import { type VoucherEntry } from "@/utils/vouchers";
 
 const store = useRoutersStore();
 
@@ -928,13 +953,6 @@ const usersPage = ref(1);
 const activePageSize = ref<20 | 50 | 100>(20);
 const activePage = ref(1);
 
-const usersPageCount = computed(() =>
-  Math.max(1, Math.ceil(filteredUsers.value.length / usersPageSize.value)),
-);
-const activePageCount = computed(() =>
-  Math.max(1, Math.ceil(active.value.length / activePageSize.value)),
-);
-
 const pagedUsers = computed(() => {
   const start = (usersPage.value - 1) * usersPageSize.value;
   return filteredUsers.value.slice(start, start + usersPageSize.value);
@@ -973,6 +991,26 @@ const hotspotSettings = ref<HotspotSettings>({
 const loading = ref(false);
 const error = ref("");
 const cleanupInstalled = ref<boolean | null>(null);
+const cleanupInterval = ref("7d");
+const cleanupToggling = ref(false);
+
+async function toggleCleanup(enabled: boolean) {
+  if (!store.activeId || cleanupToggling.value) return;
+  cleanupToggling.value = true;
+  try {
+    const result = await putCleanupScheduler(
+      store.activeId,
+      enabled,
+      cleanupInterval.value,
+    );
+    cleanupInstalled.value = result.installed;
+    if (result.interval) cleanupInterval.value = result.interval;
+  } catch {
+    // non-critical — status stays as-is, user can retry
+  } finally {
+    cleanupToggling.value = false;
+  }
+}
 
 const selected = ref<Set<string>>(new Set());
 const bulkDeleting = ref(false);
@@ -1176,6 +1214,7 @@ async function loadUsers() {
     profileMetas.value = m;
     hotspotSettings.value = s;
     cleanupInstalled.value = cleanup?.installed ?? false;
+    if (cleanup?.interval) cleanupInterval.value = cleanup.interval;
   } catch (e: any) {
     error.value = friendlyError(e, "Failed to load users");
   } finally {
@@ -1396,125 +1435,30 @@ async function submitBatch(cfg: BatchConfig) {
   await loadUsers();
 }
 
-function printVouchers(
-  entries: { name: string; password: string; profile?: string }[],
-) {
-  const v = hotspotSettings.value.voucher;
-  const businessName =
-    v?.businessName ?? hotspotSettings.value.hotspotName ?? "";
-  const showValidity = v?.showValidity ?? true;
-  const showPrice = v?.showPrice ?? true;
-  const currency = hotspotSettings.value.currency ?? "";
-  const layout = v?.layout ?? "card";
+const showPrintDialog = ref(false);
+const printEntries = ref<VoucherEntry[]>([]);
 
-  const items = entries.map((r) => {
-    const meta = profileMetas.value[r.profile || "default"];
-    const validity = meta?.validity ?? "";
-    const price = meta?.price ?? "";
-    const priceStr =
-      showPrice && price ? `${price}${currency ? " " + currency : ""}` : "";
-    const uptimeStr = showValidity && validity ? validity : "";
-    return { name: r.name, password: r.password, priceStr, uptimeStr };
-  });
-
-  let css = "";
-  let body = "";
-
-  if (layout === "ticket") {
-    css = `
-      *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:ui-sans-serif,system-ui,sans-serif;background:#fff;padding:8mm;counter-reset:voucher}
-      .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88mm,1fr));gap:5mm}
-      .card{border:1px solid #d1d5db;border-radius:6px;overflow:hidden;page-break-inside:avoid;counter-increment:voucher}
-      .header{background:#111827;color:#fff;padding:3mm 5mm;display:flex;align-items:center;justify-content:space-between}
-      .biz{font-size:10pt;font-weight:700;letter-spacing:-.01em}
-      .price{font-size:10pt;font-weight:700}
-      .body{padding:4mm 5mm;display:flex;flex-direction:column;gap:0}
-      .row{display:flex;align-items:center;justify-content:space-between;padding:2.5mm 0}
-      .row+.row{border-top:1px solid #f3f4f6}
-      .lbl{font-size:7pt;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em}
-      .val{font-size:14pt;font-weight:700;color:#111827;font-family:ui-monospace,monospace}
-      .val-sm{font-size:9pt;font-weight:500;color:#374151;font-family:ui-sans-serif,system-ui,sans-serif}
-      .num{font-size:6pt;color:#d1d5db;margin-left:auto;padding-left:3mm}
-      @media print{body{padding:4mm}.grid{gap:4mm}}
-    `;
-    const cards = items
-      .map(({ name, password, priceStr, uptimeStr }, i) => {
-        const validityRow = uptimeStr
-          ? `<div class="row"><span class="lbl">Valid for</span><span class="val-sm">${uptimeStr}</span></div>`
-          : "";
-        return `<div class="card"><div class="header"><span class="biz">${businessName || "WiFi Voucher"}</span>${priceStr ? `<span class="price">${priceStr}</span>` : ""}<span class="num">#${i + 1}</span></div><div class="body"><div class="row"><span class="lbl">Username</span><span class="val">${name}</span></div><div class="row"><span class="lbl">Password</span><span class="val">${password}</span></div>${validityRow}</div></div>`;
-      })
-      .join("");
-    body = `<div class="grid">${cards}</div>`;
-  } else {
-    // card (default) — 6-up compact grid
-    css = `
-      *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:ui-sans-serif,system-ui,sans-serif;background:#fff;padding:8mm}
-      .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4mm}
-      .card{border:1px solid #d1d5db;border-radius:6px;padding:3mm 3.5mm;display:flex;flex-direction:column;gap:2.5mm;page-break-inside:avoid}
-      .header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:1.5mm}
-      .validity{font-size:7pt;color:#6b7280}.price{font-size:8pt;font-weight:700;color:#111827}
-      .creds{display:grid;grid-template-columns:1fr 1px 1fr;gap:2mm;align-items:center}
-      .cred-col{display:flex;flex-direction:column;gap:.5mm;align-items:center}
-      .divider{width:1px;background:#e5e7eb;align-self:stretch}
-      .lbl{font-size:6pt;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em}
-      .val{font-size:9pt;font-weight:700;color:#111827;font-family:ui-monospace,monospace}
-      .biz{font-size:7pt;color:#9ca3af;text-align:center;margin-top:auto;padding-top:1mm;border-top:1px solid #f3f4f6}
-      .num{font-size:6pt;color:#d1d5db;text-align:right;margin-top:auto;padding-top:1mm}
-      @media print{body{padding:4mm}.grid{gap:3mm}}
-    `;
-    const cards = items
-      .map(({ name, password, priceStr, uptimeStr }, i) => {
-        const headerLine =
-          priceStr || uptimeStr
-            ? `<div class="header"><span class="validity">${uptimeStr}</span><span class="price">${priceStr}</span></div>`
-            : "";
-        const bizLine = businessName
-          ? `<div class="biz">${businessName}</div>`
-          : "";
-        return `<div class="card">${headerLine}<div class="creds"><div class="cred-col"><div class="lbl">Username</div><div class="val">${name}</div></div><div class="divider"></div><div class="cred-col"><div class="lbl">Password</div><div class="val">${password}</div></div></div>${bizLine}<div class="num">#${i + 1}</div></div>`;
-      })
-      .join("");
-    body = `<div class="grid">${cards}</div>`;
-  }
-
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Vouchers</title><style>${css}</style></head><body>${body}</body></html>`;
-
-  const iframe = document.createElement("iframe");
-  iframe.style.cssText =
-    "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px";
-  document.body.appendChild(iframe);
-  iframe.srcdoc = html;
-  iframe.onload = () => {
-    iframe.contentWindow?.print();
-    setTimeout(() => iframe.remove(), 1000);
-  };
-}
-
-function printSelected() {
-  const entries = users.value
+function openPrintSelected() {
+  printEntries.value = users.value
     .filter((u) => selected.value.has(u[".id"]))
     .map((u) => ({
       name: u.name,
       password: u.password ?? "",
       profile: u.profile,
     }));
-  printVouchers(entries);
+  showPrintDialog.value = true;
 }
 
-function printResults() {
+function openPrintResults() {
   const profileName = lastBatchProfile.value || "default";
-  printVouchers(
-    batchResults.value
-      .filter((r) => r.ok)
-      .map((r) => ({
-        name: r.name,
-        password: r.password,
-        profile: profileName,
-      })),
-  );
+  printEntries.value = batchResults.value
+    .filter((r) => r.ok)
+    .map((r) => ({
+      name: r.name,
+      password: r.password,
+      profile: profileName,
+    }));
+  showPrintDialog.value = true;
 }
 
 function isUptimeExhausted(u: Record<string, string>): boolean {
@@ -1548,6 +1492,28 @@ function userStatus(
   if (isUptimeExhausted(u)) return "limit-reached";
   if (epoch === null) return "waiting";
   return "active";
+}
+
+const STATUS_META: Record<
+  ReturnType<typeof userStatus>,
+  { label: string; color: "green" | "amber" | "red" | "blue" | "muted" }
+> = {
+  active: { label: "Active", color: "green" },
+  waiting: { label: "Waiting", color: "blue" },
+  disabled: { label: "Disabled", color: "red" },
+  expired: { label: "Expired", color: "red" },
+  "expires-soon": { label: "Expires soon", color: "amber" },
+  "limit-reached": { label: "Limit reached", color: "amber" },
+};
+
+function statusLabel(u: Record<string, string>): string {
+  return STATUS_META[userStatus(u)].label;
+}
+
+function statusColor(
+  u: Record<string, string>,
+): "green" | "amber" | "red" | "blue" | "muted" {
+  return STATUS_META[userStatus(u)].color;
 }
 
 function expiryLabel(u: Record<string, string>): string {

@@ -362,10 +362,11 @@ func (c *Client) DeleteHotspotUser(id string) error {
 
 // PollSnapshot holds all data collected in a single RouterOS connection for the dashboard poll.
 type PollSnapshot struct {
-	Resource  map[string]string   `json:"resource"`
-	Traffic   []map[string]string `json:"traffic"`
-	Addresses []map[string]string `json:"addresses"`
-	Clock     map[string]string   `json:"clock"`
+	Resource   map[string]string   `json:"resource"`
+	Traffic    []map[string]string `json:"traffic"`
+	Addresses  []map[string]string `json:"addresses"`
+	Clock      map[string]string   `json:"clock"`
+	Interfaces []map[string]string `json:"interfaces"`
 }
 
 // Poll opens one connection and fetches resource, interface traffic, and clock together.
@@ -378,10 +379,11 @@ func (c *Client) Poll() (*PollSnapshot, error) {
 	defer conn.Close()
 
 	snap := &PollSnapshot{
-		Resource:  map[string]string{},
-		Traffic:   []map[string]string{},
-		Addresses: []map[string]string{},
-		Clock:     map[string]string{},
+		Resource:   map[string]string{},
+		Traffic:    []map[string]string{},
+		Addresses:  []map[string]string{},
+		Clock:      map[string]string{},
+		Interfaces: []map[string]string{},
 	}
 
 	// Resource
@@ -389,11 +391,12 @@ func (c *Client) Poll() (*PollSnapshot, error) {
 		snap.Resource = r.Re[0].Map
 	}
 
-	// Interface names
+	// Interfaces — link status (running/disabled/link-downs) plus names for traffic monitoring
 	ifReply, err := conn.Run("/interface/print")
 	if err == nil && len(ifReply.Re) > 0 {
 		names := make([]string, 0, len(ifReply.Re))
 		for _, s := range ifReply.Re {
+			snap.Interfaces = append(snap.Interfaces, s.Map)
 			if n := s.Map["name"]; n != "" {
 				names = append(names, n)
 			}
@@ -551,6 +554,21 @@ func (c *Client) SystemLogs(limit int) ([]map[string]any, error) {
 		entries[i], entries[j] = entries[j], entries[i]
 	}
 	return entries, nil
+}
+
+// DHCPLeases returns all leases known to the router's DHCP server(s).
+func (c *Client) DHCPLeases() ([]map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	reply, err := conn.Run("/ip/dhcp-server/lease/print")
+	if err != nil {
+		return nil, err
+	}
+	return replyToList(reply), nil
 }
 
 // BandwidthTest measures internet download speed from the router using /tool/fetch.

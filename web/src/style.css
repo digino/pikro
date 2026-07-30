@@ -98,7 +98,7 @@ html, body, #app {
 .input {
   width: 100%;
   padding: 8px 12px;
-  font-size: 14px;
+  font-size: 13px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-base);
@@ -112,7 +112,7 @@ html, body, #app {
 
 .input-select {
   padding: 8px 12px;
-  font-size: 14px;
+  font-size: 13px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-base);

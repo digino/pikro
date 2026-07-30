@@ -13,9 +13,7 @@
       <div v-if="loading && logs.length === 0" class="flex justify-center py-12">
         <span class="spinner" />
       </div>
-      <div v-else-if="logs.length === 0" class="text-sm text-text-muted py-12 text-center">
-        No hotspot log entries found.
-      </div>
+      <EmptyState v-else-if="logs.length === 0" size="lg" message="No hotspot log entries found." />
       <table v-else class="w-full text-xs">
         <thead>
           <tr class="text-text-muted border-b border-border">
@@ -45,6 +43,7 @@
 import { ref, watch } from 'vue'
 import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 import NoRouterSelected from '@/components/NoRouterSelected.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { useRoutersStore } from '@/stores/routers'
 import { getSystemLogs } from '@/api'
 import PageLayout from '@/components/PageLayout.vue'

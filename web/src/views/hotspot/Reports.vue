@@ -48,12 +48,12 @@
       </div>
 
       <!-- No data yet state -->
-      <div v-if="!loading && ledger.length === 0" class="rounded-xl border border-border p-10 text-center bg-surface">
-        <p class="text-sm font-medium text-text-primary mb-1">No sales recorded yet</p>
-        <p class="text-xs text-text-muted">
-          Sales are recorded automatically each time you generate vouchers through Pikro.
-        </p>
-      </div>
+      <EmptyState
+        v-if="!loading && ledger.length === 0"
+        bordered
+        title="No sales recorded yet"
+        message="Sales are recorded automatically each time you generate vouchers through Pikro."
+      />
 
       <template v-else>
         <!-- Summary cards -->
@@ -100,9 +100,7 @@
             <span class="text-xs text-text-muted">{{ activeCurrency || '' }}</span>
           </div>
 
-          <div v-if="rows.length === 0" class="px-5 py-8 text-center text-sm text-text-muted">
-            No vouchers generated in this period.
-          </div>
+          <EmptyState v-if="rows.length === 0" message="No vouchers generated in this period." />
 
           <table v-else class="w-full text-sm">
             <thead>
@@ -163,6 +161,7 @@
 import { ref, computed, watch } from 'vue'
 import { PrinterIcon } from '@heroicons/vue/24/outline'
 import NoRouterSelected from '@/components/NoRouterSelected.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import PageLayout from '@/components/PageLayout.vue'
 import { useRoutersStore } from '@/stores/routers'
 import { getSalesLedger, listHotspotUsers, type SaleEntry } from '@/api'

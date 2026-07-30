@@ -46,6 +46,7 @@ export interface PollSnapshot {
   traffic: Record<string, string>[]
   addresses: Record<string, string>[]
   clock: Record<string, string>
+  interfaces: Record<string, string>[]
 }
 
 export const getPollSnapshot = (id: string) =>
@@ -53,6 +54,9 @@ export const getPollSnapshot = (id: string) =>
 
 export const getSystemLogs = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/system/logs`).then(r => r.data)
+
+export const getDHCPLeases = (id: string) =>
+  api.get<Record<string, string>[]>(`/routers/${id}/system/dhcp-leases`).then(r => r.data)
 
 // Hotspot users
 export const listHotspotUsers = (id: string) =>

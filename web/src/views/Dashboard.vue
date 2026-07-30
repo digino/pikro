@@ -164,116 +164,34 @@
         </div>
       </div>
 
-      <!-- ── Row 2: bandwidth chart + interface traffic ── -->
+      <!-- ── Row 2: sales report + active sessions ── -->
       <div class="grid grid-cols-2 gap-4">
-        <!-- Bandwidth chart -->
-        <div class="rounded-xl border border-border p-5 bg-surface h-full">
-          <div class="flex items-center gap-4 mb-4">
-            <span class="font-semibold text-text-primary">Bandwidth</span>
-            <div class="flex items-center gap-1.5">
-              <span class="size-2 rounded-sm shrink-0" style="background:#22d3ee"/>
-              <span class="text-xs text-text-secondary">Download</span>
-              <span class="font-mono text-xs font-semibold text-text-primary">{{ curDown }} Mbps</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span class="size-2 rounded-sm shrink-0" style="background:#f59e0b"/>
-              <span class="text-xs text-text-secondary">Upload</span>
-              <span class="font-mono text-xs font-semibold text-text-primary">{{ curUp }} Mbps</span>
-            </div>
-          </div>
-          <div class="h-60">
-            <BandwidthChart :history="bwHistory" />
-          </div>
-        </div>
-
-        <!-- Interface traffic -->
-        <div class="rounded-xl border border-border p-5 bg-surface">
-          <div class="flex items-center justify-between mb-4">
-            <span class="font-semibold text-text-primary">Interfaces</span>
-            <span v-if="trafficUpdatedAt" class="text-xs text-text-muted">{{
-              trafficUpdatedAt
-            }}</span>
-          </div>
-          <div
-            v-if="trafficLoading && traffic.length === 0"
-            class="flex justify-center py-8"
-          >
-            <span class="spinner spinner--sm" />
-          </div>
-          <div
-            v-else-if="traffic.length === 0"
-            class="text-xs text-text-muted py-8 text-center"
-          >
-            No interface data
-          </div>
-          <table v-else class="w-full text-xs">
-            <thead>
-              <tr class="text-text-muted border-b border-border">
-                <th class="text-left pb-2 font-medium">Interface</th>
-                <th class="text-left pb-2 font-medium">IP</th>
-                <th class="text-right pb-2 font-medium">RX</th>
-                <th class="text-right pb-2 font-medium">TX</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="iface in traffic"
-                :key="iface.name"
-                class="border-b border-border/40 last:border-0"
-              >
-                <td class="py-1.5 font-mono text-text-primary">{{ iface.name }}</td>
-                <td class="py-1.5 font-mono text-text-muted">{{ ifaceIP(iface.name) }}</td>
-                <td class="py-1.5 text-right font-mono text-text-primary">{{ formatBps(iface["rx-bits-per-second"]) }}</td>
-                <td class="py-1.5 text-right font-mono text-text-secondary">{{ formatBps(iface["tx-bits-per-second"]) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ── Row 3: recent logs + active sessions ── -->
-      <div class="grid grid-cols-2 gap-4">
-        <!-- Recent logs -->
+        <!-- Sales report -->
         <div
           class="rounded-xl border border-border p-5 grid gap-3 bg-surface"
           style="grid-template-rows: auto 1fr"
         >
           <div class="flex items-center justify-between">
-            <span class="font-semibold text-text-primary">Recent logs</span>
-            <RouterLink to="/hotspot/logs" class="btn btn-ghost btn-sm"
-              >View all</RouterLink
+            <span class="font-semibold text-text-primary">Sales this month</span>
+            <RouterLink to="/hotspot/reports" class="btn btn-ghost btn-sm"
+              >View reports</RouterLink
             >
           </div>
           <div
-            v-if="logsLoading && logs.length === 0"
-            class="flex justify-center py-4"
+            v-if="salesLoading && salesLedger.length === 0"
+            class="flex items-center justify-center"
           >
             <span class="spinner spinner--sm" />
           </div>
-          <div
-            v-else-if="logs.length === 0"
-            class="text-xs text-text-muted py-2 text-center"
-          >
-            No log entries
-          </div>
-          <div v-else class="grid" style="align-content: start">
-            <div
-              v-for="(entry, i) in logs"
-              :key="i"
-              class="flex items-start gap-2 py-1.5 border-b border-border/40 last:border-0"
-            >
-              <span
-                class="shrink-0 mt-1 size-1.5 rounded-full"
-                :style="`background:${logColor(entry.topics)}`"
-              />
-              <div class="min-w-0 flex-1">
-                <p class="text-xs text-text-primary truncate">
-                  {{ entry.message }}
-                </p>
-                <p class="text-xs text-text-muted font-mono">
-                  {{ entry.time }}
-                </p>
-              </div>
+          <EmptyState v-else-if="salesLedger.length === 0" message="No sales recorded yet" />
+          <div v-else class="grid grid-cols-2 gap-3">
+            <div class="rounded-lg border border-border p-3 bg-base">
+              <div class="text-xs text-text-secondary">Vouchers generated</div>
+              <div class="font-mono text-2xl font-bold mt-1 text-text-primary">{{ monthSales.generated }}</div>
+            </div>
+            <div class="rounded-lg border border-border p-3 bg-base">
+              <div class="text-xs text-text-secondary">Revenue</div>
+              <div class="font-mono text-2xl font-bold mt-1 text-primary">{{ fmtAmount(monthSales.revenue) }}</div>
             </div>
           </div>
         </div>
@@ -295,12 +213,7 @@
           >
             <span class="spinner spinner--sm" />
           </div>
-          <div
-            v-else-if="activeList.length === 0"
-            class="text-xs text-text-muted py-4 text-center"
-          >
-            No active sessions
-          </div>
+          <EmptyState v-else-if="activeList.length === 0" message="No active sessions" />
           <div v-else class="overflow-x-auto">
             <table class="w-full text-xs">
               <thead>
@@ -355,19 +268,20 @@ import {
   CheckCircleIcon,
 } from "@heroicons/vue/24/outline";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
+import EmptyState from "@/components/EmptyState.vue";
 import { useRoutersStore } from "@/stores/routers";
 import {
   getSystemResource,
   getSystemClock,
-  getSystemLogs,
   getPollSnapshot,
   listHotspotUsers,
   listHotspotActive,
   getCleanupScheduler,
+  getSalesLedger,
+  type SaleEntry,
 } from "@/api";
 import { friendlyError } from "@/utils/errors";
 import PageLayout from "@/components/PageLayout.vue";
-import BandwidthChart from "@/components/BandwidthChart.vue";
 import RouterArt from "@/components/router-art/RouterArt.vue";
 
 const store = useRoutersStore();
@@ -384,23 +298,8 @@ const cleanupInstalled = ref<boolean | null>(null);
 const hotspotLoading = ref(false);
 const hotspotError = ref("");
 
-const traffic = ref<Record<string, string>[]>([]);
-const addresses = ref<Record<string, string>[]>([]);
-const trafficLoading = ref(false);
-const trafficUpdatedAt = ref("");
-
-const logs = ref<Record<string, string>[]>([]);
-const logsLoading = ref(false);
-
-// ── Bandwidth history ─────────────────────────────────────────
-const N = 46;
-interface BwPoint {
-  down: number;
-  up: number;
-}
-const bwHistory = ref<BwPoint[]>(
-  Array.from({ length: N }, () => ({ down: 0, up: 0 })),
-);
+const salesLedger = ref<SaleEntry[]>([]);
+const salesLoading = ref(false);
 
 // ── Hotspot computed counts ───────────────────────────────────
 const totalUsers = computed(() => allUsers.value.length);
@@ -460,10 +359,6 @@ const ringOffset = computed(() => {
   return (2 * Math.PI * 50 * (1 - s / 100)).toFixed(1);
 });
 
-// ── Chart ─────────────────────────────────────────────────────
-const curDown = computed(() => bwHistory.value[N - 1].down.toFixed(2));
-const curUp = computed(() => bwHistory.value[N - 1].up.toFixed(2));
-
 // ── Data loading ──────────────────────────────────────────────
 async function loadStatic() {
   if (!store.activeId) return;
@@ -505,65 +400,38 @@ async function loadHotspot() {
   }
 }
 
-async function loadLogs() {
+async function loadSales() {
   if (!store.activeId) return;
-  logsLoading.value = true;
+  salesLoading.value = true;
   try {
-    const all = await getSystemLogs(store.activeId);
-    logs.value = all
-      .filter((e) => (e.topics ?? "").toLowerCase().includes("hotspot"))
-      .slice(0, 8);
+    salesLedger.value = await getSalesLedger(
+      store.activeId,
+      new Date().getFullYear(),
+    );
   } catch {
     // non-critical
   } finally {
-    logsLoading.value = false;
+    salesLoading.value = false;
   }
 }
 
 async function poll() {
   if (!store.activeId) return;
-  trafficLoading.value = true;
   try {
     const snap = await getPollSnapshot(store.activeId);
     resource.value = snap.resource;
     error.value = "";
-    if (snap.traffic.length > 0) {
-      traffic.value = snap.traffic.filter(
-        (i: Record<string, string>) => i.name,
-      );
-      trafficUpdatedAt.value = new Date().toLocaleTimeString();
-      const totalRx = snap.traffic.reduce(
-        (s: number, i: Record<string, string>) =>
-          s + (parseInt(i["rx-bits-per-second"] ?? "0") || 0),
-        0,
-      );
-      const totalTx = snap.traffic.reduce(
-        (s: number, i: Record<string, string>) =>
-          s + (parseInt(i["tx-bits-per-second"] ?? "0") || 0),
-        0,
-      );
-      bwHistory.value = [
-        ...bwHistory.value.slice(1),
-        { down: totalRx / 1_000_000, up: totalTx / 1_000_000 },
-      ];
-    }
-    if (snap.addresses) {
-      addresses.value = snap.addresses;
-    }
     if (snap.clock["time"]) {
       routerTime.value = snap.clock["time"];
     }
   } catch {
     // non-critical
-  } finally {
-    trafficLoading.value = false;
   }
 }
 
-
 let pollTimer: ReturnType<typeof setInterval>;
 let hotspotTimer: ReturnType<typeof setInterval>;
-let logTimer: ReturnType<typeof setInterval>;
+let salesTimer: ReturnType<typeof setInterval>;
 
 function startTimers() {
   pollTimer = setInterval(() => {
@@ -572,29 +440,26 @@ function startTimers() {
   hotspotTimer = setInterval(() => {
     if (!document.hidden) loadHotspot();
   }, 15_000);
-  logTimer = setInterval(() => {
-    if (!document.hidden) loadLogs();
-  }, 30_000);
+  salesTimer = setInterval(() => {
+    if (!document.hidden) loadSales();
+  }, 60_000);
 }
 
 function stopTimers() {
   clearInterval(pollTimer);
   clearInterval(hotspotTimer);
-  clearInterval(logTimer);
+  clearInterval(salesTimer);
 }
 
 watch(
   () => store.activeId,
   async (id) => {
     stopTimers();
-    bwHistory.value = Array.from({ length: N }, () => ({ down: 0, up: 0 }));
-    traffic.value = [];
-    addresses.value = [];
-    logs.value = [];
     allUsers.value = [];
     activeList.value = [];
+    salesLedger.value = [];
     if (!id) return;
-    await Promise.all([loadStatic(), loadHotspot(), loadLogs()]);
+    await Promise.all([loadStatic(), loadHotspot(), loadSales()]);
     await poll();
     startTimers();
   },
@@ -609,34 +474,34 @@ onMounted(() => {
 
 onUnmounted(stopTimers);
 
-// ── Formatters ────────────────────────────────────────────────
-function ifaceIP(name: string): string {
-  const match = addresses.value.find(a => a.interface === name)
-  return match ? match.address : '—'
+// ── Sales summary (current month) ──────────────────────────────
+const monthSales = computed(() => {
+  const now = new Date();
+  let generated = 0;
+  let revenue = 0;
+  for (const e of salesLedger.value) {
+    const d = new Date(e.at);
+    if (d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth())
+      continue;
+    generated += e.count;
+    revenue += (parseFloat(e.price) || 0) * e.count;
+  }
+  return { generated, revenue };
+});
+
+function fmtAmount(n: number): string {
+  if (!n) return "0";
+  const currency = salesLedger.value.find((e) => e.currency)?.currency ?? "";
+  const s = n % 1 === 0 ? String(n) : n.toFixed(0);
+  return currency ? `${s} ${currency}` : s;
 }
 
+// ── Formatters ────────────────────────────────────────────────
 function formatBytes(n: number): string {
   if (!n || isNaN(n)) return "—";
   if (n >= 1_073_741_824) return (n / 1_073_741_824).toFixed(1) + " GB";
   if (n >= 1_048_576) return (n / 1_048_576).toFixed(1) + " MB";
   if (n >= 1_024) return (n / 1_024).toFixed(0) + " KB";
   return n + " B";
-}
-
-function formatBps(val: string | undefined): string {
-  const n = parseInt(val ?? "0") || 0;
-  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + " Gbps";
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + " Mbps";
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + " Kbps";
-  return n + " bps";
-}
-
-function logColor(topics: string | undefined): string {
-  if (!topics) return "var(--color-text-muted)";
-  const t = topics.toLowerCase();
-  if (t.includes("error") || t.includes("critical")) return "var(--color-red)";
-  if (t.includes("warning")) return "var(--color-amber)";
-  if (t.includes("info")) return "var(--color-green)";
-  return "var(--color-text-muted)";
 }
 </script>

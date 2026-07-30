@@ -1,30 +1,42 @@
 <template>
   <!-- Step indicator -->
-  <div class="flex items-center gap-2 mb-5">
+  <StepperRoot
+    :model-value="step"
+    linear
+    class="flex items-center gap-2 mb-5"
+    @update:model-value="step = $event ?? step"
+  >
     <template v-for="(label, i) in STEPS" :key="i">
-      <div class="flex items-center gap-1.5">
-        <span
-          class="size-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
-          :class="
-            step === i + 1
-              ? 'bg-accent text-base'
-              : step > i + 1
-                ? 'bg-green/20 text-green'
-                : 'bg-muted text-text-muted'
-          "
-          >{{ step > i + 1 ? "✓" : i + 1 }}</span
-        >
-        <span
-          class="text-sm hidden sm:inline"
-          :class="
-            step === i + 1 ? 'text-text-primary font-medium' : 'text-text-muted'
-          "
-          >{{ label }}</span
-        >
-      </div>
-      <div v-if="i < STEPS.length - 1" class="flex-1 h-px bg-border" />
+      <StepperItem
+        :step="i + 1"
+        :completed="step > i + 1"
+        class="flex items-center gap-1.5"
+        :class="i < STEPS.length - 1 ? 'flex-1' : ''"
+      >
+        <StepperTrigger class="flex items-center gap-1.5" as="div">
+          <StepperIndicator
+            class="size-6 bg-primary rounded-full flex items-center justify-center text-xs font-bold transition-colors shrink-0 data-[state=active]:bg-accent data-[state=active]:text-base data-[state=completed]:bg-green/20 data-[state=completed]:text-green data-[state=inactive]:bg-muted data-[state=inactive]:text-text-muted"
+          >
+            {{ step > i + 1 ? "✓" : i + 1 }}
+          </StepperIndicator>
+          <StepperTitle
+            class="text-sm hidden sm:inline"
+            :class="
+              step === i + 1
+                ? 'text-text-primary font-medium'
+                : 'text-text-muted'
+            "
+          >
+            {{ label }}
+          </StepperTitle>
+        </StepperTrigger>
+        <StepperSeparator
+          v-if="i < STEPS.length - 1"
+          class="flex-1 h-px bg-border"
+        />
+      </StepperItem>
     </template>
-  </div>
+  </StepperRoot>
 
   <!-- Step 1: Quantity & format -->
   <div v-if="step === 1" class="space-y-4">
@@ -69,9 +81,9 @@
           class="flex items-center gap-1.5 text-sm text-text-secondary cursor-pointer"
         >
           <CheckboxRoot
-            :checked="form.charsLetters"
+            :model-value="form.charsLetters"
             class="size-4 rounded border border-border bg-base flex items-center justify-center transition-colors data-[state=checked]:bg-accent data-[state=checked]:border-accent"
-            @update:checked="form.charsLetters = $event"
+            @update:model-value="form.charsLetters = $event === true"
           >
             <CheckboxIndicator>
               <CheckIcon class="size-3 text-base" />
@@ -83,9 +95,9 @@
           class="flex items-center gap-1.5 text-sm text-text-secondary cursor-pointer"
         >
           <CheckboxRoot
-            :checked="form.charsDigits"
+            :model-value="form.charsDigits"
             class="size-4 rounded border border-border bg-base flex items-center justify-center transition-colors data-[state=checked]:bg-accent data-[state=checked]:border-accent"
-            @update:checked="form.charsDigits = $event"
+            @update:model-value="form.charsDigits = $event === true"
           >
             <CheckboxIndicator>
               <CheckIcon class="size-3 text-base" />
@@ -167,15 +179,6 @@
             :side-offset="3"
           >
             <SelectViewport class="p-1">
-              <SelectItem
-                value=""
-                class="flex items-center justify-between p-2 text-sm rounded-md cursor-pointer text-text-secondary transition-colors hover:bg-muted hover:text-text-primary data-highlighted:bg-muted data-highlighted:text-text-primary data-[state=checked]:text-text-primary data-[state=checked]:font-medium"
-              >
-                <SelectItemText>default</SelectItemText>
-                <SelectItemIndicator
-                  ><CheckCircleIcon class="size-4 text-green"
-                /></SelectItemIndicator>
-              </SelectItem>
               <SelectItem
                 v-for="p in profiles"
                 :key="p['.id']"
@@ -274,29 +277,29 @@
     <p class="font-semibold">Ready to generate</p>
     <div class="rounded-xl border border-border divide-y divide-border text-sm">
       <div class="flex justify-between px-4 py-2.5">
-        <span class="text-text-muted">Quantity</span>
+        <span>Quantity</span>
         <span class="font-semibold text-text-primary font-mono">{{
           form.count
         }}</span>
       </div>
       <div class="flex justify-between px-4 py-2.5">
-        <span class="text-text-muted">Username</span>
+        <span>Username</span>
         <span class="font-mono text-text-primary"
           >{{ form.nameLength }} chars · {{ namePreview }}</span
         >
       </div>
       <div class="flex justify-between px-4 py-2.5">
-        <span class="text-text-muted">Password</span>
-        <span class="text-text-primary">{{
+        <span>Password</span>
+        <span>{{
           PASSWORD_OPTS.find((o) => o.value === form.passwordMode)?.label
         }}</span>
       </div>
       <div class="flex justify-between px-4 py-2.5">
-        <span class="text-text-muted">Profile</span>
-        <span class="text-text-primary">{{ form.profile || "default" }}</span>
+        <span>Profile</span>
+        <span>{{ form.profile || "default" }}</span>
       </div>
       <div v-if="uptimePreview" class="flex justify-between px-4 py-2.5">
-        <span class="text-text-muted">Time limit</span>
+        <span>Time limit</span>
         <span class="font-mono text-text-primary">{{ uptimePreview }}</span>
       </div>
       <div
@@ -324,9 +327,7 @@
   </div>
 
   <!-- Navigation -->
-  <div
-    class="flex items-center justify-between pt-4 mt-1 border-border"
-  >
+  <div class="flex items-center justify-between pt-4 mt-1 border-border">
     <button
       type="button"
       class="btn btn-ghost"
@@ -369,8 +370,18 @@ import {
   SelectItemIndicator,
   CheckboxRoot,
   CheckboxIndicator,
+  StepperRoot,
+  StepperItem,
+  StepperTrigger,
+  StepperIndicator,
+  StepperTitle,
+  StepperSeparator,
 } from "reka-ui";
-import { ChevronDownIcon, CheckCircleIcon, CheckIcon } from "@heroicons/vue/24/outline";
+import {
+  ChevronDownIcon,
+  CheckCircleIcon,
+  CheckIcon,
+} from "@heroicons/vue/24/outline";
 
 const props = defineProps<{
   profiles: Record<string, string>[];
