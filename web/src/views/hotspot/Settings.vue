@@ -131,6 +131,9 @@
         </div>
         <p v-else-if="cleanupError" class="text-xs text-red">{{ cleanupError }}</p>
       </div>
+
+      <!-- ── Tab: Migration ── -->
+      <SettingsMigration v-else-if="tab === 'migration'" />
     </template>
   </div>
   </PageLayout>
@@ -149,15 +152,17 @@ import NoRouterSelected from '@/components/NoRouterSelected.vue'
 import { CURRENCIES, KNOWN_CURRENCY_VALUES } from '@/utils/currencies'
 import SettingsLoginPage from './settings/SettingsLoginPage.vue'
 import SettingsVoucher from './settings/SettingsVoucher.vue'
+import SettingsMigration from './settings/SettingsMigration.vue'
 
 const store = useRoutersStore()
 
-const tab = ref<'general' | 'login' | 'voucher' | 'cleanup'>('general')
+const tab = ref<'general' | 'login' | 'voucher' | 'cleanup' | 'migration'>('general')
 const tabs = [
   { key: 'general' as const,  label: 'General' },
   { key: 'login' as const,    label: 'Login page' },
   { key: 'voucher' as const,  label: 'Vouchers' },
   { key: 'cleanup' as const,  label: 'Cleanup' },
+  { key: 'migration' as const, label: 'Migration' },
 ]
 
 const loading = ref(false)

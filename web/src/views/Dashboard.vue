@@ -6,7 +6,10 @@
       <!-- ── Row 1: hero ── -->
       <div class="grid gap-4" style="grid-template-columns: 42% 1fr">
         <!-- System card: router image | live stats | health ring -->
-        <div class="grid grid-cols-3 rounded-xl border border-border p-5 bg-surface gap-5">
+        <div
+          class="grid rounded-xl border border-border p-5 bg-surface gap-5"
+          style="grid-template-columns: auto 1fr auto"
+        >
 
           <!-- LEFT: router illustration + device identity -->
           <div class="flex flex-col items-center gap-2">
@@ -17,11 +20,6 @@
               :wifi-led="activeSessions > 0 ? 'var(--color-green)' : 'var(--color-border)'"
               wan-led="var(--color-amber)"
             />
-            <!-- Status badge -->
-            <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-border text-xs font-medium text-text-secondary">
-              <span class="size-1.5 rounded-full shrink-0" :style="`background:${healthColor}; box-shadow:0 0 5px ${healthColor}`"/>
-              {{ healthLabel }}
-            </div>
             <!-- Device identity -->
             <div class="text-center space-y-0.5">
               <div class="text-sm font-semibold text-text-primary font-mono leading-tight">
@@ -41,7 +39,7 @@
             <div v-else-if="error" class="flex items-center gap-1.5 text-xs text-red">
               <ExclamationTriangleIcon class="size-3.5 shrink-0" />{{ error }}
             </div>
-            <div v-else class="grid grid-cols-1 text-sm">
+            <div v-else class="grid grid-cols-1 text-xs">
               <div class="flex justify-between items-center py-1.5 border-b border-border/60 ">
                 <span class="text-text-muted">Uptime</span>
                 <span class="font-mono font-semibold text-text-primary">{{ resource["uptime"] ?? "—" }}</span>
@@ -58,6 +56,10 @@
                 <span class="text-text-muted">Free disk</span>
                 <span class="font-mono font-semibold text-text-primary">{{ formatBytes(parseInt(resource["free-hdd-space"] ?? "0") || 0) }}</span>
               </div>
+              <div class="flex justify-between items-center py-1.5 border-b border-border/60 ">
+                <span class="text-text-muted">Date</span>
+                <span class="font-mono font-semibold text-text-primary">{{ routerDate || "—" }}</span>
+              </div>
               <div class="flex justify-between items-center py-1.5 ">
                 <span class="text-text-muted">Time</span>
                 <span class="font-mono font-semibold text-text-primary">{{ routerTime || "—" }}</span>
@@ -68,7 +70,7 @@
           <!-- RIGHT: health ring -->
           <div class="flex flex-col items-center justify-center gap-2 shrink-0">
             <div class="relative">
-              <svg width="110" height="110" viewBox="0 0 120 120">
+              <svg width="84" height="84" viewBox="0 0 120 120">
                 <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-border)" stroke-width="8"/>
                 <circle
                   cx="60" cy="60" r="50" fill="none"
@@ -82,7 +84,7 @@
                 />
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center">
-                <span class="font-mono text-2xl font-bold tracking-tight text-text-primary">{{ healthScore }}</span>
+                <span class="font-mono text-lg font-bold tracking-tight text-text-primary">{{ healthScore }}</span>
                 <span class="text-xs font-bold text-text-secondary">Health</span>
               </div>
             </div>
@@ -186,12 +188,12 @@
           <EmptyState v-else-if="salesLedger.length === 0" message="No sales recorded yet" />
           <div v-else class="grid grid-cols-2 gap-3">
             <div class="rounded-lg border border-border p-3 bg-base">
-              <div class="text-xs text-text-secondary">Vouchers generated</div>
+              <div class="text-sm font-medium text-text-secondary">Vouchers generated</div>
               <div class="font-mono text-2xl font-bold mt-1 text-text-primary">{{ monthSales.generated }}</div>
             </div>
             <div class="rounded-lg border border-border p-3 bg-base">
-              <div class="text-xs text-text-secondary">Revenue</div>
-              <div class="font-mono text-2xl font-bold mt-1 text-primary">{{ fmtAmount(monthSales.revenue) }}</div>
+              <div class="text-sm font-medium text-text-secondary">Revenue</div>
+              <div class="font-mono text-2xl font-bold mt-1">{{ fmtAmount(monthSales.revenue) }}</div>
             </div>
           </div>
         </div>
@@ -291,6 +293,7 @@ const resource = ref<Record<string, string>>({});
 const loading = ref(false);
 const error = ref("");
 const routerTime = ref("");
+const routerDate = ref("");
 
 const allUsers = ref<Record<string, string>[]>([]);
 const activeList = ref<Record<string, string>[]>([]);
@@ -373,6 +376,7 @@ async function loadStatic() {
     ]);
     resource.value = res;
     routerTime.value = clock["time"] ?? "";
+    routerDate.value = clock["date"] ?? "";
   } catch (e: any) {
     error.value = friendlyError(e, "Could not reach router");
   } finally {
@@ -423,6 +427,9 @@ async function poll() {
     error.value = "";
     if (snap.clock["time"]) {
       routerTime.value = snap.clock["time"];
+    }
+    if (snap.clock["date"]) {
+      routerDate.value = snap.clock["date"];
     }
   } catch {
     // non-critical

@@ -670,15 +670,56 @@ func replyToList(reply *ros.Reply) []map[string]any {
 
 const cleanupScriptName = "pikro-cleanup"
 
+// durationToSecsFn is a RouterOS script snippet defining a local function that
+// parses combinable duration strings like "1h30m", "11m44s", "1w", "0s" (the
+// format RouterOS itself reports for uptime/limit-uptime) into total seconds.
+// Shared by both cleanup script variants. Assumes the caller has not already
+// declared a $durationToSecs local.
+const durationToSecsFn = `:local durationToSecs do={
+  :local s $1
+  :local total 0
+  :local num ""
+  for i from=0 to=([:len $s] - 1) do={
+    :local ch [:pick $s $i ($i + 1)]
+    :if ($ch = "w" || $ch = "d" || $ch = "h" || $ch = "m" || $ch = "s") do={
+      :local n [:tonum $num]
+      :if ($ch = "w") do={ :set total ($total + $n * 604800) }
+      :if ($ch = "d") do={ :set total ($total + $n * 86400) }
+      :if ($ch = "h") do={ :set total ($total + $n * 3600) }
+      :if ($ch = "m") do={ :set total ($total + $n * 60) }
+      :if ($ch = "s") do={ :set total ($total + $n) }
+      :set num ""
+    } else={
+      :set num ($num . $ch)
+    }
+  }
+  :return $total
+}`
+
 // cleanupScriptV7 uses [:tonsec [:timestamp]] available on RouterOS 7.12+.
 // exp: comments store Unix epoch seconds written by the on-login profile script.
-const cleanupScriptV7 = `:local nowEpoch ([:tonsec [:timestamp]] / 1000000000)
+// Also removes any user whose uptime quota is exhausted (uptime >= limit-uptime),
+// independent of the exp: comment — RouterOS already blocks their login at that
+// point, so there's no reason to keep the account.
+var cleanupScriptV7 = `:local nowEpoch ([:tonsec [:timestamp]] / 1000000000)
+` + durationToSecsFn + `
 :foreach u in=[/ip/hotspot/user/find] do={
   :local comment [:tostr [/ip/hotspot/user/get $u comment]]
+  :local removed false
   :if ([:len $comment] > 4 && [:pick $comment 0 4] = "exp:") do={
     :local expEpoch [:tonum [:pick $comment 4 [:len $comment]]]
     :if ($expEpoch > 0 && $expEpoch < $nowEpoch) do={
       /ip/hotspot/user/remove $u
+      :set removed true
+    }
+  }
+  :if (!$removed) do={
+    :local limit [:tostr [/ip/hotspot/user/get $u limit-uptime]]
+    :local used [:tostr [/ip/hotspot/user/get $u uptime]]
+    :if ([:len $limit] > 0 && [:len $used] > 0) do={
+      :if ([$durationToSecs $used] >= [$durationToSecs $limit]) do={
+        /ip/hotspot/user/remove $u
+      }
     }
   }
 }`
@@ -686,7 +727,9 @@ const cleanupScriptV7 = `:local nowEpoch ([:tonsec [:timestamp]] / 1000000000)
 // cleanupScriptV6 is the fallback for RouterOS 6 / early v7 without [:tonsec].
 // exp: comments store "YYYY-MM-DD HH:MM:SS" (ISO, written by our on-login script).
 // Uses Mikhmon-style dateint/timeint functions for proven v6 compatibility.
-const cleanupScriptV6 = `:local dateint do={
+// Also removes any user whose uptime quota is exhausted (uptime >= limit-uptime),
+// independent of the exp: comment — see cleanupScriptV7 for rationale.
+var cleanupScriptV6 = `:local dateint do={
   :local days [:pick $d 8 10]
   :local month [:pick $d 5 7]
   :local year [:pick $d 0 4]
@@ -697,18 +740,30 @@ const cleanupScriptV6 = `:local dateint do={
   :local minutes [:pick $t 3 5]
   :return ($hours * 60 + $minutes)
 }
+` + durationToSecsFn + `
 :local date [/system clock get date]
 :local time [/system clock get time]
 :local today [$dateint d=$date]
 :local curtime [$timeint t=$time]
 :foreach u in=[/ip/hotspot/user/find] do={
   :local comment [:tostr [/ip/hotspot/user/get $u comment]]
+  :local removed false
   :if ([:len $comment] > 18 && [:pick $comment 0 4] = "exp:") do={
     :local s [:pick $comment 4 23]
     :if ([:pick $s 4 5] = "-" && [:pick $s 7 8] = "-" && [:pick $s 10 11] = " ") do={
       :local expd [$dateint d=$s]
       :local expt [$timeint t=[:pick $s 11 19]]
       :if (($expd < $today) || ($expd = $today && $expt < $curtime)) do={
+        /ip/hotspot/user/remove $u
+        :set removed true
+      }
+    }
+  }
+  :if (!$removed) do={
+    :local limit [:tostr [/ip/hotspot/user/get $u limit-uptime]]
+    :local used [:tostr [/ip/hotspot/user/get $u uptime]]
+    :if ([:len $limit] > 0 && [:len $used] > 0) do={
+      :if ([$durationToSecs $used] >= [$durationToSecs $limit]) do={
         /ip/hotspot/user/remove $u
       }
     }

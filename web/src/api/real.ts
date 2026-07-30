@@ -58,6 +58,18 @@ export const getSystemLogs = (id: string) =>
 export const getDHCPLeases = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/system/dhcp-leases`).then(r => r.data)
 
+export interface MikhmonMigrationResult {
+  usersScanned: number
+  usersUnused: number
+  usersConverted: number
+  usersSkipped: number
+  profilesScanned: number
+  profilesConverted: number
+}
+
+export const migrateFromMikhmon = (id: string) =>
+  api.post<MikhmonMigrationResult>(`/routers/${id}/hotspot/migrate-mikhmon`).then(r => r.data)
+
 // Hotspot users
 export const listHotspotUsers = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/hotspot/users`).then(r => r.data)
