@@ -21,9 +21,15 @@ ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, 
 
 interface BwPoint { down: number; up: number }
 
-const props = defineProps<{
-  history: BwPoint[]
-}>()
+const props = defineProps<{ history: BwPoint[] }>()
+
+function cssVar(name: string) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
+// Fixed semantic colors — match the legend dots in the bandwidth card header.
+const DOWN_COLOR = '#22d3ee' // cyan-400: download
+const UP_COLOR   = '#f59e0b' // amber-400: upload
 
 const N = computed(() => props.history.length)
 
@@ -38,8 +44,8 @@ const chartData = computed<ChartData<'line'>>(() => ({
     {
       label: 'Download',
       data: props.history.map(p => p.down),
-      borderColor: 'rgba(250,250,250,0.9)',
-      backgroundColor: 'rgba(250,250,250,0.08)',
+      borderColor: DOWN_COLOR,
+      backgroundColor: `${DOWN_COLOR}20`,
       borderWidth: 2,
       pointRadius: 0,
       fill: true,
@@ -48,11 +54,11 @@ const chartData = computed<ChartData<'line'>>(() => ({
     {
       label: 'Upload',
       data: props.history.map(p => p.up),
-      borderColor: 'rgba(82,82,91,0.9)',
-      backgroundColor: 'transparent',
-      borderWidth: 1.5,
+      borderColor: UP_COLOR,
+      backgroundColor: `${UP_COLOR}15`,
+      borderWidth: 2,
       pointRadius: 0,
-      fill: false,
+      fill: true,
       tension: 0.4,
     },
   ],
@@ -61,8 +67,13 @@ const chartData = computed<ChartData<'line'>>(() => ({
 const chartOptions = computed<ChartOptions<'line'>>(() => {
   const allVals = props.history.flatMap(p => [p.down, p.up])
   const peak = Math.max(...allVals, 0.01)
-  const exp = Math.pow(10, Math.floor(Math.log10(peak)))
+  const exp  = Math.pow(10, Math.floor(Math.log10(peak)))
   const ceil = Math.ceil(peak / exp) * exp
+
+  const border    = cssVar('--color-border')
+  const textMuted = cssVar('--color-text-muted')
+  const textBody  = cssVar('--color-text-primary')
+  const surface   = cssVar('--color-surface')
 
   return {
     responsive: true,
@@ -72,11 +83,11 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(14,15,17,0.95)',
-        borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: surface,
+        borderColor: border,
         borderWidth: 1,
-        titleColor: 'rgba(255,255,255,0.5)',
-        bodyColor: 'rgba(255,255,255,0.9)',
+        titleColor: textMuted,
+        bodyColor: textBody,
         padding: 8,
         callbacks: {
           label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y ?? 0).toFixed(2)} Mbps`,
@@ -85,10 +96,10 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(255,255,255,0.05)', drawTicks: false },
+        grid: { color: `color-mix(in srgb, ${border} 60%, transparent)`, drawTicks: false },
         border: { display: false },
         ticks: {
-          color: 'rgba(255,255,255,0.3)',
+          color: textMuted,
           font: { family: 'monospace', size: 10 },
           maxRotation: 0,
           autoSkip: false,
@@ -97,10 +108,10 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
       y: {
         min: 0,
         max: ceil,
-        grid: { color: 'rgba(255,255,255,0.05)', drawTicks: false },
+        grid: { color: `color-mix(in srgb, ${border} 60%, transparent)`, drawTicks: false },
         border: { display: false },
         ticks: {
-          color: 'rgba(255,255,255,0.3)',
+          color: textMuted,
           font: { family: 'monospace', size: 10 },
           maxTicksLimit: 4,
           callback: v => `${v} Mbps`,

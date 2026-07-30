@@ -20,7 +20,7 @@
             type="button"
             class="px-3 py-1.5 text-sm font-medium transition-colors"
             :class="period === p.key
-              ? 'bg-primary text-white'
+              ? 'bg-accent text-base'
               : 'text-text-secondary hover:text-text-primary hover:bg-surface'"
             @click="period = p.key"
           >

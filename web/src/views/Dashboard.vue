@@ -1,125 +1,105 @@
 <template>
-  <PageLayout title="Dashboard" subtitle="Network Overview">
+  <PageLayout title="Dashboard" subtitle="Router Overview">
     <NoRouterSelected v-if="!store.activeId" />
 
     <div v-else class="grid gap-4">
       <!-- ── Row 1: hero ── -->
       <div class="grid gap-4" style="grid-template-columns: 42% 1fr">
-        <!-- System card (health ring + full detail) -->
-        <div class="flex gap-6 rounded-xl border border-border p-6 bg-muted/20">
-          <div class="flex flex-col items-center gap-2 shrink-0">
-            <div class="relative">
-              <svg width="96" height="96" viewBox="0 0 120 120">
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="50"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.07)"
-                  stroke-width="9"
-                />
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="50"
-                  fill="none"
-                  :stroke="healthColor"
-                  stroke-width="9"
-                  stroke-linecap="round"
-                  :stroke-dasharray="ringCirc"
-                  :stroke-dashoffset="ringOffset"
-                  transform="rotate(-90 60 60)"
-                  style="transition: stroke-dashoffset 0.6s ease"
-                />
-              </svg>
-              <div
-                class="absolute inset-0 flex flex-col items-center justify-center"
-              >
-                <span
-                  class="font-mono text-xl font-bold tracking-tight text-text-primary"
-                  >{{ healthScore }}</span
-                >
-                <span
-                  class="text-sm tracking-tight font-bold text-text-secondary"
-                  >Health</span
-                >
-              </div>
+        <!-- System card: router image | live stats | health ring -->
+        <div class="grid grid-cols-3 rounded-xl border border-border p-5 bg-surface gap-5">
+
+          <!-- LEFT: router illustration + device identity -->
+          <div class="flex flex-col items-center gap-2">
+            <RouterArt
+              :board-name="resource['board-name'] ?? ''"
+              :size="120"
+              :power-led="healthColor"
+              :wifi-led="activeSessions > 0 ? 'var(--color-green)' : 'var(--color-border)'"
+              wan-led="var(--color-amber)"
+            />
+            <!-- Status badge -->
+            <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-border text-xs font-medium text-text-secondary">
+              <span class="size-1.5 rounded-full shrink-0" :style="`background:${healthColor}; box-shadow:0 0 5px ${healthColor}`"/>
+              {{ healthLabel }}
             </div>
-            <div class="flex items-center gap-1.5">
-              <span
-                class="size-1.5 rounded-full shrink-0"
-                :style="`background:${healthColor}; box-shadow:0 0 6px ${healthColor}`"
-              />
-              <span class="text-xs font-medium text-text-secondary">{{
-                healthLabel
-              }}</span>
+            <!-- Device identity -->
+            <div class="text-center space-y-0.5">
+              <div class="text-sm font-semibold text-text-primary font-mono leading-tight">
+                {{ resource['board-name'] || store.active()?.name || '—' }}
+              </div>
+              <div class="text-xs text-text-muted font-mono leading-tight">
+                RouterOS {{ resource['version']?.split(' ')[0] || '—' }}
+              </div>
             </div>
           </div>
 
-          <div class="flex-1 min-w-0 flex flex-col justify-center">
-            <div
-              v-if="loading"
-              class="flex items-center gap-2 text-xs text-text-muted"
-            >
+          <!-- MIDDLE: live stats -->
+          <div class="flex flex-col justify-center min-w-0">
+            <div v-if="loading" class="flex items-center gap-2 text-sm text-text-muted">
               <span class="spinner spinner--sm" /> Loading…
             </div>
-            <div
-              v-else-if="error"
-              class="flex items-center gap-1.5 text-xs text-red"
-            >
+            <div v-else-if="error" class="flex items-center gap-1.5 text-xs text-red">
               <ExclamationTriangleIcon class="size-3.5 shrink-0" />{{ error }}
             </div>
-            <div v-else class="grid grid-cols-2 gap-x-6">
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 text-xs">
+            <div v-else class="grid grid-cols-1 text-sm">
+              <div class="flex justify-between items-center py-1.5 border-b border-border/60 ">
                 <span class="text-text-muted">Uptime</span>
                 <span class="font-mono font-semibold text-text-primary">{{ resource["uptime"] ?? "—" }}</span>
               </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 text-xs">
+              <div class="flex justify-between items-center py-1.5 border-b border-border/60 ">
                 <span class="text-text-muted">CPU</span>
                 <span class="font-mono font-semibold text-text-primary">{{ resource["cpu-load"] ?? "—" }}%</span>
               </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 text-xs">
+              <div class="flex justify-between items-center py-1.5 border-b border-border/60 ">
                 <span class="text-text-muted">Free RAM</span>
                 <span class="font-mono font-semibold text-text-primary">{{ formatBytes(freeMemory) }}</span>
               </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 text-xs">
+              <div class="flex justify-between items-center py-1.5 border-b border-border/60 ">
                 <span class="text-text-muted">Free disk</span>
                 <span class="font-mono font-semibold text-text-primary">{{ formatBytes(parseInt(resource["free-hdd-space"] ?? "0") || 0) }}</span>
               </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 text-xs">
-                <span class="text-text-muted">Download</span>
-                <span class="font-mono font-semibold text-text-primary">{{ curDown }} Mbps</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 text-xs">
-                <span class="text-text-muted">Upload</span>
-                <span class="font-mono font-semibold text-text-primary">{{ curUp }} Mbps</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 text-xs">
-                <span class="text-text-muted">Board</span>
-                <span class="font-mono font-semibold text-text-primary">{{ resource["board-name"] ?? "—" }}</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 text-xs">
-                <span class="text-text-muted">RouterOS</span>
-                <span class="font-mono font-semibold text-text-primary">{{ resource["version"] ?? "—" }}</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5 text-xs col-span-2">
+              <div class="flex justify-between items-center py-1.5 ">
                 <span class="text-text-muted">Time</span>
                 <span class="font-mono font-semibold text-text-primary">{{ routerTime || "—" }}</span>
               </div>
             </div>
           </div>
+
+          <!-- RIGHT: health ring -->
+          <div class="flex flex-col items-center justify-center gap-2 shrink-0">
+            <div class="relative">
+              <svg width="110" height="110" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-border)" stroke-width="8"/>
+                <circle
+                  cx="60" cy="60" r="50" fill="none"
+                  :stroke="healthColor"
+                  stroke-width="8"
+                  stroke-linecap="round"
+                  :stroke-dasharray="ringCirc"
+                  :stroke-dashoffset="ringOffset"
+                  transform="rotate(-90 60 60)"
+                  style="transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease"
+                />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="font-mono text-2xl font-bold tracking-tight text-text-primary">{{ healthScore }}</span>
+                <span class="text-xs font-bold text-text-secondary">Health</span>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Right column: hotspot card -->
         <div>
           <!-- Hotspot card -->
           <div
-            class="rounded-xl border border-border p-4 grid gap-3 bg-muted/20"
+            class="rounded-xl border border-border p-4 grid gap-3 bg-surface"
             style="grid-template-rows: auto 1fr auto"
           >
             <div class="flex items-center justify-between">
               <span class="font-semibold text-text-primary">Hotspot</span>
-              <RouterLink to="/hotspot/users" class="btn btn-primary btn-sm"
+              <RouterLink to="/hotspot/users" class="btn btn-primary"
                 >Manage</RouterLink
               >
             </div>
@@ -174,7 +154,7 @@
                 <RouterLink
                   v-if="!cleanupInstalled"
                   to="/hotspot/settings"
-                  class="text-amber btn btn-sm btn-ghost"
+                  class="text-amber btn btn-ghost"
                 >
                   Configure
                 </RouterLink>
@@ -187,16 +167,18 @@
       <!-- ── Row 2: bandwidth chart + interface traffic ── -->
       <div class="grid grid-cols-2 gap-4">
         <!-- Bandwidth chart -->
-        <div class="rounded-xl border border-border p-5 bg-muted/20 h-full">
+        <div class="rounded-xl border border-border p-5 bg-surface h-full">
           <div class="flex items-center gap-4 mb-4">
             <span class="font-semibold text-text-primary">Bandwidth</span>
             <div class="flex items-center gap-1.5">
-              <span class="size-2 rounded-sm bg-text-primary" />
+              <span class="size-2 rounded-sm shrink-0" style="background:#22d3ee"/>
               <span class="text-xs text-text-secondary">Download</span>
+              <span class="font-mono text-xs font-semibold text-text-primary">{{ curDown }} Mbps</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="size-2 rounded-sm bg-text-muted" />
+              <span class="size-2 rounded-sm shrink-0" style="background:#f59e0b"/>
               <span class="text-xs text-text-secondary">Upload</span>
+              <span class="font-mono text-xs font-semibold text-text-primary">{{ curUp }} Mbps</span>
             </div>
           </div>
           <div class="h-60">
@@ -205,7 +187,7 @@
         </div>
 
         <!-- Interface traffic -->
-        <div class="rounded-xl border border-border p-5 bg-muted/20">
+        <div class="rounded-xl border border-border p-5 bg-surface">
           <div class="flex items-center justify-between mb-4">
             <span class="font-semibold text-text-primary">Interfaces</span>
             <span v-if="trafficUpdatedAt" class="text-xs text-text-muted">{{
@@ -253,7 +235,7 @@
       <div class="grid grid-cols-2 gap-4">
         <!-- Recent logs -->
         <div
-          class="rounded-xl border border-border p-5 grid gap-3 bg-muted/20"
+          class="rounded-xl border border-border p-5 grid gap-3 bg-surface"
           style="grid-template-rows: auto 1fr"
         >
           <div class="flex items-center justify-between">
@@ -298,7 +280,7 @@
 
         <!-- Active sessions -->
         <div
-          class="rounded-xl border border-border p-5 grid gap-3 bg-muted/20"
+          class="rounded-xl border border-border p-5 grid gap-3 bg-surface"
           style="grid-template-rows: auto 1fr"
         >
           <div class="flex items-center justify-between">
@@ -386,6 +368,7 @@ import {
 import { friendlyError } from "@/utils/errors";
 import PageLayout from "@/components/PageLayout.vue";
 import BandwidthChart from "@/components/BandwidthChart.vue";
+import RouterArt from "@/components/router-art/RouterArt.vue";
 
 const store = useRoutersStore();
 

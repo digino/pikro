@@ -86,26 +86,76 @@
 
       <!-- Search & filters -->
       <div class="flex items-center gap-2.5 flex-wrap">
-        <div class="relative flex-1 min-w-40 max-w-xs">
+        <div class="relative flex-1 max-w-xs">
           <input
             v-model="searchQuery"
             class="input pl-9"
             placeholder="Search username or comment…"
           />
         </div>
-        <select v-model="filterProfile" class="input-select">
-          <option value="">All profiles</option>
-          <option v-for="p in profiles" :key="p['.id']" :value="p.name">
-            {{ p.name }}
-          </option>
-        </select>
-        <select v-model="filterStatus" class="input-select">
-          <option value="">All statuses</option>
-          <option value="waiting">Waiting</option>
-          <option value="limit-reached">Limit reached</option>
-          <option value="expired">Expired</option>
-          <option value="disabled">Disabled</option>
-        </select>
+        <SelectRoot
+          :model-value="filterProfile || undefined"
+          @update:model-value="filterProfile = $event ?? ''"
+        >
+          <SelectTrigger class="input-select flex items-center gap-1.5 cursor-pointer">
+            <SelectValue placeholder="All profiles" class="flex-1 text-left" />
+            <ChevronDownIcon class="size-3.5 text-text-secondary shrink-0" />
+          </SelectTrigger>
+          <SelectPortal>
+            <SelectContent
+              class="z-50 min-w-(--reka-select-trigger-width) bg-surface border border-border rounded-lg shadow-xl overflow-hidden"
+              position="popper"
+              :side-offset="3"
+            >
+              <SelectViewport class="p-1">
+                <SelectItem
+                  v-for="p in profiles"
+                  :key="p['.id']"
+                  :value="p.name"
+                  class="flex items-center justify-between p-2 text-sm rounded-md cursor-pointer text-text-secondary transition-colors hover:bg-muted hover:text-text-primary data-highlighted:bg-muted data-highlighted:text-text-primary data-[state=checked]:text-text-primary data-[state=checked]:font-medium"
+                >
+                  <SelectItemText>{{ p.name }}</SelectItemText>
+                  <SelectItemIndicator><CheckCircleIcon class="size-4 text-green" /></SelectItemIndicator>
+                </SelectItem>
+              </SelectViewport>
+            </SelectContent>
+          </SelectPortal>
+        </SelectRoot>
+        <SelectRoot
+          :model-value="filterStatus || undefined"
+          @update:model-value="filterStatus = $event ?? ''"
+        >
+          <SelectTrigger class="input-select flex items-center gap-1.5 cursor-pointer">
+            <SelectValue placeholder="All statuses" class="flex-1 text-left" />
+            <ChevronDownIcon class="size-3.5 text-text-secondary shrink-0" />
+          </SelectTrigger>
+          <SelectPortal>
+            <SelectContent
+              class="z-50 min-w-(--reka-select-trigger-width) bg-surface border border-border rounded-lg shadow-xl overflow-hidden"
+              position="popper"
+              :side-offset="3"
+            >
+              <SelectViewport class="p-1">
+                <SelectItem
+                  v-for="opt in STATUS_OPTS"
+                  :key="opt.value"
+                  :value="opt.value"
+                  class="flex items-center justify-between p-2 text-sm rounded-md cursor-pointer text-text-secondary transition-colors hover:bg-muted hover:text-text-primary data-highlighted:bg-muted data-highlighted:text-text-primary data-[state=checked]:text-text-primary data-[state=checked]:font-medium"
+                >
+                  <SelectItemText>{{ opt.label }}</SelectItemText>
+                  <SelectItemIndicator><CheckCircleIcon class="size-4 text-green" /></SelectItemIndicator>
+                </SelectItem>
+              </SelectViewport>
+            </SelectContent>
+          </SelectPortal>
+        </SelectRoot>
+        <span
+          v-if="searchQuery || filterProfile || filterStatus"
+          class="text-xs text-text-muted"
+          >{{ filteredUsers.length }} result{{
+            filteredUsers.length !== 1 ? "s" : ""
+          }}</span
+        >
         <button
           v-if="searchQuery || filterProfile || filterStatus"
           class="text-sm text-text-muted hover:text-text-secondary transition-colors px-1"
@@ -124,17 +174,15 @@
           <thead>
             <tr class="border-b border-border bg-surface">
               <th class="px-4 py-3 w-8">
-                <button
-                  class="size-4 rounded border flex items-center justify-center transition-colors"
-                  :class="
-                    allSelected
-                      ? 'bg-text-primary border-text-primary text-base'
-                      : 'border-border hover:border-muted'
-                  "
-                  @click="toggleSelectAll"
+                <CheckboxRoot
+                  :checked="someSelected ? 'indeterminate' : allSelected"
+                  class="size-4 rounded border border-border bg-base flex items-center justify-center transition-colors data-[state=checked]:bg-text-primary data-[state=checked]:border-text-primary data-[state=indeterminate]:bg-text-primary data-[state=indeterminate]:border-text-primary hover:border-muted"
+                  @update:checked="toggleSelectAll"
                 >
-                  <CheckIcon v-if="allSelected" class="size-3" />
-                </button>
+                  <CheckboxIndicator>
+                    <CheckIcon class="size-3 text-base" />
+                  </CheckboxIndicator>
+                </CheckboxRoot>
               </th>
               <th
                 class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
@@ -191,20 +239,18 @@
               :class="selected.has(u['.id']) ? 'bg-surface' : ''"
             >
               <td class="px-4 py-3">
-                <button
-                  class="size-4 rounded border flex items-center justify-center transition-colors"
-                  :class="
-                    selected.has(u['.id'])
-                      ? 'bg-text-primary border-text-primary text-base'
-                      : 'border-border hover:border-muted'
-                  "
-                  @click="toggleSelect(u['.id'])"
+                <CheckboxRoot
+                  :checked="selected.has(u['.id'])"
+                  class="size-4 rounded border border-border bg-base flex items-center justify-center transition-colors data-[state=checked]:bg-text-primary data-[state=checked]:border-text-primary hover:border-muted"
+                  @update:checked="toggleSelect(u['.id'])"
                 >
-                  <CheckIcon v-if="selected.has(u['.id'])" class="size-3" />
-                </button>
+                  <CheckboxIndicator>
+                    <CheckIcon class="size-3 text-base" />
+                  </CheckboxIndicator>
+                </CheckboxRoot>
               </td>
               <td
-                class="px-4 py-3 font-mono font-bold text-text-primary text-sm"
+                class="px-4 py-3 font-mono font-semibold text-text-primary text-sm"
               >
                 {{ u.name }}
               </td>
@@ -230,36 +276,38 @@
               <td class="px-4 py-3">
                 <span
                   v-if="userStatus(u) === 'active'"
-                  class="text-xs px-2 py-0.5 rounded-full bg-green/10 text-green"
+                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-green/10 text-green"
                   >Active</span
                 >
                 <span
                   v-else-if="userStatus(u) === 'waiting'"
-                  class="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400"
+                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400"
                   >Waiting</span
                 >
                 <span
                   v-else-if="userStatus(u) === 'disabled'"
-                  class="text-xs px-2 py-0.5 rounded-full bg-red/10 text-red"
+                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-red/10 text-red"
                   >Disabled</span
                 >
                 <span
                   v-else-if="userStatus(u) === 'expired'"
-                  class="text-xs px-2 py-0.5 rounded-full bg-amber/10 text-amber"
+                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-red/10 text-red"
                   >Expired</span
                 >
                 <span
+                  v-else-if="userStatus(u) === 'expires-soon'"
+                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-amber/10 text-amber"
+                  >Expires soon</span
+                >
+                <span
                   v-else-if="userStatus(u) === 'limit-reached'"
-                  class="text-xs px-2 py-0.5 rounded-full bg-amber/10 text-amber"
+                  class="text-sm font-medium px-2 py-0.5 rounded-full bg-amber/10 text-amber"
                   >Limit reached</span
                 >
               </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">
-                  <button
-                    class="btn btn-ghost btn-sm"
-                    @click="openEdit(u)"
-                  >
+                  <button class="btn btn-ghost btn-sm" @click="openEdit(u)">
                     <PencilIcon class="size-3.5" />
                     Edit
                   </button>
@@ -327,31 +375,85 @@
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-border bg-surface">
-            <th class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">User</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">IP</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">MAC</th>
-            <th class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">Uptime</th>
-            <th class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">Down</th>
-            <th class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">Up</th>
-            <th class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide">Left</th>
+            <th
+              class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+            >
+              User
+            </th>
+            <th
+              class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+            >
+              IP
+            </th>
+            <th
+              class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+            >
+              MAC
+            </th>
+            <th
+              class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+            >
+              Uptime
+            </th>
+            <th
+              class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+            >
+              Down
+            </th>
+            <th
+              class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+            >
+              Up
+            </th>
+            <th
+              class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+            >
+              Left
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="active.length === 0">
-            <td colspan="7" class="text-center text-text-muted text-sm py-10">No active sessions</td>
+            <td colspan="7" class="text-center text-text-muted text-sm py-10">
+              No active sessions
+            </td>
           </tr>
           <tr
             v-for="s in pagedActive"
             :key="s['.id']"
             class="border-b border-border last:border-0 transition-colors hover:bg-surface"
           >
-            <td class="px-4 py-3 font-mono font-semibold text-text-primary text-xs">{{ s.user }}</td>
-            <td class="px-4 py-3 font-mono text-xs text-text-secondary">{{ s.address }}</td>
-            <td class="px-4 py-3 font-mono text-xs text-text-muted">{{ s["mac-address"] || "—" }}</td>
-            <td class="px-4 py-3 text-right font-mono text-xs text-text-secondary">{{ s.uptime || "—" }}</td>
-            <td class="px-4 py-3 text-right font-mono text-xs text-text-primary">{{ formatBytes(s["bytes-in"]) }}</td>
-            <td class="px-4 py-3 text-right font-mono text-xs text-text-secondary">{{ formatBytes(s["bytes-out"]) }}</td>
-            <td class="px-4 py-3 text-right font-mono text-xs text-text-secondary">{{ s["session-time-left"] || "—" }}</td>
+            <td
+              class="px-4 py-3 font-mono font-semibold text-text-primary text-xs"
+            >
+              {{ s.user }}
+            </td>
+            <td class="px-4 py-3 font-mono text-xs text-text-secondary">
+              {{ s.address }}
+            </td>
+            <td class="px-4 py-3 font-mono text-xs text-text-muted">
+              {{ s["mac-address"] || "—" }}
+            </td>
+            <td
+              class="px-4 py-3 text-right font-mono text-xs text-text-secondary"
+            >
+              {{ s.uptime || "—" }}
+            </td>
+            <td
+              class="px-4 py-3 text-right font-mono text-xs text-text-primary"
+            >
+              {{ formatBytes(s["bytes-in"]) }}
+            </td>
+            <td
+              class="px-4 py-3 text-right font-mono text-xs text-text-secondary"
+            >
+              {{ formatBytes(s["bytes-out"]) }}
+            </td>
+            <td
+              class="px-4 py-3 text-right font-mono text-xs text-text-secondary"
+            >
+              {{ s["session-time-left"] || "—" }}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -542,15 +644,11 @@
       <form @submit.prevent="submitAdd" class="space-y-4">
         <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-red"
-              >Username <span>*</span></span
-            >
+            <span class="font-medium text-red">Username <span>*</span></span>
             <input v-model="form.name" class="input" required />
           </label>
           <label class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-text-secondary"
-              >Password</span
-            >
+            <span class="font-medium text-text-secondary">Password</span>
             <input
               v-model="form.password"
               class="input"
@@ -560,7 +658,7 @@
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-text-secondary">Profile</span>
+          <span class="font-medium text-text-secondary">Profile</span>
           <select v-model="form.profile" class="input">
             <option value="">default</option>
             <option v-for="p in profiles" :key="p['.id']" :value="p.name">
@@ -571,15 +669,13 @@
 
         <div class="border-t border-border pt-3 space-y-3">
           <p
-            class="text-xs font-semibold text-text-muted uppercase tracking-wide"
+            class="text-sm font-semibold text-text-muted uppercase tracking-wide"
           >
             Limits (override profile)
           </p>
 
           <div class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-text-secondary"
-              >Time limit</span
-            >
+            <span class="font-medium text-text-secondary">Time limit</span>
             <input
               v-model="form.limitUptimeRaw"
               class="input font-mono"
@@ -588,13 +684,13 @@
             />
             <p
               v-if="form.limitUptimeRaw && !formUptimePreview"
-              class="text-xs text-red"
+              class="text-sm text-red"
             >
               Invalid format — use: 30m, 2h, 1d, 1w or combinations like 1d12h
             </p>
             <p
               v-else-if="formUptimePreview"
-              class="text-xs"
+              class="text-sm"
               :class="formUptimeWarning ? 'text-amber' : 'text-text-muted'"
             >
               <span v-if="formUptimeWarning"
@@ -608,9 +704,7 @@
           </div>
 
           <div class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-text-secondary"
-              >Data limit</span
-            >
+            <span class="font-medium text-text-secondary">Data limit</span>
             <div
               class="flex w-full overflow-hidden rounded-lg border border-border focus-within:outline-2 focus-within:outline-accent focus-within:outline-offset-1"
             >
@@ -633,7 +727,7 @@
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-text-secondary">Comment</span>
+          <span class="font-medium text-text-secondary">Comment</span>
           <input
             v-model="form.comment"
             class="input"
@@ -641,7 +735,7 @@
           />
         </label>
 
-        <p v-if="addError" class="text-xs text-red">{{ addError }}</p>
+        <p v-if="addError" class="text-sm text-red">{{ addError }}</p>
 
         <div class="flex justify-end gap-2 pt-1">
           <button type="button" class="btn btn-ghost" @click="showAdd = false">
@@ -665,7 +759,7 @@
     <!-- Batch generate dialog -->
     <AppDialog
       :open="showBatch"
-      title="Generate Users"
+      title="Generate Vouchers"
       @update:open="onBatchDialogUpdate"
     >
       <!-- Results screen -->
@@ -715,207 +809,48 @@
         <div
           class="flex items-center justify-between text-xs text-text-secondary"
         >
-          <span>Creating users…</span>
-          <span>{{ batchProgress }} / {{ batch.count }}</span>
+          <span>Creating vouchers…</span>
+          <span>{{ batchProgress }} / {{ batchTotal }}</span>
         </div>
         <div class="w-full rounded-full h-2 border border-border bg-base">
           <div
             class="h-2 rounded-full transition-all bg-text-primary"
-            :style="{ width: `${(batchProgress / batch.count) * 100}%` }"
+            :style="{ width: `${(batchProgress / batchTotal) * 100}%` }"
           />
         </div>
         <p class="text-xs text-text-muted font-mono">{{ batchCurrentName }}</p>
       </div>
 
-      <!-- Config screen -->
-      <form v-else @submit.prevent="submitBatch" class="space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-red"
-              >Quantity <span>*</span></span
-            >
-            <input
-              v-model.number="batch.count"
-              type="number"
-              min="1"
-              max="500"
-              class="input"
-              required
-            />
-            <p v-if="batch.count > 100" class="text-xs text-amber">
-              ⚠ Large batch — may take {{ Math.round(batch.count * 0.3) }}s+
-            </p>
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-text-secondary"
-              >Name length</span
-            >
-            <select v-model.number="batch.nameLength" class="input">
-              <option v-for="n in [3, 4, 5, 6]" :key="n" :value="n">
-                {{ n }} characters
-              </option>
-            </select>
-          </label>
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-text-secondary"
-            >Username characters</span
-          >
-          <div class="flex gap-2">
-            <label
-              class="flex items-center gap-1.5 text-sm text-text-secondary cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                v-model="batch.charsLetters"
-                class="rounded"
-              />
-              Letters (a-z)
-            </label>
-            <label
-              class="flex items-center gap-1.5 text-sm text-text-secondary cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                v-model="batch.charsDigits"
-                class="rounded"
-              />
-              Digits (0-9)
-            </label>
-          </div>
-          <p class="text-xs text-text-muted font-mono">
-            Preview: <span>{{ batchNamePreview }}</span>
-          </p>
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-text-secondary">Password</span>
-          <select v-model="batch.passwordMode" class="input">
-            <option value="same">Same as username</option>
-            <option value="random">Random (separate)</option>
-            <option value="fixed">Fixed password</option>
-          </select>
-          <input
-            v-if="batch.passwordMode === 'fixed'"
-            v-model="batch.fixedPassword"
-            class="input mt-1"
-            placeholder="Enter fixed password"
-          />
-        </div>
-
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-text-secondary">Profile</span>
-          <select v-model="batch.profile" class="input">
-            <option value="">default</option>
-            <option v-for="p in profiles" :key="p['.id']" :value="p.name">
-              {{ p.name }}
-            </option>
-          </select>
-        </label>
-
-        <div class="border-t border-border pt-3 space-y-3">
-          <p
-            class="text-sm font-semibold text-text-muted uppercase tracking-wide"
-          >
-            Limits (override profile)
-          </p>
-
-          <div class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-text-secondary"
-              >Time limit</span
-            >
-            <input
-              v-model="batch.limitUptimeRaw"
-              class="input font-mono"
-              placeholder="e.g. 1h, 1d, 1w, 1d12h — blank for unlimited"
-              @blur="normalizeBatchUptime"
-            />
-            <p
-              v-if="batch.limitUptimeRaw && !batchUptimePreview"
-              class="text-sm text-red"
-            >
-              Invalid format — use: 30m, 2h, 1d, 1w or combinations like 1d12h
-            </p>
-            <p
-              v-else-if="batchUptimePreview"
-              class="text-sm"
-              :class="batchUptimeWarning ? 'text-amber' : 'text-text-muted'"
-            >
-              <span v-if="batchUptimeWarning"
-                >⚠ Time limit exceeds the profile's validity — user may never
-                hit this limit.</span
-              >
-              <span v-else class="font-mono"
-                >Sends to router: <span>{{ batchUptimePreview }}</span></span
-              >
-            </p>
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-text-secondary"
-              >Data limit</span
-            >
-            <div
-              class="flex w-full overflow-hidden rounded-lg border border-border focus-within:outline-2 focus-within:outline-accent focus-within:outline-offset-1"
-            >
-              <input
-                v-model.number="batch.limitBytesTotalValue"
-                type="number"
-                min="0"
-                class="input-bare flex-1 min-w-0"
-                placeholder="0"
-              />
-              <select
-                v-model="batch.limitBytesTotalUnit"
-                class="input-bare border-l border-border shrink-0 w-16 text-xs"
-              >
-                <option value="M">MB</option>
-                <option value="G">GB</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-text-secondary">Comment</span>
-          <input
-            v-model="batch.comment"
-            class="input"
-            placeholder="optional note"
-          />
-        </label>
-
-        <p v-if="batchError" class="text-xs text-red">{{ batchError }}</p>
-
-        <div class="flex justify-end gap-2 pt-1 border-t border-border">
-          <button
-            type="button"
-            class="btn btn-ghost"
-            @click="showBatch = false"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            class="btn btn-primary"
-            :disabled="
-              !batch.count ||
-              batch.count > 500 ||
-              !batchCharset ||
-              (!!batch.limitUptimeRaw && !batchUptimePreview)
-            "
-          >
-            Generate {{ batch.count || "" }} users
-          </button>
-        </div>
-      </form>
+      <!-- Wizard -->
+      <BatchWizard
+        v-else
+        ref="wizardRef"
+        :profiles="profiles"
+        :profile-metas="profileMetas"
+        :error="batchError"
+        @cancel="showBatch = false"
+        @submit="submitBatch"
+      />
     </AppDialog>
   </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import BatchWizard, { type BatchConfig } from "@/components/BatchWizard.vue";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPortal,
+  SelectContent,
+  SelectViewport,
+  SelectItem,
+  SelectItemText,
+  SelectItemIndicator,
+  CheckboxRoot,
+  CheckboxIndicator,
+} from "reka-ui";
 import {
   PlusIcon,
   TrashIcon,
@@ -924,9 +859,10 @@ import {
   PrinterIcon,
   CheckIcon,
   PencilIcon,
-  MagnifyingGlassIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronDownIcon,
+  CheckCircleIcon,
 } from "@heroicons/vue/24/outline";
 import { useRoutersStore } from "@/stores/routers";
 import {
@@ -939,6 +875,7 @@ import {
   deleteHotspotUser,
   getProfileMetas,
   getHotspotSettings,
+  getCleanupScheduler,
   type ProfileMeta,
   type HotspotSettings,
 } from "@/api";
@@ -947,6 +884,15 @@ import AppDialog from "@/components/AppDialog.vue";
 import PageLayout from "@/components/PageLayout.vue";
 
 const store = useRoutersStore();
+
+const STATUS_OPTS = [
+  { value: "active", label: "Active" },
+  { value: "expires-soon", label: "Expires soon" },
+  { value: "waiting", label: "Waiting" },
+  { value: "limit-reached", label: "Limit reached" },
+  { value: "expired", label: "Expired" },
+  { value: "disabled", label: "Disabled" },
+] as const;
 
 const tab = ref<"users" | "active">("users");
 const tabs = [
@@ -1026,14 +972,20 @@ const hotspotSettings = ref<HotspotSettings>({
 });
 const loading = ref(false);
 const error = ref("");
+const cleanupInstalled = ref<boolean | null>(null);
 
 const selected = ref<Set<string>>(new Set());
 const bulkDeleting = ref(false);
 
 const allSelected = computed(
   () =>
-    users.value.length > 0 &&
-    users.value.every((u) => selected.value.has(u[".id"])),
+    filteredUsers.value.length > 0 &&
+    filteredUsers.value.every((u) => selected.value.has(u[".id"])),
+);
+const someSelected = computed(
+  () =>
+    !allSelected.value &&
+    filteredUsers.value.some((u) => selected.value.has(u[".id"])),
 );
 
 function toggleSelect(id: string) {
@@ -1046,7 +998,7 @@ function toggleSelect(id: string) {
 function toggleSelectAll() {
   selected.value = allSelected.value
     ? new Set()
-    : new Set(users.value.map((u) => u[".id"]));
+    : new Set(filteredUsers.value.map((u) => u[".id"]));
 }
 
 async function removeSelected() {
@@ -1156,55 +1108,14 @@ const showBatch = ref(false);
 const batchRunning = ref(false);
 const batchDone = ref(false);
 const batchProgress = ref(0);
+const batchTotal = ref(0);
 const batchCurrentName = ref("");
 const batchError = ref("");
 const batchResults = ref<
   { name: string; password: string; ok: boolean; error?: string }[]
 >([]);
-
-const emptyBatch = () => ({
-  count: 10,
-  nameLength: 6,
-  charsLetters: true,
-  charsDigits: true,
-  passwordMode: "same" as "same" | "random" | "fixed",
-  fixedPassword: "",
-  profile: "",
-  limitUptimeRaw: "",
-  limitBytesTotalValue: 0,
-  limitBytesTotalUnit: "M" as "M" | "G",
-  comment: "",
-});
-const batch = ref(emptyBatch());
-
-const batchCharset = computed(() => {
-  let s = "";
-  if (batch.value.charsLetters) s += "abcdefghijklmnopqrstuvwxyz";
-  if (batch.value.charsDigits) s += "0123456789";
-  return s;
-});
-
-const batchNamePreview = computed(() => {
-  if (!batchCharset.value) return "—";
-  return Array.from(
-    { length: batch.value.nameLength },
-    () =>
-      batchCharset.value[Math.floor(Math.random() * batchCharset.value.length)],
-  ).join("");
-});
-
-const batchUptimePreview = computed(() =>
-  uptimePreviewFrom(batch.value.limitUptimeRaw),
-);
-const batchUptimeWarning = computed(() => {
-  if (!batchUptimePreview.value || !batch.value.profile) return false;
-  const validitySecs = selectedProfileValiditySeconds(batch.value.profile);
-  if (!validitySecs) return false;
-  return shorthandToSeconds(batch.value.limitUptimeRaw) > validitySecs;
-});
-function normalizeBatchUptime() {
-  batch.value.limitUptimeRaw = normalizeShorthand(batch.value.limitUptimeRaw);
-}
+const wizardRef = ref<InstanceType<typeof BatchWizard> | null>(null);
+const lastBatchProfile = ref("");
 
 function generateName(
   charset: string,
@@ -1248,7 +1159,7 @@ async function loadUsers() {
   loading.value = true;
   error.value = "";
   try {
-    const [u, p, m, s] = await Promise.all([
+    const [u, p, m, s, cleanup] = await Promise.all([
       listHotspotUsers(store.activeId),
       listHotspotProfiles(store.activeId),
       getProfileMetas(store.activeId).catch(
@@ -1258,11 +1169,13 @@ async function loadUsers() {
         () =>
           ({ hotspotName: "", dnsName: "", currency: "" }) as HotspotSettings,
       ),
+      getCleanupScheduler(store.activeId).catch(() => null),
     ]);
     users.value = u;
     profiles.value = p;
     profileMetas.value = m;
     hotspotSettings.value = s;
+    cleanupInstalled.value = cleanup?.installed ?? false;
   } catch (e: any) {
     error.value = friendlyError(e, "Failed to load users");
   } finally {
@@ -1410,58 +1323,61 @@ async function submitEdit() {
 }
 
 function openBatch() {
-  batch.value = emptyBatch();
   batchDone.value = false;
   batchRunning.value = false;
   batchResults.value = [];
   batchError.value = "";
   showBatch.value = true;
+  wizardRef.value?.reset();
 }
 
 function onBatchDialogUpdate(open: boolean) {
   if (!batchRunning.value) showBatch.value = open;
 }
 
-async function submitBatch() {
+async function submitBatch(cfg: BatchConfig) {
   if (!store.activeId) return;
-  const charset = batchCharset.value;
+  const charset = [
+    cfg.charsLetters ? "abcdefghijklmnopqrstuvwxyz" : "",
+    cfg.charsDigits ? "0123456789" : "",
+  ].join("");
   if (!charset) {
     batchError.value = "Select at least one character type.";
     return;
   }
   batchRunning.value = true;
+  batchTotal.value = cfg.count;
+  lastBatchProfile.value = cfg.profile;
   batchProgress.value = 0;
   batchResults.value = [];
   batchError.value = "";
-  const b = batch.value;
-  const limitUptime = batchUptimePreview.value;
-  const mul = b.limitBytesTotalUnit === "G" ? 1024 ** 3 : 1024 ** 2;
-  const limitBytesTotal = b.limitBytesTotalValue
-    ? String(b.limitBytesTotalValue * mul)
+  const mul = cfg.limitBytesTotalUnit === "G" ? 1024 ** 3 : 1024 ** 2;
+  const limitBytesTotal = cfg.limitBytesTotalValue
+    ? String(cfg.limitBytesTotalValue * mul)
     : "";
   const usedNames = new Set<string>();
-  for (let i = 0; i < b.count; i++) {
-    const name = generateName(charset, b.nameLength, usedNames);
+  for (let i = 0; i < cfg.count; i++) {
+    const name = generateName(charset, cfg.nameLength, usedNames);
     usedNames.add(name);
     const password = generatePassword(
-      b.passwordMode,
+      cfg.passwordMode,
       name,
-      b.fixedPassword,
+      cfg.fixedPassword,
       charset,
-      b.nameLength,
+      cfg.nameLength,
     );
     batchCurrentName.value = name;
     try {
       await createHotspotUser(store.activeId, {
         name,
         password,
-        profile: b.profile,
-        limitUptime,
+        profile: cfg.profile,
+        limitUptime: cfg.uptimePreview,
         limitBytesTotal,
         rateLimit: "",
-        comment: b.comment,
+        comment: cfg.comment,
         expiryComment: "",
-        price: profileMetas.value[b.profile]?.price ?? "",
+        price: profileMetas.value[cfg.profile]?.price ?? "",
         currency: hotspotSettings.value.currency ?? "",
       });
       batchResults.value.push({ name, password, ok: true });
@@ -1484,7 +1400,8 @@ function printVouchers(
   entries: { name: string; password: string; profile?: string }[],
 ) {
   const v = hotspotSettings.value.voucher;
-  const businessName = v?.businessName ?? hotspotSettings.value.hotspotName ?? "";
+  const businessName =
+    v?.businessName ?? hotspotSettings.value.hotspotName ?? "";
   const showValidity = v?.showValidity ?? true;
   const showPrice = v?.showPrice ?? true;
   const currency = hotspotSettings.value.currency ?? "";
@@ -1494,7 +1411,8 @@ function printVouchers(
     const meta = profileMetas.value[r.profile || "default"];
     const validity = meta?.validity ?? "";
     const price = meta?.price ?? "";
-    const priceStr = showPrice && price ? `${price}${currency ? " " + currency : ""}` : "";
+    const priceStr =
+      showPrice && price ? `${price}${currency ? " " + currency : ""}` : "";
     const uptimeStr = showValidity && validity ? validity : "";
     return { name: r.name, password: r.password, priceStr, uptimeStr };
   });
@@ -1520,14 +1438,15 @@ function printVouchers(
       .num{font-size:6pt;color:#d1d5db;margin-left:auto;padding-left:3mm}
       @media print{body{padding:4mm}.grid{gap:4mm}}
     `;
-    const cards = items.map(({ name, password, priceStr, uptimeStr }, i) => {
-      const validityRow = uptimeStr
-        ? `<div class="row"><span class="lbl">Valid for</span><span class="val-sm">${uptimeStr}</span></div>`
-        : "";
-      return `<div class="card"><div class="header"><span class="biz">${businessName || "WiFi Voucher"}</span>${priceStr ? `<span class="price">${priceStr}</span>` : ""}<span class="num">#${i + 1}</span></div><div class="body"><div class="row"><span class="lbl">Username</span><span class="val">${name}</span></div><div class="row"><span class="lbl">Password</span><span class="val">${password}</span></div>${validityRow}</div></div>`;
-    }).join("");
+    const cards = items
+      .map(({ name, password, priceStr, uptimeStr }, i) => {
+        const validityRow = uptimeStr
+          ? `<div class="row"><span class="lbl">Valid for</span><span class="val-sm">${uptimeStr}</span></div>`
+          : "";
+        return `<div class="card"><div class="header"><span class="biz">${businessName || "WiFi Voucher"}</span>${priceStr ? `<span class="price">${priceStr}</span>` : ""}<span class="num">#${i + 1}</span></div><div class="body"><div class="row"><span class="lbl">Username</span><span class="val">${name}</span></div><div class="row"><span class="lbl">Password</span><span class="val">${password}</span></div>${validityRow}</div></div>`;
+      })
+      .join("");
     body = `<div class="grid">${cards}</div>`;
-
   } else {
     // card (default) — 6-up compact grid
     css = `
@@ -1546,20 +1465,26 @@ function printVouchers(
       .num{font-size:6pt;color:#d1d5db;text-align:right;margin-top:auto;padding-top:1mm}
       @media print{body{padding:4mm}.grid{gap:3mm}}
     `;
-    const cards = items.map(({ name, password, priceStr, uptimeStr }, i) => {
-      const headerLine = priceStr || uptimeStr
-        ? `<div class="header"><span class="validity">${uptimeStr}</span><span class="price">${priceStr}</span></div>`
-        : "";
-      const bizLine = businessName ? `<div class="biz">${businessName}</div>` : "";
-      return `<div class="card">${headerLine}<div class="creds"><div class="cred-col"><div class="lbl">Username</div><div class="val">${name}</div></div><div class="divider"></div><div class="cred-col"><div class="lbl">Password</div><div class="val">${password}</div></div></div>${bizLine}<div class="num">#${i + 1}</div></div>`;
-    }).join("");
+    const cards = items
+      .map(({ name, password, priceStr, uptimeStr }, i) => {
+        const headerLine =
+          priceStr || uptimeStr
+            ? `<div class="header"><span class="validity">${uptimeStr}</span><span class="price">${priceStr}</span></div>`
+            : "";
+        const bizLine = businessName
+          ? `<div class="biz">${businessName}</div>`
+          : "";
+        return `<div class="card">${headerLine}<div class="creds"><div class="cred-col"><div class="lbl">Username</div><div class="val">${name}</div></div><div class="divider"></div><div class="cred-col"><div class="lbl">Password</div><div class="val">${password}</div></div></div>${bizLine}<div class="num">#${i + 1}</div></div>`;
+      })
+      .join("");
     body = `<div class="grid">${cards}</div>`;
   }
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Vouchers</title><style>${css}</style></head><body>${body}</body></html>`;
 
   const iframe = document.createElement("iframe");
-  iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px";
+  iframe.style.cssText =
+    "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px";
   document.body.appendChild(iframe);
   iframe.srcdoc = html;
   iframe.onload = () => {
@@ -1580,7 +1505,7 @@ function printSelected() {
 }
 
 function printResults() {
-  const profileName = batch.value.profile || "default";
+  const profileName = lastBatchProfile.value || "default";
   printVouchers(
     batchResults.value
       .filter((r) => r.ok)
@@ -1608,10 +1533,18 @@ function extractExpEpoch(comment: string | undefined): number | null {
 
 function userStatus(
   u: Record<string, string>,
-): "disabled" | "expired" | "limit-reached" | "waiting" | "active" {
+):
+  | "disabled"
+  | "expired"
+  | "expires-soon"
+  | "limit-reached"
+  | "waiting"
+  | "active" {
   if (u.disabled === "true") return "disabled";
   const epoch = extractExpEpoch(u.comment);
-  if (epoch !== null && epoch < Math.floor(Date.now() / 1000)) return "expired";
+  const now = Math.floor(Date.now() / 1000);
+  if (epoch !== null && epoch < now) return "expired";
+  if (epoch !== null && epoch - now < 86400) return "expires-soon";
   if (isUptimeExhausted(u)) return "limit-reached";
   if (epoch === null) return "waiting";
   return "active";
@@ -1660,7 +1593,6 @@ function formatSeconds(secs: number): string {
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }
-
 
 function displayComment(comment: string | undefined): string {
   if (!comment) return "—";

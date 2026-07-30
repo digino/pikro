@@ -14,8 +14,9 @@ skills-lock.json
 !.claude/rules/
 !.claude/agents/
 
-# Private strategy — keep in the working tree, never publish
+# Keep in the working tree, never publish
 docs/roadmap.md
+docs/architecture.md
 
 # OS / editor junk
 **/.DS_Store

@@ -4,16 +4,24 @@
   >
     <!-- Logo -->
     <div class="flex items-center gap-2 px-4 pt-4 pb-3.5">
-      <span class="text-lg font-bold tracking-tight text-text-primary">pikro</span>
+      <span class="text-lg font-bold tracking-tight text-text-primary"
+        >pikro</span
+      >
     </div>
 
     <!-- Router selector -->
     <div class="px-3 pb-3">
-      <SelectRoot :model-value="store.activeId ?? ''" @update:model-value="onSelectRouter">
+      <SelectRoot
+        :model-value="store.activeId ?? ''"
+        @update:model-value="onSelectRouter"
+      >
         <SelectTrigger
           class="flex items-center gap-1.5 w-full p-2 text-sm font-medium bg-surface border border-border rounded-lg text-text-primary cursor-pointer transition-colors hover:bg-muted hover:border-muted focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1"
         >
-          <SelectValue placeholder="No router selected" class="flex-1 truncate text-left" />
+          <SelectValue
+            placeholder="No router selected"
+            class="flex-1 truncate text-left"
+          />
           <ChevronDownIcon class="size-4 text-text-secondary shrink-0" />
         </SelectTrigger>
         <SelectPortal>
@@ -23,7 +31,10 @@
             :side-offset="3"
           >
             <SelectViewport class="p-1">
-              <div v-if="store.routers.length === 0" class="px-3 py-2 text-sm text-text-muted">
+              <div
+                v-if="store.routers.length === 0"
+                class="px-3 py-2 text-sm text-text-muted"
+              >
                 No routers configured
               </div>
               <SelectItem
@@ -57,9 +68,11 @@
               :key="item.to"
               :to="item.to"
               class="flex items-center font-semibold gap-2 p-1.75 rounded-lg transition-colors"
-              :class="isActive(item.to)
-                ? 'bg-muted text-text-primary'
-                : 'text-text-secondary hover:bg-surface hover:text-text-primary'"
+              :class="
+                isActive(item.to)
+                  ? 'bg-base text-text-primary'
+                  : 'text-text-secondary hover:bg-base hover:text-text-primary'
+              "
             >
               <component :is="item.icon" class="size-5 shrink-0" />
               <span>{{ item.label }}</span>
@@ -72,12 +85,18 @@
     <div class="flex-1" />
 
     <!-- Footer -->
-    <div class="px-4 py-3 border-t border-border flex items-center justify-between">
+    <div
+      class="px-4 py-3 border-t border-border flex items-center justify-between"
+    >
       <span class="text-xs text-text-muted font-mono">{{ appVersion }}</span>
       <button
         type="button"
         class="size-7 flex items-center justify-center rounded-md text-text-muted hover:text-text-primary hover:bg-surface transition-colors"
-        :title="themeStore.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+        :title="
+          themeStore.theme === 'dark'
+            ? 'Switch to light mode'
+            : 'Switch to dark mode'
+        "
         @click="themeStore.toggle()"
       >
         <SunIcon v-if="themeStore.theme === 'dark'" class="size-4" />
@@ -88,73 +107,89 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute, useRouter } from 'vue-router'
-import { type FunctionalComponent } from 'vue'
+import { useRoute, useRouter } from "vue-router";
+import { type FunctionalComponent } from "vue";
 import {
-  SelectRoot, SelectTrigger, SelectValue, SelectPortal,
-  SelectContent, SelectViewport, SelectItem, SelectItemText, SelectItemIndicator,
-} from 'reka-ui'
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPortal,
+  SelectContent,
+  SelectViewport,
+  SelectItem,
+  SelectItemText,
+  SelectItemIndicator,
+} from "reka-ui";
 import {
-  ChevronDownIcon, CheckCircleIcon,
-  Squares2X2Icon, CircleStackIcon,
-  BoltIcon, WrenchScrewdriverIcon, UsersIcon, RectangleGroupIcon, Cog6ToothIcon, ClipboardDocumentListIcon,
-  ChartBarIcon, SunIcon, MoonIcon,
-} from '@heroicons/vue/24/outline'
-import { useRoutersStore } from '@/stores/routers'
-import { useThemeStore } from '@/stores/theme'
+  ChevronDownIcon,
+  CheckCircleIcon,
+  Squares2X2Icon,
+  CircleStackIcon,
+  SignalIcon,
+  BoltIcon,
+  WrenchScrewdriverIcon,
+  UsersIcon,
+  RectangleGroupIcon,
+  Cog6ToothIcon,
+  ClipboardDocumentListIcon,
+  ChartBarIcon,
+  SunIcon,
+  MoonIcon,
+} from "@heroicons/vue/24/outline";
+import { useRoutersStore } from "@/stores/routers";
+import { useThemeStore } from "@/stores/theme";
 
-const themeStore = useThemeStore()
+const themeStore = useThemeStore();
 
-defineProps<{ appVersion: string }>()
+defineProps<{ appVersion: string }>();
 
-const store = useRoutersStore()
-const route = useRoute()
-const router = useRouter()
+const store = useRoutersStore();
+const route = useRoute();
+const router = useRouter();
 
 function isActive(to: string) {
-  return route.path === to || route.path.startsWith(to + '/')
+  return route.path === to || route.path.startsWith(to + "/");
 }
 
 interface NavItem {
-  to: string
-  icon: FunctionalComponent
-  label: string
+  to: string;
+  icon: FunctionalComponent;
+  label: string;
 }
 
 interface NavSection {
-  label: string
-  items: NavItem[]
+  label: string;
+  items: NavItem[];
 }
 
 const navSections: NavSection[] = [
   {
-    label: 'General',
+    label: "General",
     items: [
-      { to: '/dashboard', icon: Squares2X2Icon, label: 'Dashboard' },
-      { to: '/routers',   icon: CircleStackIcon, label: 'Routers' },
+      { to: "/dashboard", icon: Squares2X2Icon, label: "Dashboard" },
+      { to: "/network",   icon: SignalIcon,      label: "Network" },
+      { to: "/routers",   icon: CircleStackIcon, label: "Routers" },
     ],
   },
   {
-    label: 'Hotspot',
+    label: "Hotspot",
     items: [
-      { to: '/hotspot/setup',     icon: WrenchScrewdriverIcon, label: 'Setup' },
-      { to: '/hotspot/users',     icon: UsersIcon,          label: 'Users' },
-      { to: '/hotspot/profiles',  icon: RectangleGroupIcon, label: 'Profiles' },
-      { to: '/hotspot/reports',   icon: ChartBarIcon,                label: 'Reports' },
-      { to: '/hotspot/settings',  icon: Cog6ToothIcon,               label: 'Settings' },
-      { to: '/hotspot/logs',     icon: ClipboardDocumentListIcon,   label: 'Logs' },
+      { to: "/hotspot/setup", icon: WrenchScrewdriverIcon, label: "Setup" },
+      { to: "/hotspot/users", icon: UsersIcon, label: "Users" },
+      { to: "/hotspot/profiles", icon: RectangleGroupIcon, label: "Profiles" },
+      { to: "/hotspot/reports", icon: ChartBarIcon, label: "Reports" },
+      { to: "/hotspot/settings", icon: Cog6ToothIcon, label: "Settings" },
+      { to: "/hotspot/logs", icon: ClipboardDocumentListIcon, label: "Logs" },
     ],
   },
   {
-    label: 'Tools',
-    items: [
-      { to: '/speedtest', icon: BoltIcon, label: 'Speed Test' },
-    ],
+    label: "Tools",
+    items: [{ to: "/speedtest", icon: BoltIcon, label: "Speed Test" }],
   },
-]
+];
 
 function onSelectRouter(id: string) {
-  store.select(id)
-  router.push('/dashboard')
+  store.select(id);
+  router.push("/dashboard");
 }
 </script>

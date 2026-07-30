@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Brand primary — theme-invariant amber-orange ─────── */
-  --color-primary:       #ed7e15;
-  --color-primary-hover: #d4710f;
-  --color-primary-fg:    #ffffff;
+  /* ── Brand primary — golden amber ────────────────────── */
+  --color-primary:       #ffbf00;
+  --color-primary-hover: #e6ac00;
+  --color-primary-fg:    #1a1000;
 
   /* ── Dark palette (default) ───────────────────────────── */
   --color-base:      #09090b;
@@ -70,7 +70,8 @@ html, body, #app {
 ::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
 
 /* ── Selection ────────────────────────────────────────────── */
-::selection { background: rgba(255,255,255,0.15); color: #fafafa; }
+::selection { background: #ffbf0040; color: var(--color-text-primary); }
+[data-theme="light"] ::selection { background: #ffbf0060; }
 
 /* ── Buttons ──────────────────────────────────────────────── */
 @utility btn {
@@ -82,7 +83,8 @@ html, body, #app {
   @apply px-2.5 py-1 text-xs gap-1;
 }
 @utility btn-primary {
-  @apply border-transparent text-white bg-primary hover:bg-primary-hover;
+  @apply border-transparent bg-accent hover:bg-accent-hover;
+  color: var(--color-base);
 }
 @utility btn-ghost {
   @apply border-border text-text-secondary bg-transparent
