@@ -145,7 +145,7 @@
             </span>
             <span class="text-xs text-text-muted">{{ activeCurrency || "" }}</span>
           </div>
-          <div class="h-64">
+          <div class="h-96">
             <SalesBarChart :points="chartPoints" :currency="activeCurrency" />
           </div>
         </div>

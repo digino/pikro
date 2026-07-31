@@ -45,7 +45,12 @@
                   {{ p["rate-limit"] }}
                 </p>
               </div>
-              <TicketIcon class="size-4 text-text-muted shrink-0" />
+              <div>
+                <button class="btn btn-sm">
+                  Generate
+                  <TicketIcon class="size-4" />
+                </button>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">

@@ -10,7 +10,7 @@
       </div>
       <EmptyState v-else-if="leases.length === 0" message="No DHCP leases found" />
       <template v-else>
-        <table class="w-full text-xs">
+        <table class="w-full text-sm">
           <thead>
             <tr class="text-text-muted border-b border-border">
               <th class="text-left pb-2 font-medium">Host</th>

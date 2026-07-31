@@ -10,7 +10,7 @@
       </div>
       <EmptyState v-else-if="hosts.length === 0" message="No connected hosts found" />
       <template v-else>
-        <table class="w-full text-xs">
+        <table class="w-full text-sm">
           <thead>
             <tr class="text-text-muted border-b border-border">
               <th class="text-left pb-2 font-medium">MAC address</th>

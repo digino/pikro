@@ -3,191 +3,94 @@
     <NoRouterSelected v-if="!store.activeId" />
 
     <div v-else class="grid gap-4">
-      <!-- ── Row 1: hero ── -->
-      <div class="grid gap-4" style="grid-template-columns: 42% 1fr">
-        <!-- System card: router image | live stats | health ring -->
+      <!-- ── Row 1: hotspot ── -->
+      <DashboardCard title="Hotspot">
+        <template #actions>
+          <RouterLink to="/hotspot/vouchers" class="btn btn-ghost">
+            Generate vouchers
+          </RouterLink>
+          <RouterLink to="/hotspot/users" class="btn btn-primary">
+            Manage
+          </RouterLink>
+        </template>
+
         <div
-          class="grid rounded-xl border border-border p-5 bg-surface gap-5"
-          style="grid-template-columns: auto 1fr auto"
+          v-if="hotspotLoading && totalUsers === 0"
+          class="flex items-center justify-center py-4"
         >
-
-          <!-- LEFT: router illustration + device identity -->
-          <div class="flex flex-col items-center gap-2">
-            <RouterArt
-              :board-name="resource['board-name'] ?? ''"
-              :size="120"
-              :power-led="healthColor"
-              :wifi-led="activeSessions > 0 ? 'var(--color-green)' : 'var(--color-border)'"
-              wan-led="var(--color-amber)"
-            />
-            <!-- Device identity -->
-            <div class="text-center space-y-0.5">
-              <div class="text-sm font-semibold text-text-primary font-mono leading-tight">
-                {{ resource['board-name'] || store.active()?.name || '—' }}
-              </div>
-              <div class="text-xs text-text-muted font-mono leading-tight">
-                RouterOS {{ resource['version']?.split(' ')[0] || '—' }}
-              </div>
-            </div>
-          </div>
-
-          <!-- MIDDLE: live stats -->
-          <div class="flex flex-col justify-center min-w-0">
-            <div v-if="loading" class="flex items-center gap-2 text-sm text-text-muted">
-              <span class="spinner spinner--sm" /> Loading…
-            </div>
-            <div v-else-if="error" class="flex items-center gap-1.5 text-xs text-red">
-              <ExclamationTriangleIcon class="size-3.5 shrink-0" />{{ error }}
-            </div>
-            <div v-else class="grid grid-cols-1 text-xs">
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 ">
-                <span class="text-text-muted">Uptime</span>
-                <span class="font-mono font-semibold text-text-primary">{{ resource["uptime"] ?? "—" }}</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 ">
-                <span class="text-text-muted">CPU</span>
-                <span class="font-mono font-semibold text-text-primary">{{ resource["cpu-load"] ?? "—" }}%</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 ">
-                <span class="text-text-muted">Free RAM</span>
-                <span class="font-mono font-semibold text-text-primary">{{ formatBytes(freeMemory) }}</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 ">
-                <span class="text-text-muted">Free disk</span>
-                <span class="font-mono font-semibold text-text-primary">{{ formatBytes(parseInt(resource["free-hdd-space"] ?? "0") || 0) }}</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60 ">
-                <span class="text-text-muted">Date</span>
-                <span class="font-mono font-semibold text-text-primary">{{ routerDate || "—" }}</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5 ">
-                <span class="text-text-muted">Time</span>
-                <span class="font-mono font-semibold text-text-primary">{{ routerTime || "—" }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- RIGHT: health ring -->
-          <div class="flex flex-col items-center justify-center gap-2 shrink-0">
-            <div class="relative">
-              <svg width="84" height="84" viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-border)" stroke-width="8"/>
-                <circle
-                  cx="60" cy="60" r="50" fill="none"
-                  :stroke="healthColor"
-                  stroke-width="8"
-                  stroke-linecap="round"
-                  :stroke-dasharray="ringCirc"
-                  :stroke-dashoffset="ringOffset"
-                  transform="rotate(-90 60 60)"
-                  style="transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease"
-                />
-              </svg>
-              <div class="absolute inset-0 flex flex-col items-center justify-center">
-                <span class="font-mono text-lg font-bold tracking-tight text-text-primary">{{ healthScore }}</span>
-                <span class="text-xs font-bold text-text-secondary">Health</span>
-              </div>
-            </div>
-          </div>
-
+          <span class="spinner spinner--sm" />
         </div>
+        <template v-else>
+          <div class="grid grid-cols-4 gap-3 tracking-tight text-sm font-semibold text-secondary">
+            <div class="rounded-lg border border-border p-3 bg-base">
+              <div class="text-text-secondary">Users</div>
+              <div class="font-mono text-2xl font-bold mt-1 text-text-primary">{{ totalUsers }}</div>
+            </div>
+            <div class="rounded-lg border border-border p-3 bg-base">
+              <div class="text-text-secondary">Active</div>
+              <div class="font-mono text-2xl font-bold mt-1">{{ activeSessions }}</div>
+            </div>
+            <div class="rounded-lg border border-border p-3 bg-base">
+              <div class="text-text-secondary">Expired</div>
+              <div class="font-mono text-2xl font-bold mt-1">{{ expiredUsers }}</div>
+            </div>
+            <div class="rounded-lg border border-border p-3 bg-base">
+              <div class="text-text-secondary">Disabled</div>
+              <div class="font-mono text-2xl font-bold mt-1 text-text-secondary">{{ disabledUsers }}</div>
+            </div>
+          </div>
 
-        <!-- Right column: hotspot card -->
-        <div>
-          <!-- Hotspot card -->
           <div
-            class="rounded-xl border border-border p-4 grid gap-3 bg-surface"
-            style="grid-template-rows: auto 1fr auto"
+            v-if="cleanupInstalled !== null"
+            class="flex items-center gap-3 p-3 rounded-lg border border-border bg-base"
           >
-            <div class="flex items-center justify-between">
-              <span class="font-semibold text-text-primary">Hotspot</span>
-              <RouterLink to="/hotspot/users" class="btn btn-primary"
-                >Manage</RouterLink
-              >
+            <component
+              :is="cleanupInstalled ? CheckCircleIcon : ExclamationTriangleIcon"
+              class="size-5 shrink-0"
+              :class="cleanupInstalled ? 'text-green' : 'text-amber'"
+            />
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold text-text-primary">
+                Auto-cleanup {{ cleanupInstalled ? "active" : "not configured" }}
+              </div>
+              <div class="text-xs text-text-secondary mt-0.5">
+                {{
+                  cleanupInstalled
+                    ? `Expired vouchers are removed automatically every ${cleanupIntervalLabel}.`
+                    : "Not configured — expired users accumulate until removed manually."
+                }}
+              </div>
             </div>
-            <div
-              v-if="hotspotLoading && totalUsers === 0"
-              class="flex items-center justify-center"
+            <RouterLink
+              to="/hotspot/settings"
+              class="btn btn-ghost"
+              :class="{ 'text-amber': !cleanupInstalled }"
             >
-              <span class="spinner spinner--sm" />
-            </div>
-            <template v-else>
-              <div
-                class="grid grid-cols-4 gap-3 tracking-tight text-sm font-semibold text-secondary"
-              >
-                <div class="rounded-lg border border-border p-3 bg-base">
-                  <div class="text-text-secondary">Users</div>
-                  <div class="font-mono text-2xl font-bold mt-1 text-text-primary">{{ totalUsers }}</div>
-                </div>
-                <div class="rounded-lg border border-border p-3 bg-base">
-                  <div class="text-text-secondary">Active</div>
-                  <div class="font-mono text-2xl font-bold mt-1 text-green">{{ activeSessions }}</div>
-                </div>
-                <div class="rounded-lg border border-border p-3 bg-base">
-                  <div class="text-text-secondary">Expired</div>
-                  <div class="font-mono text-2xl font-bold mt-1 text-amber">{{ expiredUsers }}</div>
-                </div>
-                <div class="rounded-lg border border-border p-3 bg-base">
-                  <div class="text-text-secondary">Disabled</div>
-                  <div class="font-mono text-2xl font-bold mt-1 text-text-secondary">{{ disabledUsers }}</div>
-                </div>
-              </div>
-              <div
-                v-if="cleanupInstalled !== null"
-                class="flex items-center gap-2.5 p-3 rounded-lg border border-border bg-base"
-              >
-                <component
-                  :is="cleanupInstalled ? CheckCircleIcon : ExclamationTriangleIcon"
-                  class="size-4 shrink-0"
-                  :class="cleanupInstalled ? 'text-green' : 'text-amber'"
-                />
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm tracking-tight text-text-primary">
-                    Auto-cleanup
-                  </div>
-                  <div class="text-xs text-text-secondary mt-1">
-                    {{
-                      cleanupInstalled
-                        ? "Scheduler active"
-                        : "Not configured — expired users accumulate"
-                    }}
-                  </div>
-                </div>
-                <RouterLink
-                  v-if="!cleanupInstalled"
-                  to="/hotspot/settings"
-                  class="text-amber btn btn-ghost"
-                >
-                  Configure
-                </RouterLink>
-              </div>
-            </template>
+              {{ cleanupInstalled ? "Change" : "Configure" }}
+            </RouterLink>
           </div>
-        </div>
-      </div>
+        </template>
+      </DashboardCard>
 
-      <!-- ── Row 2: sales report + active sessions ── -->
+      <!-- ── Row 2: sales + active sessions ── -->
       <div class="grid grid-cols-2 gap-4">
         <!-- Sales report -->
-        <div
-          class="rounded-xl border border-border p-5 grid gap-3 bg-surface"
-          style="grid-template-rows: auto 1fr"
-        >
-          <div class="flex items-center justify-between">
-            <span class="font-semibold text-text-primary">Sales this month</span>
-            <RouterLink to="/hotspot/reports" class="btn btn-ghost btn-sm"
-              >View reports</RouterLink
-            >
-          </div>
+        <DashboardCard title="Sales this month">
+          <template #actions>
+            <RouterLink to="/hotspot/reports" class="btn btn-ghost">
+              View reports
+            </RouterLink>
+          </template>
+
           <div
             v-if="salesLoading && salesLedger.length === 0"
-            class="flex items-center justify-center"
+            class="flex items-center justify-center py-4"
           >
             <span class="spinner spinner--sm" />
           </div>
           <EmptyState v-else-if="salesLedger.length === 0" message="No sales recorded yet" />
-          <div v-else class="flex flex-col gap-3">
-            <div class="grid grid-cols-2 gap-3">
+          <template v-else>
+            <div class="grid grid-cols-3 gap-3">
               <div class="rounded-lg border border-border p-3 bg-base">
                 <div class="text-sm font-medium text-text-secondary">Vouchers generated</div>
                 <div class="font-mono text-2xl font-bold mt-1 text-text-primary">{{ monthSales.generated }}</div>
@@ -196,24 +99,25 @@
                 <div class="text-sm font-medium text-text-secondary">Revenue</div>
                 <div class="font-mono text-2xl font-bold mt-1">{{ fmtAmount(monthSales.revenue) }}</div>
               </div>
+              <div class="rounded-lg border border-border p-3 bg-base" title="Sum of revenue from the last 30 days — a rolling run-rate, not a true subscription MRR.">
+                <div class="text-sm font-medium text-text-secondary">Revenue (30d)</div>
+                <div class="font-mono text-2xl font-bold mt-1">{{ fmtAmount(revenue30d) }}</div>
+              </div>
             </div>
             <div class="h-40">
               <SalesBarChart :points="dailySalesPoints" :currency="salesCurrency" />
             </div>
-          </div>
-        </div>
+          </template>
+        </DashboardCard>
 
         <!-- Active sessions -->
-        <div
-          class="rounded-xl border border-border p-5 grid gap-3 bg-surface"
-          style="grid-template-rows: auto 1fr"
-        >
-          <div class="flex items-center justify-between">
-            <span class="font-semibold text-text-primary">Active sessions</span>
-            <RouterLink to="/hotspot/users" class="btn btn-ghost btn-sm"
-              >View all</RouterLink
-            >
-          </div>
+        <DashboardCard title="Active sessions">
+          <template #actions>
+            <RouterLink to="/hotspot/users" class="btn btn-ghost">
+              View all
+            </RouterLink>
+          </template>
+
           <div
             v-if="hotspotLoading && activeList.length === 0"
             class="flex justify-center py-6"
@@ -261,7 +165,100 @@
               </tbody>
             </table>
           </div>
-        </div>
+        </DashboardCard>
+      </div>
+
+      <!-- ── Row 3: system + bandwidth ── -->
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4 items-stretch">
+        <!-- System card -->
+        <DashboardCard title="System">
+          <div v-if="loading" class="flex items-center gap-2 text-sm text-text-muted py-4 justify-center">
+            <span class="spinner spinner--sm" /> Loading…
+          </div>
+          <div v-else-if="error" class="flex items-center gap-1.5 text-xs text-red py-4 justify-center">
+            <ExclamationTriangleIcon class="size-3.5 shrink-0" />{{ error }}
+          </div>
+          <template v-else>
+            <div class="flex flex-col items-center gap-2">
+              <RouterArt
+                :board-name="resource['board-name'] ?? ''"
+                :size="88"
+                :power-led="healthColor"
+                :wifi-led="activeSessions > 0 ? 'var(--color-green)' : 'var(--color-border)'"
+                wan-led="var(--color-amber)"
+              />
+              <div class="text-center space-y-0.5">
+                <div class="text-sm font-semibold text-text-primary font-mono leading-tight">
+                  {{ resource['board-name'] || store.active()?.name || '—' }}
+                </div>
+                <div class="text-xs text-text-muted font-mono leading-tight">
+                  RouterOS {{ resource['version']?.split(' ')[0] || '—' }}
+                </div>
+              </div>
+              <div class="relative mt-1">
+                <svg width="72" height="72" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-border)" stroke-width="8"/>
+                  <circle
+                    cx="60" cy="60" r="50" fill="none"
+                    :stroke="healthColor"
+                    stroke-width="8"
+                    stroke-linecap="round"
+                    :stroke-dasharray="ringCirc"
+                    :stroke-dashoffset="ringOffset"
+                    transform="rotate(-90 60 60)"
+                    style="transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease"
+                  />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span class="font-mono font-bold tracking-tight text-text-primary">{{ healthScore }}</span>
+                  <span class="text-xs font-bold text-text-secondary">Health</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 text-xs">
+              <div class="flex justify-between items-center py-1.5 border-b border-border/60">
+                <span class="text-text-muted">Uptime</span>
+                <span class="font-mono font-semibold text-text-primary">{{ resource["uptime"] ?? "—" }}</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5 border-b border-border/60">
+                <span class="text-text-muted">CPU</span>
+                <span class="font-mono font-semibold text-text-primary">{{ resource["cpu-load"] ?? "—" }}%</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5 border-b border-border/60">
+                <span class="text-text-muted">Free RAM</span>
+                <span class="font-mono font-semibold text-text-primary">{{ formatBytes(freeMemory) }}</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5 border-b border-border/60">
+                <span class="text-text-muted">Free disk</span>
+                <span class="font-mono font-semibold text-text-primary">{{ formatBytes(parseInt(resource["free-hdd-space"] ?? "0") || 0) }}</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5">
+                <span class="text-text-muted">Date &amp; time</span>
+                <span class="font-mono font-semibold text-text-primary">{{ routerDate || "—" }} {{ routerTime || "" }}</span>
+              </div>
+            </div>
+          </template>
+        </DashboardCard>
+
+        <!-- Bandwidth monitor -->
+        <DashboardCard title="Bandwidth">
+          <template #actions>
+            <div class="flex items-center gap-1.5">
+              <span class="size-2 rounded-sm shrink-0" style="background:#22d3ee"/>
+              <span class="text-xs text-text-secondary">Download</span>
+              <span class="font-mono text-xs font-semibold text-text-primary">{{ curDown }} Mbps</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="size-2 rounded-sm shrink-0" style="background:#f59e0b"/>
+              <span class="text-xs text-text-secondary">Upload</span>
+              <span class="font-mono text-xs font-semibold text-text-primary">{{ curUp }} Mbps</span>
+            </div>
+          </template>
+          <div class="h-full">
+            <BandwidthChart :history="bwHistory" />
+          </div>
+        </DashboardCard>
       </div>
     </div>
   </PageLayout>
@@ -292,6 +289,8 @@ import { formatCompactAmount } from "@/utils/currencies";
 import PageLayout from "@/components/PageLayout.vue";
 import RouterArt from "@/components/router-art/RouterArt.vue";
 import SalesBarChart from "@/components/SalesBarChart.vue";
+import BandwidthChart from "@/components/BandwidthChart.vue";
+import DashboardCard from "@/components/DashboardCard.vue";
 
 const store = useRoutersStore();
 
@@ -305,11 +304,24 @@ const routerDate = ref("");
 const allUsers = ref<Record<string, string>[]>([]);
 const activeList = ref<Record<string, string>[]>([]);
 const cleanupInstalled = ref<boolean | null>(null);
+const cleanupInterval = ref("");
 const hotspotLoading = ref(false);
 const hotspotError = ref("");
 
 const salesLedger = ref<SaleEntry[]>([]);
+const prevYearSalesLedger = ref<SaleEntry[]>([]);
 const salesLoading = ref(false);
+
+const N = 46;
+interface BwPoint {
+  down: number;
+  up: number;
+}
+const bwHistory = ref<BwPoint[]>(
+  Array.from({ length: N }, () => ({ down: 0, up: 0 })),
+);
+const curDown = computed(() => bwHistory.value[N - 1].down.toFixed(2));
+const curUp = computed(() => bwHistory.value[N - 1].up.toFixed(2));
 
 // ── Hotspot computed counts ───────────────────────────────────
 const totalUsers = computed(() => allUsers.value.length);
@@ -329,6 +341,19 @@ const expiredUsers = computed(() => {
 const disabledUsers = computed(
   () => allUsers.value.filter((u) => u.disabled === "true").length,
 );
+
+// Cleanup interval is stored as a router-shorthand duration (e.g. "7d", "12h").
+// Expand it to a human phrase for the dashboard card.
+const cleanupIntervalLabel = computed(() => {
+  const s = cleanupInterval.value;
+  const m = s.match(/^(\d+)([wdhm])$/i);
+  if (!m) return s || "a regular interval";
+  const n = parseInt(m[1]);
+  const unit = { w: "week", d: "day", h: "hour", m: "minute" }[
+    m[2].toLowerCase()
+  ]!;
+  return `${n} ${unit}${n === 1 ? "" : "s"}`;
+});
 
 // ── Health computeds ──────────────────────────────────────────
 const cpuLoad = computed(
@@ -355,13 +380,6 @@ const healthColor = computed(() => {
   if (s >= 75) return "var(--color-green)";
   if (s >= 50) return "var(--color-amber)";
   return "var(--color-red)";
-});
-const healthLabel = computed(() => {
-  if (error.value) return "Unreachable";
-  const s = parseInt(healthScore.value) || 0;
-  if (s >= 75) return "Router reachable";
-  if (s >= 50) return "Router degraded";
-  return "Router under stress";
 });
 const ringCirc = (2 * Math.PI * 50).toFixed(1);
 const ringOffset = computed(() => {
@@ -404,6 +422,7 @@ async function loadHotspot() {
     allUsers.value = users;
     activeList.value = active;
     cleanupInstalled.value = cleanup?.installed ?? null;
+    cleanupInterval.value = cleanup?.interval ?? "";
   } catch (e: any) {
     hotspotError.value = friendlyError(e, "Could not load hotspot data");
   } finally {
@@ -415,10 +434,18 @@ async function loadSales() {
   if (!store.activeId) return;
   salesLoading.value = true;
   try {
-    salesLedger.value = await getSalesLedger(
-      store.activeId,
-      new Date().getFullYear(),
-    );
+    const now = new Date();
+    salesLedger.value = await getSalesLedger(store.activeId, now.getFullYear());
+    // A trailing-30-day window can dip into December of the previous year —
+    // only fetch it when we're actually close enough to the boundary to need it.
+    if (now.getMonth() === 0) {
+      prevYearSalesLedger.value = await getSalesLedger(
+        store.activeId,
+        now.getFullYear() - 1,
+      ).catch(() => []);
+    } else {
+      prevYearSalesLedger.value = [];
+    }
   } catch {
     // non-critical
   } finally {
@@ -437,6 +464,20 @@ async function poll() {
     }
     if (snap.clock["date"]) {
       routerDate.value = snap.clock["date"];
+    }
+    if (snap.traffic.length > 0) {
+      const totalRx = snap.traffic.reduce(
+        (s, i) => s + (parseInt(i["rx-bits-per-second"] ?? "0") || 0),
+        0,
+      );
+      const totalTx = snap.traffic.reduce(
+        (s, i) => s + (parseInt(i["tx-bits-per-second"] ?? "0") || 0),
+        0,
+      );
+      bwHistory.value = [
+        ...bwHistory.value.slice(1),
+        { down: totalRx / 1_000_000, up: totalTx / 1_000_000 },
+      ];
     }
   } catch {
     // non-critical
@@ -472,6 +513,8 @@ watch(
     allUsers.value = [];
     activeList.value = [];
     salesLedger.value = [];
+    prevYearSalesLedger.value = [];
+    bwHistory.value = Array.from({ length: N }, () => ({ down: 0, up: 0 }));
     if (!id) return;
     await Promise.all([loadStatic(), loadHotspot(), loadSales()]);
     await poll();
@@ -510,6 +553,18 @@ const monthSales = computed(() => {
 const salesCurrency = computed(
   () => salesLedger.value.find((e) => e.currency)?.currency ?? "",
 );
+
+// Trailing 30-day revenue run-rate — a rolling total, not a true subscription
+// MRR (vouchers are one-off sales), but gives an at-a-glance performance signal.
+const revenue30d = computed(() => {
+  const cutoff = Date.now() - 30 * 86_400_000;
+  let revenue = 0;
+  for (const e of [...salesLedger.value, ...prevYearSalesLedger.value]) {
+    if (new Date(e.at).getTime() < cutoff) continue;
+    revenue += (parseFloat(e.price) || 0) * e.count;
+  }
+  return revenue;
+});
 
 // By-day breakdown for the current month, for the bar chart.
 const dailySalesPoints = computed(() => {

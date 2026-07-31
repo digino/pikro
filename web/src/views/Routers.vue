@@ -63,7 +63,7 @@
             Factory reset — assign an IP via WinBox first
           </p>
           <button
-            class="btn btn-ghost btn-sm self-start mt-auto"
+            class="btn btn-ghost self-start mt-auto"
             :class="
               isAlreadySaved(d.ip)
                 ? 'cursor-default'

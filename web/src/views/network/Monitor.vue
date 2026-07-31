@@ -66,57 +66,16 @@
           </table>
         </div>
       </div>
-
-      <!-- Recent logs -->
-      <div
-        class="rounded-xl border border-border p-5 grid gap-3 bg-surface"
-        style="grid-template-rows: auto 1fr"
-      >
-        <div class="flex items-center justify-between">
-          <span class="font-semibold text-text-primary">Recent logs</span>
-          <RouterLink to="/hotspot/logs" class="btn btn-ghost btn-sm"
-            >View all</RouterLink
-          >
-        </div>
-        <div
-          v-if="logsLoading && logs.length === 0"
-          class="flex justify-center py-4"
-        >
-          <span class="spinner spinner--sm" />
-        </div>
-        <EmptyState v-else-if="logs.length === 0" size="sm" message="No log entries" />
-        <div v-else class="grid" style="align-content: start">
-          <div
-            v-for="(entry, i) in logs"
-            :key="i"
-            class="flex items-start gap-2 py-1.5 border-b border-border/40 last:border-0"
-          >
-            <span
-              class="shrink-0 mt-1 size-1.5 rounded-full"
-              :style="`background:${logColor(entry.topics)}`"
-            />
-            <div class="min-w-0 flex-1">
-              <p class="text-xs text-text-primary truncate">
-                {{ entry.message }}
-              </p>
-              <p class="text-xs text-text-muted font-mono">
-                {{ entry.time }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { RouterLink } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useRoutersStore } from '@/stores/routers'
-import { getPollSnapshot, getSystemLogs } from '@/api'
+import { getPollSnapshot } from '@/api'
 import PageLayout from '@/components/PageLayout.vue'
 import BandwidthChart from '@/components/BandwidthChart.vue'
 
@@ -127,9 +86,6 @@ const addresses = ref<Record<string, string>[]>([])
 const interfaces = ref<Record<string, string>[]>([])
 const trafficLoading = ref(false)
 const trafficUpdatedAt = ref('')
-
-const logs = ref<Record<string, string>[]>([])
-const logsLoading = ref(false)
 
 const N = 46
 interface BwPoint { down: number; up: number }
@@ -159,32 +115,14 @@ async function poll() {
   }
 }
 
-async function loadLogs() {
-  if (!store.activeId) return
-  logsLoading.value = true
-  try {
-    const all = await getSystemLogs(store.activeId)
-    logs.value = all
-      .filter((e) => (e.topics ?? '').toLowerCase().includes('hotspot'))
-      .slice(0, 8)
-  } catch {
-    // non-critical
-  } finally {
-    logsLoading.value = false
-  }
-}
-
 let pollTimer: ReturnType<typeof setInterval>
-let logTimer: ReturnType<typeof setInterval>
 
 function startTimers() {
   pollTimer = setInterval(() => { if (!document.hidden) poll() }, 5000)
-  logTimer = setInterval(() => { if (!document.hidden) loadLogs() }, 30_000)
 }
 
 function stopTimers() {
   clearInterval(pollTimer)
-  clearInterval(logTimer)
 }
 
 watch(() => store.activeId, async (id) => {
@@ -193,9 +131,8 @@ watch(() => store.activeId, async (id) => {
   traffic.value = []
   addresses.value = []
   interfaces.value = []
-  logs.value = []
   if (!id) return
-  await Promise.all([poll(), loadLogs()])
+  await poll()
   startTimers()
 }, { immediate: true })
 
@@ -217,15 +154,6 @@ function ifaceStatus(name: string): 'up' | 'down' | 'disabled' | null {
   if (!iface) return null
   if (iface.disabled === 'true') return 'disabled'
   return iface.running === 'true' ? 'up' : 'down'
-}
-
-function logColor(topics: string | undefined): string {
-  if (!topics) return 'var(--color-text-muted)'
-  const t = topics.toLowerCase()
-  if (t.includes('error') || t.includes('critical')) return 'var(--color-red)'
-  if (t.includes('warning')) return 'var(--color-amber)'
-  if (t.includes('info')) return 'var(--color-green)'
-  return 'var(--color-text-muted)'
 }
 
 function formatBps(val: string | undefined): string {
