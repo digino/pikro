@@ -99,6 +99,23 @@ func (c *Client) HotspotActive() ([]map[string]any, error) {
 	return replyToList(reply), nil
 }
 
+// HotspotHosts returns all devices the hotspot has ever seen on the network
+// (/ip/hotspot/host) — MAC/IP/server/bridge-port for any connected client,
+// not just currently-authenticated sessions (that's HotspotActive).
+func (c *Client) HotspotHosts() ([]map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	reply, err := conn.Run("/ip/hotspot/host/print")
+	if err != nil {
+		return nil, err
+	}
+	return replyToList(reply), nil
+}
+
 // HotspotProfiles returns available hotspot user profiles.
 func (c *Client) HotspotProfiles() ([]map[string]any, error) {
 	conn, err := c.connect()
@@ -108,6 +125,22 @@ func (c *Client) HotspotProfiles() ([]map[string]any, error) {
 	defer conn.Close()
 
 	reply, err := conn.Run("/ip/hotspot/user/profile/print")
+	if err != nil {
+		return nil, err
+	}
+	return replyToList(reply), nil
+}
+
+// AddressPools returns configured IP address pools (/ip/pool), so an admin
+// can pick which pool new hotspot users are assigned to.
+func (c *Client) AddressPools() ([]map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	reply, err := conn.Run("/ip/pool/print")
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +160,12 @@ type HotspotProfileParams struct {
 }
 
 // buildOnLoginScript returns a RouterOS on-login script that stamps
-// exp:<value> into the user comment the first time they log in.
+// exp:<value> into the user comment the first time they log in, preserving
+// any existing operator note by appending it after the marker (space-
+// separated) rather than overwriting the whole field. extractExpEpoch and
+// isUptimeExhausted (frontend) and the cleanup script (RouterOS side) only
+// ever read the exp:<value> prefix, so anything after it is safe to carry
+// along unexamined.
 // On ROS 7.12+ it uses Unix epoch seconds; on v6/early v7 it uses
 // "YYYY-MM-DD HH:MM:SS" which the v6 cleanup script parses as an integer.
 func buildOnLoginScript(validitySecs int64, rosVersion string) string {
@@ -141,7 +179,10 @@ func buildOnLoginScript(validitySecs int64, rosVersion string) string {
 :if ([:len $uid] > 0) do={
   :local c [:tostr [/ip/hotspot/user/get $uid comment]]
   :if ([:len $c] < 5 || [:pick $c 0 4] != "exp:") do={
-    /ip/hotspot/user/set $uid comment="exp:$expEpoch"
+    :local newComment ("exp:" . $expEpoch)
+    :if ([:len $c] > 0) do={ :set newComment ($newComment . " " . $c) }
+    :log info ("pikro-on-login: stamping $user (exp=$expEpoch now=$nowEpoch)")
+    /ip/hotspot/user/set $uid comment=$newComment
   }
 }`, validitySecs)
 	}
@@ -168,7 +209,10 @@ func buildOnLoginScript(validitySecs int64, rosVersion string) string {
     }
     :if ($xlen > 15) do={ :set expStr $exp }
     :if ($expStr != "") do={
-      /ip/hotspot/user/set $uid comment="exp:$expStr"
+      :local newComment ("exp:" . $expStr)
+      :if ([:len $c] > 0) do={ :set newComment ($newComment . " " . $c) }
+      :log info ("pikro-on-login: stamping $user (exp=$expStr)")
+      /ip/hotspot/user/set $uid comment=$newComment
     }
     /system scheduler remove [find where name=$user]
   }
@@ -311,12 +355,20 @@ func (c *Client) ToggleHotspotUser(id string, disabled bool) error {
 }
 
 // UpdateHotspotUserParams holds the editable fields for a hotspot user.
+//
+// Comment is intentionally not editable here: it doubles as Pikro's own
+// exp:<value> expiry marker once a user has logged in (see
+// buildOnLoginScript), and the Edit dialog only ever showed/edited the
+// operator-note half of it — so a plain overwrite would silently discard
+// the marker on every edit, permanently disabling time-based cleanup for
+// that user. Until there's a design that safely preserves the marker while
+// editing the note, comment editing is removed rather than left as a latent
+// data-loss trap.
 type UpdateHotspotUserParams struct {
 	Password        string
 	Profile         string
 	LimitUptime     string
 	LimitBytesTotal string
-	Comment         string
 }
 
 // UpdateHotspotUser updates an existing hotspot user by RouterOS ID.
@@ -339,10 +391,6 @@ func (c *Client) UpdateHotspotUser(id string, p UpdateHotspotUserParams) error {
 	// Only send limit-bytes-total when non-empty — RouterOS requires an integer
 	if p.LimitBytesTotal != "" {
 		args = append(args, "=limit-bytes-total="+p.LimitBytesTotal)
-	}
-	// Send comment always so it can be cleared, but skip the "—" placeholder
-	if p.Comment != "—" {
-		args = append(args, "=comment="+p.Comment)
 	}
 	_, err = conn.RunArgs(args)
 	return err
@@ -670,27 +718,76 @@ func replyToList(reply *ros.Reply) []map[string]any {
 
 const cleanupScriptName = "pikro-cleanup"
 
-// durationToSecsFn is a RouterOS script snippet defining a local function that
-// parses combinable duration strings like "1h30m", "11m44s", "1w", "0s" (the
-// format RouterOS itself reports for uptime/limit-uptime) into total seconds.
+// durationToSecsFn is a RouterOS script snippet defining a local function
+// that parses RouterOS's native hotspot uptime/limit-uptime string into
+// total seconds. Two forms are known to occur (confirmed via a live
+// router's own :log output, which reflects the raw script-level value —
+// Pikro's Go API client normalises this to the letter-suffixed form before
+// it ever reaches the frontend, so the frontend/API never sees form 2):
+//  1. Letter-suffixed, combinable: "1w3d", "1h30m", "11m44s", "1w", "0s".
+//  2. Week/day letters followed by a colon-joined time-of-day: "00:00:00",
+//     "1d00:00:00", "1w3d10:51:24".
+//
+// Bug history: an earlier version only handled form 1. A hotspot user's
+// uptime/limit-uptime read directly via RouterOS script (form 2, e.g.
+// "00:00:00") has no w/d/h/m/s letters at all, so the old parser silently
+// returned 0 for every such value — comparing 0 >= 0 was always true,
+// deleting every unused voucher regardless of its actual quota. This was
+// invisible through Pikro's own API (which shows form 1) and only caught by
+// reading RouterOS's own :log line directly on the router.
 // Shared by both cleanup script variants. Assumes the caller has not already
 // declared a $durationToSecs local.
 const durationToSecsFn = `:local durationToSecs do={
   :local s $1
+  :local slen [:len $s]
   :local total 0
   :local num ""
-  for i from=0 to=([:len $s] - 1) do={
+  :local i 0
+  :while ($i < $slen) do={
     :local ch [:pick $s $i ($i + 1)]
-    :if ($ch = "w" || $ch = "d" || $ch = "h" || $ch = "m" || $ch = "s") do={
-      :local n [:tonum $num]
-      :if ($ch = "w") do={ :set total ($total + $n * 604800) }
-      :if ($ch = "d") do={ :set total ($total + $n * 86400) }
-      :if ($ch = "h") do={ :set total ($total + $n * 3600) }
-      :if ($ch = "m") do={ :set total ($total + $n * 60) }
-      :if ($ch = "s") do={ :set total ($total + $n) }
+    :if ($ch = "w") do={
+      :set total ($total + [:tonum $num] * 604800)
       :set num ""
+      :set i ($i + 1)
     } else={
-      :set num ($num . $ch)
+      :if ($ch = "d") do={
+        :set total ($total + [:tonum $num] * 86400)
+        :set num ""
+        :set i ($i + 1)
+      } else={
+        :if ($ch = "h") do={
+          :set total ($total + [:tonum $num] * 3600)
+          :set num ""
+          :set i ($i + 1)
+        } else={
+          :if ($ch = "m") do={
+            :set total ($total + [:tonum $num] * 60)
+            :set num ""
+            :set i ($i + 1)
+          } else={
+            :if ($ch = "s") do={
+              :set total ($total + [:tonum $num])
+              :set num ""
+              :set i ($i + 1)
+            } else={
+              :if ($ch = ":") do={
+                # Remainder from here on is HH:MM:SS — consume it whole.
+                :local rest ($num . [:pick $s $i $slen])
+                :local h [:tonum [:pick $rest 0 [:find $rest ":"]]]
+                :local rest2 [:pick $rest ([:find $rest ":"] + 1) [:len $rest]]
+                :local m [:tonum [:pick $rest2 0 [:find $rest2 ":"]]]
+                :local sec [:tonum [:pick $rest2 ([:find $rest2 ":"] + 1) [:len $rest2]]]
+                :set total ($total + $h * 3600 + $m * 60 + $sec)
+                :set num ""
+                :set i $slen
+              } else={
+                :set num ($num . $ch)
+                :set i ($i + 1)
+              }
+            }
+          }
+        }
+      }
     }
   }
   :return $total
@@ -704,11 +801,13 @@ const durationToSecsFn = `:local durationToSecs do={
 var cleanupScriptV7 = `:local nowEpoch ([:tonsec [:timestamp]] / 1000000000)
 ` + durationToSecsFn + `
 :foreach u in=[/ip/hotspot/user/find] do={
+  :local uname [:tostr [/ip/hotspot/user/get $u name]]
   :local comment [:tostr [/ip/hotspot/user/get $u comment]]
   :local removed false
   :if ([:len $comment] > 4 && [:pick $comment 0 4] = "exp:") do={
     :local expEpoch [:tonum [:pick $comment 4 [:len $comment]]]
     :if ($expEpoch > 0 && $expEpoch < $nowEpoch) do={
+      :log info ("pikro-cleanup: removing $uname (exp: comment expired, exp=$expEpoch now=$nowEpoch)")
       /ip/hotspot/user/remove $u
       :set removed true
     }
@@ -718,6 +817,7 @@ var cleanupScriptV7 = `:local nowEpoch ([:tonsec [:timestamp]] / 1000000000)
     :local used [:tostr [/ip/hotspot/user/get $u uptime]]
     :if ([:len $limit] > 0 && [:len $used] > 0) do={
       :if ([$durationToSecs $used] >= [$durationToSecs $limit]) do={
+        :log info ("pikro-cleanup: removing $uname (uptime quota exhausted, uptime=$used limit=$limit)")
         /ip/hotspot/user/remove $u
       }
     }
@@ -746,6 +846,7 @@ var cleanupScriptV6 = `:local dateint do={
 :local today [$dateint d=$date]
 :local curtime [$timeint t=$time]
 :foreach u in=[/ip/hotspot/user/find] do={
+  :local uname [:tostr [/ip/hotspot/user/get $u name]]
   :local comment [:tostr [/ip/hotspot/user/get $u comment]]
   :local removed false
   :if ([:len $comment] > 18 && [:pick $comment 0 4] = "exp:") do={
@@ -754,6 +855,7 @@ var cleanupScriptV6 = `:local dateint do={
       :local expd [$dateint d=$s]
       :local expt [$timeint t=[:pick $s 11 19]]
       :if (($expd < $today) || ($expd = $today && $expt < $curtime)) do={
+        :log info ("pikro-cleanup: removing $uname (exp: comment expired, exp=$s now=$date $time)")
         /ip/hotspot/user/remove $u
         :set removed true
       }
@@ -764,6 +866,7 @@ var cleanupScriptV6 = `:local dateint do={
     :local used [:tostr [/ip/hotspot/user/get $u uptime]]
     :if ([:len $limit] > 0 && [:len $used] > 0) do={
       :if ([$durationToSecs $used] >= [$durationToSecs $limit]) do={
+        :log info ("pikro-cleanup: removing $uname (uptime quota exhausted, uptime=$used limit=$limit)")
         /ip/hotspot/user/remove $u
       }
     }

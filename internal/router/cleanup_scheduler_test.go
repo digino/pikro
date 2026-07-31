@@ -12,58 +12,106 @@ import (
 // function embedded in durationToSecsFn (see client.go). It exists purely to make
 // the parsing ALGORITHM testable in Go — the actual RouterOS script text in
 // client.go is never modified or executed here. Keep this in lockstep with the
-// RSC source by hand; if you change one, change the other.
+// RSC source by hand, control-flow for control-flow; if you change one, change
+// the other.
 //
-// RSC source being mirrored:
+// RSC source being mirrored (see durationToSecsFn in client.go for the real,
+// authoritative copy):
 //
 //	:local durationToSecs do={
 //	  :local s $1
+//	  :local slen [:len $s]
 //	  :local total 0
 //	  :local num ""
-//	  for i from=0 to=([:len $s] - 1) do={
+//	  :local i 0
+//	  :while ($i < $slen) do={
 //	    :local ch [:pick $s $i ($i + 1)]
-//	    :if ($ch = "w" || $ch = "d" || $ch = "h" || $ch = "m" || $ch = "s") do={
-//	      :local n [:tonum $num]
-//	      :if ($ch = "w") do={ :set total ($total + $n * 604800) }
-//	      :if ($ch = "d") do={ :set total ($total + $n * 86400) }
-//	      :if ($ch = "h") do={ :set total ($total + $n * 3600) }
-//	      :if ($ch = "m") do={ :set total ($total + $n * 60) }
-//	      :if ($ch = "s") do={ :set total ($total + $n) }
-//	      :set num ""
+//	    :if ($ch = "w") do={
+//	      :set total ($total + [:tonum $num] * 604800); :set num ""; :set i ($i + 1)
+//	    } else={ :if ($ch = "d") do={
+//	      :set total ($total + [:tonum $num] * 86400); :set num ""; :set i ($i + 1)
+//	    } else={ :if ($ch = "h") do={
+//	      :set total ($total + [:tonum $num] * 3600); :set num ""; :set i ($i + 1)
+//	    } else={ :if ($ch = "m") do={
+//	      :set total ($total + [:tonum $num] * 60); :set num ""; :set i ($i + 1)
+//	    } else={ :if ($ch = "s") do={
+//	      :set total ($total + [:tonum $num]); :set num ""; :set i ($i + 1)
+//	    } else={ :if ($ch = ":") do={
+//	      # Remainder from here on is HH:MM:SS — consume it whole.
+//	      :local rest ($num . [:pick $s $i $slen])
+//	      :local h [:tonum [:pick $rest 0 [:find $rest ":"]]]
+//	      :local rest2 [:pick $rest ([:find $rest ":"] + 1) [:len $rest]]
+//	      :local m [:tonum [:pick $rest2 0 [:find $rest2 ":"]]]
+//	      :local sec [:tonum [:pick $rest2 ([:find $rest2 ":"] + 1) [:len $rest2]]]
+//	      :set total ($total + $h * 3600 + $m * 60 + $sec)
+//	      :set num ""; :set i $slen
 //	    } else={
-//	      :set num ($num . $ch)
-//	    }
+//	      :set num ($num . $ch); :set i ($i + 1)
+//	    } } } } } }
 //	  }
 //	  :return $total
 //	}
+//
+// [:pick $s $start $end] is 0-based with an EXCLUSIVE end index (confirmed
+// against MikroTik's own docs and forum examples: [:pick "abcde" 1 3] = "bc").
+// [:find $s substr] returns the 0-based index of the first match. Both are
+// mirrored below using Go string slicing, which has identical semantics for
+// the byte-oriented, ASCII-only inputs RouterOS hands us here.
 func durationToSecsGo(s string) int64 {
+	slen := len(s)
 	var total int64
 	var num strings.Builder
-	multiplier := map[byte]int64{
-		'w': 604800,
-		'd': 86400,
-		'h': 3600,
-		'm': 60,
-		's': 1,
-	}
-	for i := 0; i < len(s); i++ {
-		ch := s[i]
-		if mult, isUnit := multiplier[ch]; isUnit {
-			// RouterOS [:tonum ""] returns 0, matching strconv on an empty accumulator.
-			var n int64
-			if num.Len() > 0 {
-				for _, d := range num.String() {
-					if d < '0' || d > '9' {
-						n = 0
-						break
-					}
-					n = n*10 + int64(d-'0')
-				}
+	i := 0
+	toNum := func(str string) int64 {
+		// RouterOS [:tonum ""] returns 0, matching strconv on an empty accumulator.
+		var n int64
+		for _, d := range str {
+			if d < '0' || d > '9' {
+				return 0
 			}
-			total += n * mult
+			n = n*10 + int64(d-'0')
+		}
+		return n
+	}
+	for i < slen {
+		ch := s[i]
+		switch ch {
+		case 'w':
+			total += toNum(num.String()) * 604800
 			num.Reset()
-		} else {
+			i++
+		case 'd':
+			total += toNum(num.String()) * 86400
+			num.Reset()
+			i++
+		case 'h':
+			total += toNum(num.String()) * 3600
+			num.Reset()
+			i++
+		case 'm':
+			total += toNum(num.String()) * 60
+			num.Reset()
+			i++
+		case 's':
+			total += toNum(num.String())
+			num.Reset()
+			i++
+		case ':':
+			// Remainder from here on is HH:MM:SS -- consume it whole, mirroring
+			// the RSC colon branch's :find/:pick chain exactly.
+			rest := num.String() + s[i:slen]
+			restColon := strings.Index(rest, ":")
+			h := toNum(rest[0:restColon])
+			rest2 := rest[restColon+1:]
+			rest2Colon := strings.Index(rest2, ":")
+			m := toNum(rest2[0:rest2Colon])
+			sec := toNum(rest2[rest2Colon+1:])
+			total += h*3600 + m*60 + sec
+			num.Reset()
+			i = slen
+		default:
 			num.WriteByte(ch)
+			i++
 		}
 	}
 	return total
@@ -75,36 +123,53 @@ func TestDurationToSecsGo(t *testing.T) {
 		input string
 		want  int64
 	}{
-		// Single units.
+		// --- Form 1: letter-suffixed, combinable (Pikro's Go API client's
+		// normalized form; the only form ever visible via the frontend/API). ---
 		{name: "minutes", input: "5m", want: 300},
 		{name: "hours", input: "1h", want: 3600},
 		{name: "days", input: "1d", want: 86400},
 		{name: "weeks", input: "1w", want: 604800},
 		{name: "seconds", input: "30s", want: 30},
-
-		// Combined units.
 		{name: "hours and minutes", input: "1h30m", want: 5400},
 		{name: "minutes and seconds", input: "11m44s", want: 704},
 		{name: "days and hours", input: "1d12h", want: 129600},
-
-		// Edge cases.
 		{name: "zero seconds", input: "0s", want: 0},
 		{name: "empty string means no limit set", input: "", want: 0},
 
-		// Real limit-uptime values observed from a live router.
+		// Real limit-uptime / uptime values observed from a live router (form 1).
 		{name: "live limit-uptime: 1d", input: "1d", want: 86400},
 		{name: "live limit-uptime: 1h30m", input: "1h30m", want: 5400},
 		{name: "live limit-uptime: 1w", input: "1w", want: 604800},
 		{name: "live limit-uptime: 2w", input: "2w", want: 1209600},
 		{name: "live limit-uptime: 4h", input: "4h", want: 14400},
 		{name: "live limit-uptime: 5m", input: "5m", want: 300},
-
-		// Real uptime values observed from a live router.
-		{name: "live uptime: 0s", input: "0s", want: 0},
 		{name: "live uptime: 11m44s", input: "11m44s", want: 704},
 		{name: "live uptime: 48m16s", input: "48m16s", want: 2896},
 		{name: "live uptime: 53m20s", input: "53m20s", want: 3200},
-		{name: "live uptime: 5m", input: "5m", want: 300},
+
+		// --- Form 2: raw RouterOS script value, week/day letters followed by a
+		// colon-joined HH:MM:SS time-of-day. This is what a .rsc script actually
+		// reads via [/ip/hotspot/user/get $u uptime] -- confirmed via a live
+		// router's own :log output, NOT via Pikro's API (which never sees this
+		// form). The earlier parser (form-1-only) silently returned 0 for all of
+		// these, which caused the production incident this test guards against. ---
+		{name: "under a day, zero uptime", input: "00:00:00", want: 0},
+		{name: "under a day, ten minutes", input: "00:10:00", want: 600},
+		{name: "under a day, with seconds", input: "01:02:03", want: 3723},
+		{name: "multi-day prefix, zero time-of-day", input: "1d00:00:00", want: 86400},
+		{name: "multi-day prefix, with time-of-day", input: "2d05:15:30", want: 191730},
+		// 1 week + 3 days + (10h51m24s) = 604800 + 259200 + 39084 = 903084.
+		{name: "multi-week prefix, weeks+days+time-of-day", input: "1w3d10:51:24", want: 903084},
+		// 1 week only, no day letter, straight into time-of-day.
+		{name: "week prefix without day, with time-of-day", input: "1w00:05:00", want: 604800 + 300},
+
+		// --- The real production incident: uptime="00:00:00" (never-used
+		// voucher), limit="00:10:00" (10-minute quota). The old parser returned 0
+		// for BOTH (no letters to match), so 0 >= 0 was true and every fresh
+		// voucher got deleted on the next scheduler tick. This is the single most
+		// important assertion in this file. ---
+		{name: "incident: fresh voucher uptime", input: "00:00:00", want: 0},
+		{name: "incident: ten-minute limit", input: "00:10:00", want: 600},
 	}
 
 	for _, tc := range tests {
@@ -114,6 +179,24 @@ func TestDurationToSecsGo(t *testing.T) {
 				t.Errorf("durationToSecsGo(%q) = %d, want %d", tc.input, got, tc.want)
 			}
 		})
+	}
+}
+
+// TestDurationToSecsGo_incidentRegression is the direct regression test for the
+// production incident: a freshly-generated, never-used voucher has
+// uptime="00:00:00" and some non-zero limit-uptime like "00:10:00". The cleanup
+// scheduler deletes a user when durationToSecs(uptime) >= durationToSecs(limit).
+// The bug was that both values parsed to 0 (no letter suffixes matched), so
+// 0 >= 0 was true and the voucher was deleted despite never being used. This test
+// asserts the fix holds: an unused voucher's uptime must compare as LESS THAN its
+// limit, not equal to or greater than it.
+func TestDurationToSecsGo_incidentRegression(t *testing.T) {
+	uptime := durationToSecsGo("00:00:00")
+	limit := durationToSecsGo("00:10:00")
+
+	if !(uptime < limit) {
+		t.Fatalf("incident regression: durationToSecsGo(uptime=00:00:00)=%d, durationToSecsGo(limit=00:10:00)=%d; "+
+			"want uptime < limit (a fresh, unused voucher must NOT look quota-exhausted)", uptime, limit)
 	}
 }
 

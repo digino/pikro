@@ -1,7 +1,11 @@
 <template>
   <PageLayout title="Hotspot" subtitle="Profiles">
     <template #actions>
-      <button v-if="store.activeId && !loading && !error" class="btn btn-primary" @click="openCreate">
+      <button
+        v-if="store.activeId && !loading && !error"
+        class="btn btn-primary"
+        @click="openCreate"
+      >
         <PlusIcon class="size-3.5" />
         New profile
       </button>
@@ -100,15 +104,13 @@
     <!-- Create / Edit dialog -->
     <AppDialog
       :open="showForm"
-      :title="editing ? 'Edit Profile' : 'New Profile'"
+      :title="editing ? 'Edit Profile' : 'Create New profile'"
       @update:open="showForm = $event"
     >
       <TooltipProvider :delay-duration="200">
         <form class="space-y-4" @submit.prevent="submit">
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-red"
-              >Name <span>*</span></span
-            >
+            <span class="font-medium">Name <span>*</span></span>
             <input
               v-model="form.name"
               class="input"
@@ -148,7 +150,7 @@
             />
             <div class="flex gap-2">
               <div class="flex flex-col gap-1 flex-1 min-w-0">
-                <span class="text-xs text-text-muted">Upload</span>
+                <span class="text-sm text-text-secondary">Upload</span>
                 <div class="flex">
                   <input
                     v-model.number="rateUp"
@@ -161,7 +163,7 @@
                 </div>
               </div>
               <div class="flex flex-col gap-1 flex-1 min-w-0">
-                <span class="text-xs text-text-muted">Download</span>
+                <span class="text-sm text-text-secondary">Download</span>
                 <div class="flex">
                   <input
                     v-model.number="rateDown"
@@ -207,16 +209,21 @@
               label="Address pool"
               tip="IP address pool to assign to users of this profile. Leave blank to use the hotspot's default pool."
             />
-            <input
+            <AppSelect
               v-model="form.addressPool"
-              class="input"
-              placeholder="e.g. hotspot-pool"
+              :options="
+                addressPools.map((p) => ({
+                  value: p.name,
+                  label: p.ranges ? `${p.name} (${p.ranges})` : p.name,
+                }))
+              "
+              placeholder="Use hotspot's default pool"
             />
           </div>
 
           <p v-if="formError" class="text-xs text-red">{{ formError }}</p>
 
-          <div class="flex justify-end gap-2 pt-1 border-t border-border">
+          <div class="flex justify-end gap-2 pt-2">
             <button
               type="button"
               class="btn btn-ghost"
@@ -283,12 +290,14 @@ import {
   getHotspotSettings,
   getSystemResource,
   getProfileMetas,
+  listAddressPools,
   type ProfileMeta,
 } from "@/api";
 import { friendlyError } from "@/utils/errors";
 import AppDialog from "@/components/AppDialog.vue";
 import PageLayout from "@/components/PageLayout.vue";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
+import AppSelect from "@/components/AppSelect.vue";
 
 const store = useRoutersStore();
 
@@ -299,11 +308,7 @@ const FieldLabel = defineComponent({
       h("div", { class: "flex items-center gap-1" }, [
         props.iconOnly
           ? null
-          : h(
-              "span",
-              { class: "text-sm font-medium text-text-secondary" },
-              props.label,
-            ),
+          : h("span", { class: "font-medium" }, props.label),
         h(
           TooltipRoot,
           {},
@@ -446,6 +451,7 @@ const RateSelect = defineComponent({
 
 const profiles = ref<Record<string, string>[]>([]);
 const profileMetas = ref<Record<string, ProfileMeta>>({});
+const addressPools = ref<Record<string, string>[]>([]);
 const loading = ref(false);
 const error = ref("");
 const currency = ref("");
@@ -576,16 +582,18 @@ async function load() {
   loading.value = true;
   error.value = "";
   try {
-    const [p, s, res, m] = await Promise.all([
+    const [p, s, res, m, pools] = await Promise.all([
       listHotspotProfiles(store.activeId),
       getHotspotSettings(store.activeId).catch(() => ({ currency: "" })),
       getSystemResource(store.activeId).catch(() => ({})),
       getProfileMetas(store.activeId).catch(
         () => ({}) as Record<string, ProfileMeta>,
       ),
+      listAddressPools(store.activeId).catch(() => []),
     ]);
     profiles.value = p;
     profileMetas.value = m;
+    addressPools.value = pools;
     currency.value = (s as any).currency ?? "";
     rosVersion.value =
       (res as any)["ros-version"] ?? (res as any)["version"] ?? "";

@@ -186,14 +186,19 @@
             <span class="spinner spinner--sm" />
           </div>
           <EmptyState v-else-if="salesLedger.length === 0" message="No sales recorded yet" />
-          <div v-else class="grid grid-cols-2 gap-3">
-            <div class="rounded-lg border border-border p-3 bg-base">
-              <div class="text-sm font-medium text-text-secondary">Vouchers generated</div>
-              <div class="font-mono text-2xl font-bold mt-1 text-text-primary">{{ monthSales.generated }}</div>
+          <div v-else class="flex flex-col gap-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="rounded-lg border border-border p-3 bg-base">
+                <div class="text-sm font-medium text-text-secondary">Vouchers generated</div>
+                <div class="font-mono text-2xl font-bold mt-1 text-text-primary">{{ monthSales.generated }}</div>
+              </div>
+              <div class="rounded-lg border border-border p-3 bg-base">
+                <div class="text-sm font-medium text-text-secondary">Revenue</div>
+                <div class="font-mono text-2xl font-bold mt-1">{{ fmtAmount(monthSales.revenue) }}</div>
+              </div>
             </div>
-            <div class="rounded-lg border border-border p-3 bg-base">
-              <div class="text-sm font-medium text-text-secondary">Revenue</div>
-              <div class="font-mono text-2xl font-bold mt-1">{{ fmtAmount(monthSales.revenue) }}</div>
+            <div class="h-40">
+              <SalesBarChart :points="dailySalesPoints" :currency="salesCurrency" />
             </div>
           </div>
         </div>
@@ -283,8 +288,10 @@ import {
   type SaleEntry,
 } from "@/api";
 import { friendlyError } from "@/utils/errors";
+import { formatCompactAmount } from "@/utils/currencies";
 import PageLayout from "@/components/PageLayout.vue";
 import RouterArt from "@/components/router-art/RouterArt.vue";
+import SalesBarChart from "@/components/SalesBarChart.vue";
 
 const store = useRoutersStore();
 
@@ -443,7 +450,7 @@ let salesTimer: ReturnType<typeof setInterval>;
 function startTimers() {
   pollTimer = setInterval(() => {
     if (!document.hidden) poll();
-  }, 3000);
+  }, 5000);
   hotspotTimer = setInterval(() => {
     if (!document.hidden) loadHotspot();
   }, 15_000);
@@ -482,25 +489,46 @@ onMounted(() => {
 onUnmounted(stopTimers);
 
 // ── Sales summary (current month) ──────────────────────────────
-const monthSales = computed(() => {
+const monthSalesEntries = computed(() => {
   const now = new Date();
+  return salesLedger.value.filter((e) => {
+    const d = new Date(e.at);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  });
+});
+
+const monthSales = computed(() => {
   let generated = 0;
   let revenue = 0;
-  for (const e of salesLedger.value) {
-    const d = new Date(e.at);
-    if (d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth())
-      continue;
+  for (const e of monthSalesEntries.value) {
     generated += e.count;
     revenue += (parseFloat(e.price) || 0) * e.count;
   }
   return { generated, revenue };
 });
 
+const salesCurrency = computed(
+  () => salesLedger.value.find((e) => e.currency)?.currency ?? "",
+);
+
+// By-day breakdown for the current month, for the bar chart.
+const dailySalesPoints = computed(() => {
+  const bucket = new Map<string, { count: number; revenue: number }>();
+  for (const e of monthSalesEntries.value) {
+    const d = new Date(e.at);
+    const key = String(d.getDate());
+    const entry = bucket.get(key) ?? { count: 0, revenue: 0 };
+    entry.count += e.count;
+    entry.revenue += (parseFloat(e.price) || 0) * e.count;
+    bucket.set(key, entry);
+  }
+  return [...bucket.entries()]
+    .sort(([a], [b]) => parseInt(a) - parseInt(b))
+    .map(([label, v]) => ({ label, count: v.count, revenue: v.revenue }));
+});
+
 function fmtAmount(n: number): string {
-  if (!n) return "0";
-  const currency = salesLedger.value.find((e) => e.currency)?.currency ?? "";
-  const s = n % 1 === 0 ? String(n) : n.toFixed(0);
-  return currency ? `${s} ${currency}` : s;
+  return formatCompactAmount(n, salesCurrency.value);
 }
 
 // ── Formatters ────────────────────────────────────────────────

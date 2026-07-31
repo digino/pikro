@@ -13,7 +13,6 @@
     "axios": "^1.7.0",
     "chart.js": "^4.5.1",
     "chartjs-adapter-date-fns": "^3.0.0",
-    "chartjs-plugin-streaming": "^2.0.0",
     "date-fns": "^4.4.0",
     "pinia": "^2.2.0",
     "reka-ui": "^2.9.8",

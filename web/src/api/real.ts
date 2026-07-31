@@ -77,8 +77,14 @@ export const listHotspotUsers = (id: string) =>
 export const listHotspotActive = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/hotspot/active`).then(r => r.data)
 
+export const listHotspotHosts = (id: string) =>
+  api.get<Record<string, string>[]>(`/routers/${id}/hotspot/hosts`).then(r => r.data)
+
 export const listHotspotProfiles = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/hotspot/profiles`).then(r => r.data)
+
+export const listAddressPools = (id: string) =>
+  api.get<Record<string, string>[]>(`/routers/${id}/address-pools`).then(r => r.data)
 
 export const createHotspotUser = (id: string, user: NewHotspotUser) =>
   api.post(`/routers/${id}/hotspot/users`, user).then(r => r.data)

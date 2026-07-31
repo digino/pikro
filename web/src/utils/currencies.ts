@@ -21,3 +21,13 @@ export const CURRENCIES: CurrencyOption[] = [
 ]
 
 export const KNOWN_CURRENCY_VALUES = ['', ...CURRENCIES.map(c => c.value)]
+
+const compactFormatter = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
+
+// Formats a revenue amount with k/M/B suffixes (e.g. 1234 -> "1.2K"), optionally
+// suffixed with a currency code (e.g. "1.2K XOF").
+export function formatCompactAmount(n: number, currency?: string): string {
+  if (!n) return currency ? `0 ${currency}` : '0'
+  const s = compactFormatter.format(n)
+  return currency ? `${s} ${currency}` : s
+}

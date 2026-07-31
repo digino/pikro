@@ -526,7 +526,7 @@ function normalizeUptime() {
     .join("");
 }
 
-function reset() {
+function reset(initialProfile = "") {
   step.value = 1;
   form.value = {
     count: 10,
@@ -535,7 +535,7 @@ function reset() {
     charsDigits: true,
     passwordMode: "same",
     fixedPassword: "",
-    profile: "",
+    profile: initialProfile,
     limitUptimeRaw: "",
     limitBytesTotalValue: 0,
     limitBytesTotalUnit: "M",

@@ -1,12 +1,12 @@
 <template>
   <PageLayout title="Hotspot" subtitle="Users">
     <template #actions>
-      <button class="btn btn-ghost" @click="openBatch">
-        <TicketIcon class="size-3.5" />
-        Generate users
-      </button>
+      <RouterLink to="/hotspot/vouchers" class="btn btn-ghost">
+        <TicketIcon class="size-4" />
+        Generate vouchers
+      </RouterLink>
       <button class="btn btn-primary" @click="openAdd">
-        <PlusIcon class="size-3.5" />
+        <PlusIcon class="size-4" />
         New user
       </button>
     </template>
@@ -77,7 +77,9 @@
         v-if="selected.size > 0"
         class="flex items-center gap-3 px-3 py-2 border border-border rounded-xl text-sm font-medium bg-surface"
       >
-        <span class="text-text-secondary font-semibold">{{ selected.size }} selected</span>
+        <span class="text-text-secondary font-semibold"
+          >{{ selected.size }} selected</span
+        >
         <button
           class="ml-auto text-text-secondary hover:text-text-primary transition-colors cursor-pointer underline"
           @click="selected = new Set()"
@@ -205,38 +207,26 @@
                 </CheckboxRoot>
               </th>
               <th
-                class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+                class="text-left px-4 py-3 text-sm font-semibold text-text-primary"
               >
                 Username
               </th>
-              <th
-                class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
-              >
+              <th class="text-left px-4 py-3 font-semibold text-text-primary">
                 Profile
               </th>
-              <th
-                class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
-              >
+              <th class="text-left px-4 py-3 font-semibold text-text-primary">
                 Time limit
               </th>
-              <th
-                class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
-              >
+              <th class="text-left px-4 py-3 font-semibold text-text-primary">
                 Data limit
               </th>
-              <th
-                class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
-              >
+              <th class="text-left px-4 py-3 font-semibold text-text-primary">
                 Comment
               </th>
-              <th
-                class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
-              >
+              <th class="text-left px-4 py-3 font-semibold text-text-primary">
                 Expires
               </th>
-              <th
-                class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
-              >
+              <th class="text-left px-4 py-3 font-semibold text-text-primary">
                 Status
               </th>
               <th class="px-4 py-3"></th>
@@ -287,8 +277,8 @@
               <td class="px-4 py-3 text-sm text-text-secondary">
                 {{ formatBytes(u["limit-bytes-total"]) }}
               </td>
-              <td class="px-4 py-3 text-sm text-text-muted">
-                {{ displayComment(u.comment) }}
+              <td class="px-4 py-3 text-sm text-text-muted font-mono">
+                {{ u.comment || "—" }}
               </td>
               <td class="px-4 py-3 text-sm" :class="expiryClass(u)">
                 {{ expiryLabel(u) }}
@@ -302,9 +292,17 @@
               </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">
-                  <button class="btn btn-ghost btn-sm" @click="openEdit(u)">
-                    <PencilIcon class="size-3.5" />
-                    Edit
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    @click="toggleDisabled(u)"
+                  >
+                    <component
+                      :is="
+                        u.disabled === 'true' ? CheckCircleIcon : NoSymbolIcon
+                      "
+                      class="size-3.5"
+                    />
+                    {{ u.disabled === "true" ? "Enable" : "Disable" }}
                   </button>
                   <button
                     class="btn btn-sm btn-ghost hover:text-red hover:bg-red/10"
@@ -506,138 +504,6 @@
       </div>
     </div>
 
-    <!-- Edit user dialog -->
-    <AppDialog
-      :open="showEdit"
-      :title="editForm.name ? `Edit — ${editForm.name}` : 'Edit user'"
-      @update:open="showEdit = $event"
-    >
-      <form @submit.prevent="submitEdit" class="space-y-4">
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-text-secondary">Password</span>
-          <input
-            v-model="editForm.password"
-            class="input"
-            placeholder="leave blank to keep current"
-          />
-        </label>
-
-        <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-text-secondary">Profile</span>
-          <select v-model="editForm.profile" class="input">
-            <option value="">default</option>
-            <option v-for="p in profiles" :key="p['.id']" :value="p.name">
-              {{ p.name }}
-            </option>
-          </select>
-        </label>
-
-        <div class="border-t border-border pt-3 space-y-3">
-          <p
-            class="text-xs font-semibold text-text-muted uppercase tracking-wide"
-          >
-            Limits
-          </p>
-
-          <div class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-text-secondary"
-              >Time limit</span
-            >
-            <input
-              v-model="editForm.limitUptimeRaw"
-              class="input font-mono"
-              placeholder="e.g. 1h30m — blank for unlimited"
-              @blur="normalizeEditUptime"
-            />
-            <p
-              v-if="editForm.limitUptimeRaw && !editUptimePreview"
-              class="text-xs text-red"
-            >
-              Invalid format — use: 30m, 2h, 1d, 1w or combinations like 1d12h
-            </p>
-            <p v-else-if="editUptimePreview" class="text-xs text-text-muted">
-              Sends to router:
-              <span class="font-mono">{{ editUptimePreview }}</span>
-            </p>
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-text-secondary"
-              >Data limit</span
-            >
-            <div
-              class="flex w-full overflow-hidden rounded-lg border border-border focus-within:outline-2 focus-within:outline-accent focus-within:outline-offset-1"
-            >
-              <input
-                v-model.number="editForm.limitBytesTotalValue"
-                type="number"
-                min="0"
-                class="input-bare flex-1 min-w-0"
-                placeholder="0"
-              />
-              <select
-                v-model="editForm.limitBytesTotalUnit"
-                class="input-bare border-l border-border shrink-0 w-16 text-xs"
-              >
-                <option value="M">MB</option>
-                <option value="G">GB</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-text-secondary">Comment</span>
-          <input
-            v-model="editForm.comment"
-            class="input"
-            placeholder="optional note"
-          />
-        </label>
-
-        <div
-          class="flex items-center justify-between border-t border-border pt-3"
-        >
-          <div>
-            <p class="text-xs font-medium text-text-secondary">Disable user</p>
-            <p class="text-xs text-text-muted">Blocked from logging in</p>
-          </div>
-          <button
-            type="button"
-            class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none"
-            :class="editForm.disabled ? 'bg-red' : 'bg-border'"
-            @click="editForm.disabled = !editForm.disabled"
-          >
-            <span
-              class="pointer-events-none inline-block size-4 rounded-full bg-white shadow transform transition-transform"
-              :class="editForm.disabled ? 'translate-x-4' : 'translate-x-0'"
-            />
-          </button>
-        </div>
-
-        <p v-if="editError" class="text-xs text-red">{{ editError }}</p>
-
-        <div class="flex justify-end gap-2 pt-1">
-          <button type="button" class="btn btn-ghost" @click="showEdit = false">
-            Cancel
-          </button>
-          <button
-            type="submit"
-            class="btn btn-primary"
-            :disabled="
-              editing || (!!editForm.limitUptimeRaw && !editUptimePreview)
-            "
-          >
-            <span
-              v-if="editing"
-              class="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin"
-            />
-            Save
-          </button>
-        </div>
-      </form>
-    </AppDialog>
-
     <!-- Add single user dialog -->
     <AppDialog
       :open="showAdd"
@@ -759,88 +625,15 @@
       </form>
     </AppDialog>
 
-    <!-- Batch generate dialog -->
-    <AppDialog
-      :open="showBatch"
-      title="Generate Vouchers"
-      @update:open="onBatchDialogUpdate"
-    >
-      <!-- Results screen -->
-      <div v-if="batchDone" class="space-y-4">
-        <div class="flex items-center gap-2 text-sm text-text-secondary">
-          <span class="font-bold text-text-primary">{{
-            batchResults.filter((r) => r.ok).length
-          }}</span>
-          created,
-          <span class="font-bold text-red">{{
-            batchResults.filter((r) => !r.ok).length
-          }}</span>
-          failed
-        </div>
-        <div
-          class="max-h-64 overflow-y-auto border border-border rounded-lg text-xs font-mono bg-base"
-        >
-          <div
-            v-for="r in batchResults"
-            :key="r.name"
-            class="flex items-center gap-3 px-3 py-2 border-b border-border last:border-0"
-            :class="r.ok ? 'text-text-secondary' : 'text-red bg-red/5'"
-          >
-            <span class="flex-1">{{ r.name }}</span>
-            <span class="text-text-muted">{{ r.password }}</span>
-            <span v-if="!r.ok" class="text-xs ml-auto text-red">{{
-              r.error
-            }}</span>
-          </div>
-        </div>
-        <div class="flex justify-end gap-2 pt-1 border-t border-border">
-          <button
-            type="button"
-            class="btn btn-ghost"
-            @click="showBatch = false"
-          >
-            Close
-          </button>
-          <button type="button" class="btn btn-primary" @click="openPrintResults">
-            <PrinterIcon class="size-4" /> Print
-          </button>
-        </div>
-      </div>
-
-      <!-- Progress screen -->
-      <div v-else-if="batchRunning" class="space-y-4">
-        <div
-          class="flex items-center justify-between text-xs text-text-secondary"
-        >
-          <span>Creating vouchers…</span>
-          <span>{{ batchProgress }} / {{ batchTotal }}</span>
-        </div>
-        <div class="w-full rounded-full h-2 border border-border bg-base">
-          <div
-            class="h-2 rounded-full transition-all bg-text-primary"
-            :style="{ width: `${(batchProgress / batchTotal) * 100}%` }"
-          />
-        </div>
-        <p class="text-xs text-text-muted font-mono">{{ batchCurrentName }}</p>
-      </div>
-
-      <!-- Wizard -->
-      <BatchWizard
-        v-else
-        ref="wizardRef"
-        :profiles="profiles"
-        :profile-metas="profileMetas"
-        :error="batchError"
-        @cancel="showBatch = false"
-        @submit="submitBatch"
-      />
-    </AppDialog>
-
     <PrintTemplateDialog
       :open="showPrintDialog"
       :entries="printEntries"
       :default-layout="hotspotSettings.voucher?.layout ?? 'card'"
-      :business-name="hotspotSettings.voucher?.businessName ?? hotspotSettings.hotspotName ?? ''"
+      :business-name="
+        hotspotSettings.voucher?.businessName ??
+        hotspotSettings.hotspotName ??
+        ''
+      "
       :show-validity="hotspotSettings.voucher?.showValidity ?? true"
       :show-price="hotspotSettings.voucher?.showPrice ?? true"
       :currency="hotspotSettings.currency ?? ''"
@@ -851,8 +644,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
-import BatchWizard, { type BatchConfig } from "@/components/BatchWizard.vue";
+import { ref, computed, watch, onUnmounted } from "vue";
 import {
   SelectRoot,
   SelectTrigger,
@@ -878,7 +670,7 @@ import {
   TicketIcon,
   PrinterIcon,
   CheckIcon,
-  PencilIcon,
+  NoSymbolIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronDownIcon,
@@ -891,7 +683,6 @@ import {
   listHotspotActive,
   listHotspotProfiles,
   createHotspotUser,
-  updateHotspotUser,
   toggleHotspotUser,
   deleteHotspotUser,
   getProfileMetas,
@@ -1142,55 +933,20 @@ function normalizeFormUptime() {
   form.value.limitUptimeRaw = normalizeShorthand(form.value.limitUptimeRaw);
 }
 
-const showBatch = ref(false);
-const batchRunning = ref(false);
-const batchDone = ref(false);
-const batchProgress = ref(0);
-const batchTotal = ref(0);
-const batchCurrentName = ref("");
-const batchError = ref("");
-const batchResults = ref<
-  { name: string; password: string; ok: boolean; error?: string }[]
->([]);
-const wizardRef = ref<InstanceType<typeof BatchWizard> | null>(null);
-const lastBatchProfile = ref("");
-
-function generateName(
-  charset: string,
-  length: number,
-  existing: Set<string>,
-): string {
-  let name = "",
-    attempts = 0;
-  do {
-    name = Array.from(
-      { length },
-      () => charset[Math.floor(Math.random() * charset.length)],
-    ).join("");
-    attempts++;
-  } while (existing.has(name) && attempts < 1000);
-  return name;
-}
-
-function generatePassword(
-  mode: "same" | "random" | "fixed",
-  name: string,
-  fixed: string,
-  charset: string,
-  length: number,
-): string {
-  if (mode === "same") return name;
-  if (mode === "fixed") return fixed;
-  return Array.from(
-    { length },
-    () => charset[Math.floor(Math.random() * charset.length)],
-  ).join("");
-}
+let activeSessionsTimer: ReturnType<typeof setInterval> | undefined;
 
 function switchTab(key: "users" | "active") {
   tab.value = key;
-  if (key === "active") loadActive();
+  clearInterval(activeSessionsTimer);
+  if (key === "active") {
+    loadActive();
+    activeSessionsTimer = setInterval(() => {
+      if (!document.hidden) loadActive();
+    }, 5 * 60_000);
+  }
 }
+
+onUnmounted(() => clearInterval(activeSessionsTimer));
 
 async function loadUsers() {
   if (!store.activeId) return;
@@ -1278,161 +1034,15 @@ async function submitAdd() {
   }
 }
 
-const showEdit = ref(false);
-const editing = ref(false);
-const editError = ref("");
-const editingId = ref("");
-
-const editForm = ref({
-  name: "",
-  password: "",
-  profile: "",
-  limitUptimeRaw: "",
-  limitBytesTotalValue: 0,
-  limitBytesTotalUnit: "M" as "M" | "G",
-  comment: "",
-  disabled: false,
-});
-
-const editUptimePreview = computed(() =>
-  uptimePreviewFrom(editForm.value.limitUptimeRaw),
-);
-function normalizeEditUptime() {
-  editForm.value.limitUptimeRaw = normalizeShorthand(
-    editForm.value.limitUptimeRaw,
-  );
-}
-
-function rosUptimeToShorthand(s: string): string {
-  if (!s || s === "00:00:00") return "";
-  const m = s.match(/^(?:(\d+)d\s*)?(\d+):(\d+):(\d+)$/);
-  if (!m) return s;
-  const d = parseInt(m[1] || "0"),
-    h = parseInt(m[2]),
-    min = parseInt(m[3]);
-  return [d ? `${d}d` : "", h ? `${h}h` : "", min ? `${min}m` : ""]
-    .filter(Boolean)
-    .join("");
-}
-
-function openEdit(u: Record<string, string>) {
-  editingId.value = u[".id"];
-  editForm.value = {
-    name: u.name ?? "",
-    password: "",
-    profile: u.profile ?? "",
-    limitUptimeRaw: rosUptimeToShorthand(u["limit-uptime"] ?? ""),
-    limitBytesTotalValue: u["limit-bytes-total"]
-      ? Math.round(parseInt(u["limit-bytes-total"]) / 1024 ** 2)
-      : 0,
-    limitBytesTotalUnit: "M",
-    comment: displayComment(u.comment) === "—" ? "" : displayComment(u.comment),
-    disabled: u.disabled === "true",
-  };
-  editError.value = "";
-  showEdit.value = true;
-}
-
-async function submitEdit() {
-  if (!store.activeId || !editingId.value) return;
-  editing.value = true;
-  editError.value = "";
+async function toggleDisabled(u: Record<string, string>) {
+  if (!store.activeId) return;
+  const nextDisabled = u.disabled !== "true";
   try {
-    const f = editForm.value;
-    const limitUptime = editUptimePreview.value;
-    const mul = f.limitBytesTotalUnit === "G" ? 1024 ** 3 : 1024 ** 2;
-    const limitBytesTotal = f.limitBytesTotalValue
-      ? String(f.limitBytesTotalValue * mul)
-      : "";
-    await updateHotspotUser(store.activeId, editingId.value, {
-      password: f.password,
-      profile: f.profile,
-      limitUptime,
-      limitBytesTotal,
-      comment: f.comment,
-    });
-    await toggleHotspotUser(store.activeId, editingId.value, f.disabled);
-    showEdit.value = false;
+    await toggleHotspotUser(store.activeId, u[".id"], nextDisabled);
     await loadUsers();
   } catch (e: any) {
-    editError.value = friendlyError(e, "Failed to update user");
-  } finally {
-    editing.value = false;
+    error.value = friendlyError(e, "Failed to update user");
   }
-}
-
-function openBatch() {
-  batchDone.value = false;
-  batchRunning.value = false;
-  batchResults.value = [];
-  batchError.value = "";
-  showBatch.value = true;
-  wizardRef.value?.reset();
-}
-
-function onBatchDialogUpdate(open: boolean) {
-  if (!batchRunning.value) showBatch.value = open;
-}
-
-async function submitBatch(cfg: BatchConfig) {
-  if (!store.activeId) return;
-  const charset = [
-    cfg.charsLetters ? "abcdefghijklmnopqrstuvwxyz" : "",
-    cfg.charsDigits ? "0123456789" : "",
-  ].join("");
-  if (!charset) {
-    batchError.value = "Select at least one character type.";
-    return;
-  }
-  batchRunning.value = true;
-  batchTotal.value = cfg.count;
-  lastBatchProfile.value = cfg.profile;
-  batchProgress.value = 0;
-  batchResults.value = [];
-  batchError.value = "";
-  const mul = cfg.limitBytesTotalUnit === "G" ? 1024 ** 3 : 1024 ** 2;
-  const limitBytesTotal = cfg.limitBytesTotalValue
-    ? String(cfg.limitBytesTotalValue * mul)
-    : "";
-  const usedNames = new Set<string>();
-  for (let i = 0; i < cfg.count; i++) {
-    const name = generateName(charset, cfg.nameLength, usedNames);
-    usedNames.add(name);
-    const password = generatePassword(
-      cfg.passwordMode,
-      name,
-      cfg.fixedPassword,
-      charset,
-      cfg.nameLength,
-    );
-    batchCurrentName.value = name;
-    try {
-      await createHotspotUser(store.activeId, {
-        name,
-        password,
-        profile: cfg.profile,
-        limitUptime: cfg.uptimePreview,
-        limitBytesTotal,
-        rateLimit: "",
-        comment: cfg.comment,
-        expiryComment: "",
-        price: profileMetas.value[cfg.profile]?.price ?? "",
-        currency: hotspotSettings.value.currency ?? "",
-      });
-      batchResults.value.push({ name, password, ok: true });
-    } catch (e: any) {
-      batchResults.value.push({
-        name,
-        password,
-        ok: false,
-        error: e?.response?.data?.error ?? e?.message ?? "error",
-      });
-    }
-    batchProgress.value = i + 1;
-  }
-  batchRunning.value = false;
-  batchDone.value = true;
-  await loadUsers();
 }
 
 const showPrintDialog = ref(false);
@@ -1445,18 +1055,6 @@ function openPrintSelected() {
       name: u.name,
       password: u.password ?? "",
       profile: u.profile,
-    }));
-  showPrintDialog.value = true;
-}
-
-function openPrintResults() {
-  const profileName = lastBatchProfile.value || "default";
-  printEntries.value = batchResults.value
-    .filter((r) => r.ok)
-    .map((r) => ({
-      name: r.name,
-      password: r.password,
-      profile: profileName,
     }));
   showPrintDialog.value = true;
 }
@@ -1485,11 +1083,15 @@ function userStatus(
   | "waiting"
   | "active" {
   if (u.disabled === "true") return "disabled";
+  // Uptime quota is enforced by RouterOS in real time — once hit, the user is
+  // already cut off regardless of what the (possibly stale) exp: comment says.
+  // Check it before calendar expiry so the badge reflects the reason that
+  // actually applies, not whichever the code happens to check first.
+  if (isUptimeExhausted(u)) return "limit-reached";
   const epoch = extractExpEpoch(u.comment);
   const now = Math.floor(Date.now() / 1000);
   if (epoch !== null && epoch < now) return "expired";
   if (epoch !== null && epoch - now < 86400) return "expires-soon";
-  if (isUptimeExhausted(u)) return "limit-reached";
   if (epoch === null) return "waiting";
   return "active";
 }
@@ -1517,6 +1119,10 @@ function statusColor(
 }
 
 function expiryLabel(u: Record<string, string>): string {
+  // Uptime quota exhaustion takes precedence over the exp: comment — see
+  // userStatus() for why: RouterOS enforces it in real time, so it's the
+  // reason that actually applies even if the calendar exp: hasn't hit yet.
+  if (isUptimeExhausted(u)) return "Limit reached";
   const epoch = extractExpEpoch(u.comment);
   if (epoch === null) return "—";
   const now = Math.floor(Date.now() / 1000);
@@ -1528,6 +1134,7 @@ function expiryLabel(u: Record<string, string>): string {
 }
 
 function expiryClass(u: Record<string, string>): string {
+  if (isUptimeExhausted(u)) return "text-amber font-medium";
   const epoch = extractExpEpoch(u.comment);
   if (epoch === null) return "text-text-muted";
   const diff = epoch - Math.floor(Date.now() / 1000);

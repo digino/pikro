@@ -76,10 +76,12 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/routers/{id}/hotspot/users/{userID}/toggle", handlers.ToggleHotspotUser)
 	mux.HandleFunc("DELETE /api/routers/{id}/hotspot/users/{userID}", handlers.DeleteHotspotUser)
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/active", handlers.ListHotspotActive)
+	mux.HandleFunc("GET /api/routers/{id}/hotspot/hosts", handlers.ListHotspotHosts)
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/profiles", handlers.ListHotspotProfiles)
 	mux.HandleFunc("POST /api/routers/{id}/hotspot/profiles", handlers.CreateHotspotProfile)
 	mux.HandleFunc("PATCH /api/routers/{id}/hotspot/profiles/{profileID}", handlers.UpdateHotspotProfile)
 	mux.HandleFunc("DELETE /api/routers/{id}/hotspot/profiles/{profileID}", handlers.DeleteHotspotProfile)
+	mux.HandleFunc("GET /api/routers/{id}/address-pools", handlers.ListAddressPools)
 
 	mux.HandleFunc("POST /api/routers/{id}/speedtest", handlers.RunSpeedTest)
 }

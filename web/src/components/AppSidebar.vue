@@ -126,9 +126,12 @@ import {
   Squares2X2Icon,
   CircleStackIcon,
   SignalIcon,
+  ComputerDesktopIcon,
+  ServerStackIcon,
   BoltIcon,
   WrenchScrewdriverIcon,
   UsersIcon,
+  TicketIcon,
   RectangleGroupIcon,
   Cog6ToothIcon,
   ClipboardDocumentListIcon,
@@ -167,7 +170,6 @@ const navSections: NavSection[] = [
     label: "General",
     items: [
       { to: "/dashboard", icon: Squares2X2Icon, label: "Dashboard" },
-      { to: "/network",   icon: SignalIcon,      label: "Network" },
       { to: "/routers",   icon: CircleStackIcon, label: "Routers" },
     ],
   },
@@ -176,10 +178,19 @@ const navSections: NavSection[] = [
     items: [
       { to: "/hotspot/setup", icon: WrenchScrewdriverIcon, label: "Setup" },
       { to: "/hotspot/users", icon: UsersIcon, label: "Users" },
+      { to: "/hotspot/vouchers", icon: TicketIcon, label: "Vouchers" },
       { to: "/hotspot/profiles", icon: RectangleGroupIcon, label: "Profiles" },
       { to: "/hotspot/reports", icon: ChartBarIcon, label: "Reports" },
       { to: "/hotspot/settings", icon: Cog6ToothIcon, label: "Settings" },
       { to: "/hotspot/logs", icon: ClipboardDocumentListIcon, label: "Logs" },
+    ],
+  },
+  {
+    label: "Network",
+    items: [
+      { to: "/network/monitor", icon: SignalIcon, label: "Monitor" },
+      { to: "/network/hosts", icon: ComputerDesktopIcon, label: "Hosts" },
+      { to: "/network/dhcp", icon: ServerStackIcon, label: "DHCP" },
     ],
   },
   {

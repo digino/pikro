@@ -37,6 +37,20 @@ func ListHotspotActive(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, active)
 }
 
+func ListHotspotHosts(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	hosts, err := client.HotspotHosts()
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	jsonOK(w, hosts)
+}
+
 func ListHotspotProfiles(w http.ResponseWriter, r *http.Request) {
 	client, err := clientFromRequest(r)
 	if err != nil {
@@ -49,6 +63,20 @@ func ListHotspotProfiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonOK(w, profiles)
+}
+
+func ListAddressPools(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	pools, err := client.AddressPools()
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	jsonOK(w, pools)
 }
 
 func CreateHotspotUser(w http.ResponseWriter, r *http.Request) {
@@ -150,7 +178,6 @@ func UpdateHotspotUser(w http.ResponseWriter, r *http.Request) {
 		Profile         string `json:"profile"`
 		LimitUptime     string `json:"limitUptime"`
 		LimitBytesTotal string `json:"limitBytesTotal"`
-		Comment         string `json:"comment"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		jsonError(w, "invalid body", http.StatusBadRequest)
@@ -161,7 +188,6 @@ func UpdateHotspotUser(w http.ResponseWriter, r *http.Request) {
 		Profile:         body.Profile,
 		LimitUptime:     body.LimitUptime,
 		LimitBytesTotal: body.LimitBytesTotal,
-		Comment:         body.Comment,
 	}); err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
