@@ -283,11 +283,15 @@ func (c *Client) stepCreateHotspotProfile(profileName, gateway, dnsName string) 
 	}
 	defer conn.Close()
 
+	// http-pap is included alongside http-chap so the "Business" voucher
+	// template's QR code can encode username/password as plain URL query
+	// params — chap requires a per-session challenge hash a QR scan can't
+	// provide, so without pap a QR-based auto-login silently never works.
 	args := []string{
 		"/ip/hotspot/profile/add",
 		"=name=" + profileName,
 		"=hotspot-address=" + gateway,
-		"=login-by=cookie,http-chap,mac-cookie",
+		"=login-by=cookie,http-chap,http-pap,mac-cookie",
 	}
 	if dnsName != "" {
 		args = append(args, "=dns-name="+dnsName)
@@ -300,7 +304,7 @@ func (c *Client) stepCreateHotspotProfile(profileName, gateway, dnsName string) 
 		setArgs := []string{
 			"/ip/hotspot/profile/set",
 			"=numbers=" + profileName,
-			"=login-by=cookie,http-chap,mac-cookie",
+			"=login-by=cookie,http-chap,http-pap,mac-cookie",
 		}
 		if dnsName != "" {
 			setArgs = append(setArgs, "=dns-name="+dnsName)

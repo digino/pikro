@@ -9,32 +9,34 @@
         <p class="text-sm font-medium text-text-secondary">Choose a template</p>
         <div class="grid gap-2">
           <button
-            v-for="l in VOUCHER_LAYOUTS"
-            :key="l.key"
+            v-for="t in VOUCHER_TEMPLATES"
+            :key="t.key"
             type="button"
             class="flex items-start gap-3 border rounded-lg p-3 text-left transition-colors"
             :class="
-              layout === l.key
+              template === t.key
                 ? 'border-accent bg-accent/10'
                 : 'border-border hover:border-muted'
             "
-            @click="layout = l.key"
+            @click="template = t.key"
           >
-            <span class="mt-0.5 text-lg shrink-0">{{ l.icon }}</span>
             <div>
-              <p class="text-sm font-semibold text-text-primary">{{ l.label }}</p>
-              <p class="text-xs text-text-secondary">{{ l.description }}</p>
+              <p class="text-sm font-semibold text-text-primary">{{ t.label }}</p>
+              <p class="text-xs text-text-secondary">{{ t.description }}</p>
             </div>
           </button>
         </div>
       </div>
 
+      <p v-if="printError" class="text-xs text-red">{{ printError }}</p>
+
       <div class="flex justify-end gap-2 pt-1 border-t border-border">
         <button type="button" class="btn btn-ghost" @click="emit('update:open', false)">
           Cancel
         </button>
-        <button type="button" class="btn btn-primary" @click="handlePrint">
-          <PrinterIcon class="size-4" /> Print
+        <button type="button" class="btn btn-primary" :disabled="printing" @click="handlePrint">
+          <span v-if="printing" class="size-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+          <PrinterIcon v-else class="size-4" /> Print
         </button>
       </div>
     </div>
@@ -45,22 +47,17 @@
 import { ref, watch } from "vue";
 import { PrinterIcon } from "@heroicons/vue/24/outline";
 import AppDialog from "@/components/AppDialog.vue";
-import {
-  printVouchers,
-  VOUCHER_LAYOUTS,
-  type VoucherEntry,
-  type PrintVouchersOptions,
-} from "@/utils/vouchers";
+import { VOUCHER_TEMPLATES, type VoucherTemplate } from "@/utils/voucherTemplates";
+import { printVouchers, type VoucherEntry, type PrintVouchersOptions } from "@/utils/vouchers";
 
 const props = defineProps<{
   open: boolean;
   entries: VoucherEntry[];
-  defaultLayout: PrintVouchersOptions["layout"];
   businessName: string;
-  showValidity: boolean;
-  showPrice: boolean;
   currency: string;
   profileMetas: PrintVouchersOptions["profileMetas"];
+  loginUrl?: string;
+  loginUrlSupportsCredentials?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -68,27 +65,39 @@ const emit = defineEmits<{
 }>();
 
 const count = ref(0);
-const layout = ref<PrintVouchersOptions["layout"]>(props.defaultLayout);
+const template = ref<VoucherTemplate["key"]>("classic");
+const printing = ref(false);
+const printError = ref("");
 
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
       count.value = props.entries.length;
-      layout.value = props.defaultLayout;
+      printError.value = "";
     }
   },
 );
 
-function handlePrint() {
-  printVouchers(props.entries, {
-    layout: layout.value,
-    businessName: props.businessName,
-    showValidity: props.showValidity,
-    showPrice: props.showPrice,
-    currency: props.currency,
-    profileMetas: props.profileMetas,
-  });
-  emit("update:open", false);
+async function handlePrint() {
+  printing.value = true;
+  printError.value = "";
+  try {
+    await printVouchers(props.entries, {
+      template: template.value,
+      businessName: props.businessName,
+      showValidity: true,
+      showPrice: true,
+      currency: props.currency,
+      profileMetas: props.profileMetas,
+      loginUrl: props.loginUrl,
+      loginUrlSupportsCredentials: props.loginUrlSupportsCredentials,
+    });
+    emit("update:open", false);
+  } catch (e: any) {
+    printError.value = e?.message ?? "Failed to prepare vouchers for printing";
+  } finally {
+    printing.value = false;
+  }
 }
 </script>

@@ -127,7 +127,7 @@
         <!-- Active sessions -->
         <DashboardCard title="Active sessions">
           <template #actions>
-            <RouterLink to="/hotspot/users" class="btn btn-ghost">
+            <RouterLink to="/hotspot/users?tab=active" class="btn btn-ghost">
               View all
             </RouterLink>
           </template>
@@ -539,13 +539,18 @@ watch(
   { immediate: true },
 );
 
+function onVisibilityChange() {
+  if (!document.hidden && store.activeId) poll();
+}
+
 onMounted(() => {
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && store.activeId) poll();
-  });
+  document.addEventListener("visibilitychange", onVisibilityChange);
 });
 
-onUnmounted(stopTimers);
+onUnmounted(() => {
+  stopTimers();
+  document.removeEventListener("visibilitychange", onVisibilityChange);
+});
 
 // ── Sales summary (current month) ──────────────────────────────
 const monthSalesEntries = computed(() => {

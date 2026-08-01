@@ -23,7 +23,6 @@ export interface NewRouterProfile {
     hotspotName: string
     dnsName: string
     currency: string
-    voucher: { showValidity: boolean; showPrice: boolean }
   }
 }
 
@@ -68,18 +67,11 @@ export interface LoginPageSettings {
   template?: 'minimal' | 'bold'
 }
 
-export interface VoucherSettings {
-  showValidity: boolean
-  showPrice: boolean
-  layout?: 'card' | 'ticket'
-}
-
 export interface HotspotSettings {
   hotspotName: string
   dnsName: string
   currency: string
   loginPage?: LoginPageSettings
-  voucher?: VoucherSettings
 }
 
 export interface CleanupSchedulerStatus {

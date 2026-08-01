@@ -170,19 +170,18 @@
     <PrintTemplateDialog
       :open="showPrintDialog"
       :entries="printEntries"
-      :default-layout="hotspotSettings.voucher?.layout ?? 'card'"
       :business-name="hotspotSettings.hotspotName ?? ''"
-      :show-validity="hotspotSettings.voucher?.showValidity ?? true"
-      :show-price="hotspotSettings.voucher?.showPrice ?? true"
       :currency="hotspotSettings.currency ?? ''"
       :profile-metas="profileMetas"
+      :login-url="loginUrl"
+      :login-url-supports-credentials="true"
       @update:open="showPrintDialog = $event"
     />
   </PageLayout>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import BatchWizard, { type BatchConfig } from "@/components/BatchWizard.vue";
 import {
@@ -219,6 +218,13 @@ const hotspotSettings = ref<HotspotSettings>({
 });
 const loading = ref(false);
 const error = ref("");
+
+// Used by the Business voucher template's QR code — points at the
+// hotspot's own login page, since that DNS name is what devices on the
+// hotspot network actually resolve.
+const loginUrl = computed(() =>
+  hotspotSettings.value.dnsName ? `http://${hotspotSettings.value.dnsName}/login` : "",
+);
 
 async function load() {
   if (!store.activeId) return;

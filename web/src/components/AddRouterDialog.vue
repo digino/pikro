@@ -170,7 +170,6 @@ async function submit() {
         hotspotName: f.hotspotName,
         dnsName: f.dnsName,
         currency: f.currency,
-        voucher: { showValidity: true, showPrice: true },
       },
     })
     emit('added', f.host)

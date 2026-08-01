@@ -136,13 +136,18 @@ watch(() => store.activeId, async (id) => {
   startTimers()
 }, { immediate: true })
 
+function onVisibilityChange() {
+  if (!document.hidden && store.activeId) poll()
+}
+
 onMounted(() => {
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && store.activeId) poll()
-  })
+  document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
-onUnmounted(stopTimers)
+onUnmounted(() => {
+  stopTimers()
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+})
 
 function ifaceIP(name: string): string {
   const match = addresses.value.find(a => a.interface === name)

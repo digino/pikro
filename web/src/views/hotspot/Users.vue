@@ -628,12 +628,11 @@
     <PrintTemplateDialog
       :open="showPrintDialog"
       :entries="printEntries"
-      :default-layout="hotspotSettings.voucher?.layout ?? 'card'"
       :business-name="hotspotSettings.hotspotName ?? ''"
-      :show-validity="hotspotSettings.voucher?.showValidity ?? true"
-      :show-price="hotspotSettings.voucher?.showPrice ?? true"
       :currency="hotspotSettings.currency ?? ''"
       :profile-metas="profileMetas"
+      :login-url="loginUrl"
+      :login-url-supports-credentials="true"
       @update:open="showPrintDialog = $event"
     />
   </PageLayout>
@@ -672,7 +671,7 @@ import {
   ChevronDownIcon,
   CheckCircleIcon,
 } from "@heroicons/vue/24/outline";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute } from "vue-router";
 import { useRoutersStore } from "@/stores/routers";
 import {
   listHotspotUsers,
@@ -696,6 +695,7 @@ import PrintTemplateDialog from "@/components/PrintTemplateDialog.vue";
 import { type VoucherEntry } from "@/utils/vouchers";
 
 const store = useRoutersStore();
+const route = useRoute();
 
 const STATUS_OPTS = [
   { value: "active", label: "Active" },
@@ -706,7 +706,7 @@ const STATUS_OPTS = [
   { value: "disabled", label: "Disabled" },
 ] as const;
 
-const tab = ref<"users" | "active">("users");
+const tab = ref<"users" | "active">(route.query.tab === "active" ? "active" : "users");
 const tabs = [
   { key: "users" as const, label: "All Users" },
   { key: "active" as const, label: "Active Sessions" },
@@ -775,6 +775,14 @@ const hotspotSettings = ref<HotspotSettings>({
   dnsName: "",
   currency: "",
 });
+
+// Used by the Business voucher template's QR code — points at the
+// hotspot's own login page, since that DNS name is what devices on the
+// hotspot network actually resolve.
+const loginUrl = computed(() =>
+  hotspotSettings.value.dnsName ? `http://${hotspotSettings.value.dnsName}/login` : "",
+);
+
 const loading = ref(false);
 const error = ref("");
 const cleanupInstalled = ref<boolean | null>(null);
@@ -1185,4 +1193,7 @@ function formatBytes(val: string | undefined): string {
 }
 
 watch(() => store.activeId, loadUsers, { immediate: true });
+
+// Deep-linked from Dashboard's "Active sessions" card via ?tab=active.
+if (tab.value === "active") switchTab("active");
 </script>

@@ -106,8 +106,8 @@ func UpdateRouter(w http.ResponseWriter, r *http.Request) {
 			cfg.Routers[i].Password = input.Password
 		}
 		cfg.Routers[i].UseTLS = input.UseTLS
-		// Merge only the fields the router dialog owns — ProfileMetas, Voucher,
-		// and LoginPage live on the same struct but are managed elsewhere
+		// Merge only the fields the router dialog owns — ProfileMetas and
+		// LoginPage live on the same struct but are managed elsewhere
 		// (Profiles page, Settings tabs) and must not be clobbered.
 		if input.HotspotSettings != nil {
 			hs := cfg.Routers[i].HotspotSettings

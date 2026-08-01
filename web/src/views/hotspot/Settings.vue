@@ -32,7 +32,6 @@
       <!-- ── Tab: Vouchers ── -->
       <SettingsVoucher
         v-else-if="tab === 'voucher'"
-        ref="voucherRef"
         :hotspot-name="form.hotspotName"
         :effective-currency="effectiveCurrency"
       />
@@ -132,7 +131,6 @@ const deviceModeBlocked = computed(() =>
 )
 
 const loginPageRef = ref<InstanceType<typeof SettingsLoginPage> | null>(null)
-const voucherRef = ref<InstanceType<typeof SettingsVoucher> | null>(null)
 
 async function load() {
   if (!store.activeId) return
@@ -148,7 +146,6 @@ async function load() {
     form.value.dnsName = s.dnsName ?? ''
     form.value.currency = s.currency ?? ''
     loginPageRef.value?.init(s.loginPage)
-    voucherRef.value?.init(s.voucher)
     cleanup.value = { installed: c.installed, interval: c.interval || '7d' }
   } catch (e: any) {
     settingsError.value = e?.response?.data?.error ?? e?.message ?? 'Failed to load settings'

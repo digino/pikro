@@ -21,19 +21,12 @@ type LoginPageSettings struct {
 	Template    string `json:"template,omitempty"`   // "minimal" | "bold"
 }
 
-type VoucherSettings struct {
-	ShowValidity bool   `json:"showValidity"`
-	ShowPrice    bool   `json:"showPrice"`
-	Layout       string `json:"layout,omitempty"` // "card" | "ticket", default "card"
-}
-
 type HotspotSettings struct {
 	HotspotName  string                 `json:"hotspotName"`
 	DNSName      string                 `json:"dnsName"`
 	Currency     string                 `json:"currency"`
 	ProfileMetas map[string]ProfileMeta `json:"profileMetas,omitempty"`
 	LoginPage    *LoginPageSettings     `json:"loginPage,omitempty"`
-	Voucher      *VoucherSettings       `json:"voucher,omitempty"`
 }
 
 type RouterProfile struct {

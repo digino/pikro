@@ -52,11 +52,10 @@ const active: Record<string, string>[] = [
 ]
 
 let hotspotSettings: HotspotSettings = {
-  hotspotName: 'CyberCafé Abidjan',
-  dnsName: 'hotspot.local',
+  hotspotName: 'Wifi Zone Nord-Ouest',
+  dnsName: 'nordouest.spot',
   currency: 'XOF',
-  loginPage: { title: 'CyberCafé Abidjan', subtitle: 'Bienvenue — connectez-vous pour accéder à internet', accentColor: '#111827' },
-  voucher: { showValidity: true, showPrice: true },
+  loginPage: { title: 'Wifi Zone Nord-Ouest', subtitle: 'Bienvenue — connectez-vous pour accéder à internet', accentColor: '#111827' },
 }
 
 let cleanup: CleanupSchedulerStatus = { installed: true, interval: '1d' }
