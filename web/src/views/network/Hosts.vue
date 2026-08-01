@@ -3,7 +3,7 @@
     <div class="rounded-xl border border-border p-5 bg-surface">
       <div class="flex items-center justify-between mb-4">
         <span class="font-semibold text-text-primary">Connected hosts</span>
-        <span v-if="hosts.length > 0" class="text-xs text-text-muted">{{ hosts.length }} total</span>
+        <span v-if="hosts.length > 0" class="text-sm text-text-secon">{{ hosts.length }} total</span>
       </div>
       <div v-if="loading && hosts.length === 0" class="flex justify-center py-8">
         <span class="spinner spinner--sm" />

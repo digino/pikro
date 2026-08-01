@@ -101,23 +101,21 @@
       </p>
     </div>
 
-    <!-- Router cards grid -->
     <div
       v-if="store.routers.length > 0"
-      class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5"
+      class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5"
     >
       <div
         v-for="r in store.routers"
         :key="r.id"
-        class="flex flex-col rounded-xl border transition-all p-3.5"
+        class="flex flex-col rounded-xl border transition-all"
         :class="
           store.activeId === r.id
             ? 'border-primary bg-surface shadow-[0_0_0_2px_var(--color-primary)]'
             : 'border-border bg-surface hover:border-muted'
         "
       >
-        <!-- Top bar: reachability pill left, test button right -->
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between pt-3.5 px-3.5">
           <div>
             <span
               v-if="testResults[r.id] === 'ok'"
@@ -138,17 +136,20 @@
             :disabled="testing[r.id]"
             @click.stop="test(r.id)"
           >
-            <ArrowPathIcon class="size-3.5" :class="{ 'animate-spin': testing[r.id] }" />
-            {{ testing[r.id] ? "Testing…" : "Test" }}
+            <ArrowPathIcon
+              class="size-3.5"
+              :class="{ 'animate-spin': testing[r.id] }"
+            />
+            {{ testing[r.id] ? "Pinging router..." : "Ping" }}
           </button>
         </div>
 
         <!-- Card body -->
-        <div class="flex flex-col items-center gap-2">
+        <div class="flex flex-col items-center gap-2 py-1.5">
           <!-- Router illustration -->
           <RouterArt
             :board-name="r.name"
-            :size="110"
+            :size="96"
             :power-led="
               testResults[r.id] === 'ok'
                 ? 'var(--color-green)'
@@ -166,25 +167,30 @@
             <span
               v-if="store.activeId === r.id"
               class="text-xs px-1.5 py-0.5 rounded font-medium"
-              style="color: var(--color-primary-fg); background: var(--color-primary);"
+              style="
+                color: var(--color-primary-fg);
+                background: var(--color-primary);
+              "
               >Active</span
             >
           </div>
 
           <!-- Connection info -->
-          <p class="text-xs font-mono text-text-muted text-center leading-relaxed">
+          <p
+            class="text-xs font-mono text-text-secondary text-center leading-relaxed"
+          >
             {{ r.host }}:{{ r.port }}<br />
-            {{ r.username }}<span v-if="r.useTls"> · TLS</span>
+            <span v-if="r.useTls"> · TLS</span>
           </p>
         </div>
 
         <!-- Divider -->
-        <div class="h-px bg-border m-3" />
+        <div class="h-px bg-border" />
 
         <!-- Action row -->
-        <div class="flex items-center justify-between gap-1.5">
+        <div class="flex flex-wrap gap-2 py-3 px-3.5">
           <button
-            class="btn flex-1"
+            class="btn flex-1 min-w-0 justify-center whitespace-normal text-center"
             :class="
               store.activeId === r.id
                 ? 'border-transparent opacity-40 cursor-default bg-transparent text-text-muted'
@@ -193,37 +199,37 @@
             :disabled="store.activeId === r.id"
             @click="selectRouter(r.id)"
           >
-            <BoltIcon class="size-3.5" />
+            <BoltIcon class="size-3.5 shrink-0" />
             {{ store.activeId === r.id ? "In use" : "Use" }}
           </button>
 
-          <button class="btn btn-ghost" @click="openEdit(r)">
+          <button
+            class="btn btn-ghost flex-1 min-w-0 justify-center whitespace-normal text-center"
+            @click="openEdit(r)"
+          >
+            <PencilSquareIcon class="size-3.5 shrink-0" />
+
             Edit
-            <PencilSquareIcon class="size-3.5" />
           </button>
 
           <button
-            class="btn border-transparent text-text-muted hover:text-red hover:bg-red/10"
+            class="btn border-transparent bg-red-10 text-red hover:bg-red/50 hover:text-white flex-1 min-w-0 justify-center whitespace-normal text-center"
             @click="remove(r.id)"
           >
-            <TrashIcon class="size-4" />
+            <TrashIcon class="size-4 shrink-0" />
+            Delete
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Empty state -->
-    <div
+    <EmptyState
       v-else-if="!scanning && !scanned"
-      class="border border-dashed border-border rounded-xl py-16 text-center"
-    >
-      <ServerIcon class="size-8 text-text-muted mx-auto mb-3" />
-      <p class="font-medium text-text-primary">No routers configured</p>
-      <p class="text-text-secondary mt-1">
-        Click <strong class="text-text-primary">Scan</strong> to find devices on
-        your network, or add one manually
-      </p>
-    </div>
+      bordered
+      size="lg"
+      title="No routers configured"
+      message="Click Scan to find devices on your network, or add one manually"
+    />
 
     <AddRouterDialog
       v-model:open="showAdd"
@@ -265,6 +271,7 @@ import AddRouterDialog from "@/components/AddRouterDialog.vue";
 import EditRouterDialog from "@/components/EditRouterDialog.vue";
 import PageLayout from "@/components/PageLayout.vue";
 import RouterArt from "@/components/router-art/RouterArt.vue";
+import EmptyState from "@/components/EmptyState.vue";
 
 const store = useRoutersStore();
 const router = useRouter();

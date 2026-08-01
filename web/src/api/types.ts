@@ -5,6 +5,11 @@ export interface RouterProfile {
   port: number
   username: string
   useTls: boolean
+  hotspotSettings?: {
+    hotspotName?: string
+    dnsName?: string
+    currency?: string
+  }
 }
 
 export interface NewRouterProfile {
@@ -14,6 +19,12 @@ export interface NewRouterProfile {
   username: string
   password: string
   useTls: boolean
+  hotspotSettings?: {
+    hotspotName: string
+    dnsName: string
+    currency: string
+    voucher: { showValidity: boolean; showPrice: boolean }
+  }
 }
 
 export interface NewHotspotUser {
@@ -58,7 +69,6 @@ export interface LoginPageSettings {
 }
 
 export interface VoucherSettings {
-  businessName?: string
   showValidity: boolean
   showPrice: boolean
   layout?: 'card' | 'ticket'

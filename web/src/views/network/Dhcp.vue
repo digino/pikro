@@ -3,7 +3,7 @@
     <div class="rounded-xl border border-border p-5 bg-surface">
       <div class="flex items-center justify-between mb-4">
         <span class="font-semibold text-text-primary">DHCP leases</span>
-        <span v-if="leases.length > 0" class="text-xs text-text-muted">{{ leases.length }} total</span>
+        <span v-if="leases.length > 0" class="text-sm text-text-secondary">{{ leases.length }} total</span>
       </div>
       <div v-if="leasesLoading && leases.length === 0" class="flex justify-center py-8">
         <span class="spinner spinner--sm" />

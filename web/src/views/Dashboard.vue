@@ -64,7 +64,7 @@
             <RouterLink
               to="/hotspot/settings"
               class="btn btn-ghost"
-              :class="{ 'text-amber': !cleanupInstalled }"
+              :class="{ 'bg-primary': !cleanupInstalled }"
             >
               {{ cleanupInstalled ? "Change" : "Configure" }}
             </RouterLink>
@@ -99,9 +99,23 @@
                 <div class="text-sm font-medium text-text-secondary">Revenue</div>
                 <div class="font-mono text-2xl font-bold mt-1">{{ fmtAmount(monthSales.revenue) }}</div>
               </div>
-              <div class="rounded-lg border border-border p-3 bg-base" title="Sum of revenue from the last 30 days — a rolling run-rate, not a true subscription MRR.">
-                <div class="text-sm font-medium text-text-secondary">Revenue (30d)</div>
-                <div class="font-mono text-2xl font-bold mt-1">{{ fmtAmount(revenue30d) }}</div>
+              <div class="rounded-lg border border-border p-3 bg-base" title="This month's revenue vs. last month.">
+                <div class="text-sm font-medium text-text-secondary">Performance</div>
+                <div
+                  v-if="salesPerformance === null"
+                  class="text-sm font-medium mt-1.5 text-text-muted"
+                >
+                  No prior month to compare
+                </div>
+                <div
+                  v-else
+                  class="font-mono text-2xl font-bold mt-1 flex items-center gap-1"
+                  :class="salesPerformance >= 0 ? 'text-green' : 'text-red'"
+                >
+                  <ArrowTrendingUpIcon v-if="salesPerformance >= 0" class="size-4" />
+                  <ArrowTrendingDownIcon v-else class="size-4" />
+                  {{ salesPerformance >= 0 ? "+" : "" }}{{ salesPerformance.toFixed(0) }}%
+                </div>
               </div>
             </div>
             <div class="h-40">
@@ -270,6 +284,8 @@ import { RouterLink } from "vue-router";
 import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
 } from "@heroicons/vue/24/outline";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
 import EmptyState from "@/components/EmptyState.vue";
@@ -436,8 +452,8 @@ async function loadSales() {
   try {
     const now = new Date();
     salesLedger.value = await getSalesLedger(store.activeId, now.getFullYear());
-    // A trailing-30-day window can dip into December of the previous year —
-    // only fetch it when we're actually close enough to the boundary to need it.
+    // Comparing this month to last month dips into the previous year's
+    // December only in January — only fetch it then.
     if (now.getMonth() === 0) {
       prevYearSalesLedger.value = await getSalesLedger(
         store.activeId,
@@ -554,16 +570,27 @@ const salesCurrency = computed(
   () => salesLedger.value.find((e) => e.currency)?.currency ?? "",
 );
 
-// Trailing 30-day revenue run-rate — a rolling total, not a true subscription
-// MRR (vouchers are one-off sales), but gives an at-a-glance performance signal.
-const revenue30d = computed(() => {
-  const cutoff = Date.now() - 30 * 86_400_000;
+// Previous calendar month's revenue, for a month-over-month comparison.
+const prevMonthRevenue = computed(() => {
+  const now = new Date();
+  const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
   let revenue = 0;
   for (const e of [...salesLedger.value, ...prevYearSalesLedger.value]) {
-    if (new Date(e.at).getTime() < cutoff) continue;
+    const d = new Date(e.at);
+    if (d.getFullYear() !== prevYear || d.getMonth() !== prevMonth) continue;
     revenue += (parseFloat(e.price) || 0) * e.count;
   }
   return revenue;
+});
+
+// Sales performance: this month's revenue vs. last month's, as a % change —
+// a trend signal, not an absolute figure easily mistaken for revenue itself.
+// null means "no valid baseline" (last month had zero revenue) — the template
+// falls back to showing the plain revenue figure in that case.
+const salesPerformance = computed(() => {
+  if (prevMonthRevenue.value === 0) return null;
+  return ((monthSales.value.revenue - prevMonthRevenue.value) / prevMonthRevenue.value) * 100;
 });
 
 // By-day breakdown for the current month, for the bar chart.

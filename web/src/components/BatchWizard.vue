@@ -158,7 +158,7 @@
     <p class="font-semibold">Profile and limits</p>
 
     <div class="flex flex-col gap-1">
-      <span class="text-sm font-medium text-text-secondary">Profile</span>
+      <span class="font-medium text-text-secondary">Profile</span>
       <SelectRoot
         :model-value="form.profile || undefined"
         @update:model-value="form.profile = $event ?? ''"
@@ -197,7 +197,7 @@
     </div>
 
     <div class="flex flex-col gap-1">
-      <span class="text-sm font-medium text-text-secondary">
+      <span class="font-medium text-text-secondary">
         Time limit
         <span class="text-text-muted font-normal">(overrides profile)</span>
       </span>
@@ -225,7 +225,7 @@
     </div>
 
     <div class="flex flex-col gap-1">
-      <span class="text-sm font-medium text-text-secondary">
+      <span class="font-medium text-text-secondary">
         Data limit
         <span class="text-text-muted font-normal">(overrides profile)</span>
       </span>
@@ -314,7 +314,7 @@
       </div>
     </div>
     <label class="flex flex-col gap-1">
-      <span class="text-sm font-medium text-text-secondary">
+      <span class="font-medium text-text-secondary">
         Comment <span class="text-text-muted font-normal">(optional)</span>
       </span>
       <input
@@ -387,6 +387,7 @@ const props = defineProps<{
   profiles: Record<string, string>[];
   profileMetas: Record<string, { validity?: string; price?: string }>;
   error?: string;
+  initialProfile?: string;
 }>();
 
 const emit = defineEmits<{
@@ -438,7 +439,7 @@ const form = ref<Omit<BatchConfig, "uptimePreview">>({
   charsDigits: true,
   passwordMode: "same",
   fixedPassword: "",
-  profile: "",
+  profile: props.initialProfile ?? "",
   limitUptimeRaw: "",
   limitBytesTotalValue: 0,
   limitBytesTotalUnit: "M",
@@ -526,7 +527,7 @@ function normalizeUptime() {
     .join("");
 }
 
-function reset(initialProfile = "") {
+function reset(initialProfile?: string) {
   step.value = 1;
   form.value = {
     count: 10,
@@ -535,7 +536,7 @@ function reset(initialProfile = "") {
     charsDigits: true,
     passwordMode: "same",
     fixedPassword: "",
-    profile: initialProfile,
+    profile: initialProfile ?? props.initialProfile ?? "",
     limitUptimeRaw: "",
     limitBytesTotalValue: 0,
     limitBytesTotalUnit: "M",

@@ -9,27 +9,21 @@ web/node_modules/
 .agents/
 skills-lock.json
 
-# Claude Code: share rules/ and agents/ with contributors; keep local bits out
 .claude/*
 !.claude/rules/
 !.claude/agents/
 
-# Keep in the working tree, never publish
-docs/roadmap.md
-docs/architecture.md
+docs/poc
 
 # OS / editor junk
 **/.DS_Store
 .idea/
 *.swp
 
-# Local env & secrets — never commit these
 .env
 .env.local
 .env.*.local
 web/.env.local
 *.pem
 *.key
-# Local Pikro config holds router credentials
 .pikro.json
-.mikroruler.json

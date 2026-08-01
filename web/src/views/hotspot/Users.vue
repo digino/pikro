@@ -17,7 +17,7 @@
         <button
           v-for="t in tabs"
           :key="t.key"
-          class="px-3 py-2 text-sm font-medium border-b-2 transition-colors"
+          class="px-3 py-2 text-sm font-semibold border-b-2 transition-colors"
           :class="
             tab === t.key
               ? 'border-text-primary text-text-primary'
@@ -266,7 +266,7 @@
               </td>
               <td class="px-4 py-3">
                 <span
-                  class="text-xs text-text-secondary border border-border px-2 py-0.5 rounded bg-base"
+                  class="text-xs text-text-secondary font-medium border border-border px-2 py-0.5 rounded bg-white"
                 >
                   {{ u.profile || "default" }}
                 </span>
@@ -280,7 +280,7 @@
               <td class="px-4 py-3 text-sm text-text-muted font-mono">
                 {{ u.comment || "—" }}
               </td>
-              <td class="px-4 py-3 text-sm" :class="expiryClass(u)">
+              <td class="px-4 py-3 text-xs" :class="expiryClass(u)">
                 {{ expiryLabel(u) }}
               </td>
               <td class="px-4 py-3">
@@ -629,11 +629,7 @@
       :open="showPrintDialog"
       :entries="printEntries"
       :default-layout="hotspotSettings.voucher?.layout ?? 'card'"
-      :business-name="
-        hotspotSettings.voucher?.businessName ??
-        hotspotSettings.hotspotName ??
-        ''
-      "
+      :business-name="hotspotSettings.hotspotName ?? ''"
       :show-validity="hotspotSettings.voucher?.showValidity ?? true"
       :show-price="hotspotSettings.voucher?.showPrice ?? true"
       :currency="hotspotSettings.currency ?? ''"
@@ -787,6 +783,13 @@ const cleanupToggling = ref(false);
 
 async function toggleCleanup(enabled: boolean) {
   if (!store.activeId || cleanupToggling.value) return;
+  if (
+    !enabled &&
+    !confirm(
+      "Turn off auto-cleanup? Expired and quota-exhausted vouchers will no longer be removed automatically — they'll accumulate until you delete them manually.",
+    )
+  )
+    return;
   cleanupToggling.value = true;
   try {
     const result = await putCleanupScheduler(

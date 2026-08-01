@@ -28,11 +28,14 @@
 
 ## Quick start
 
-Download the binary for your platform from [Releases](../../releases) and run it:
+Download the binary for your platform from [Releases](../../releases) and run it. 
 
-On **macOS**, unzip and drag `Pikro.app` to Applications. A tray icon appears in the menu bar.
+On macOS and Windows, Pikro runs as a tray application. Starting it places an
+icon in the menu bar (macOS) or system tray (Windows). Click **Open Pikro** to
+open the app in your browser, or **Quit** to stop the server.
 
-On **Windows**, double-click `pikro.exe`. A tray icon appears in the system tray and your browser opens automatically.
+A firewall prompt may appear on first run — click **Allow** so Pikro can reach
+your router over the local network.
 
 ```bash
 ./pikro
@@ -43,5 +46,4 @@ On **Windows**, double-click `pikro.exe`. A tray icon appears in the system tray
 
 ## Docs
 
-- [Architecture](docs/architecture.md)
 - [Building from source](docs/building.md)

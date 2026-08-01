@@ -22,68 +22,18 @@
         </button>
       </div>
 
-      <!-- ── Tab: General ── -->
-      <div v-if="tab === 'general'" class="max-w-lg">
-        <form class="space-y-5" @submit.prevent="save">
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-text-secondary">Business name</span>
-            <input v-model="form.voucherBusinessName" class="input" placeholder="e.g. CyberCafé Lumière" />
-            <p class="text-xs text-text-muted">Shown on vouchers and as the login page title.</p>
-          </label>
-
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-text-secondary">Hotspot name</span>
-            <input v-model="form.hotspotName" class="input" placeholder="e.g. myspot" />
-            <p class="text-xs text-text-muted">The name of the hotspot server configured on your router.</p>
-          </label>
-
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-text-secondary">DNS name</span>
-            <input v-model="form.dnsName" class="input" placeholder="e.g. myspot.spot" />
-            <p class="text-xs text-text-muted">The DNS name clients are redirected to for the login page.</p>
-          </label>
-
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-text-secondary">Currency</span>
-            <select v-model="form.currency" class="input">
-              <option value="">None</option>
-              <option v-for="c in CURRENCIES" :key="c.value" :value="c.value">{{ c.label }}</option>
-              <option value="custom">Custom…</option>
-            </select>
-            <input
-              v-if="form.currency === 'custom'"
-              v-model="customCurrency"
-              class="input mt-1"
-              placeholder="Enter currency code, e.g. MGA"
-              maxlength="6"
-            />
-            <p class="text-xs text-text-muted">Used when displaying prices on profiles and vouchers.</p>
-          </label>
-
-          <p v-if="settingsError" class="text-xs text-red">{{ settingsError }}</p>
-          <p v-if="settingsSaved" class="text-xs text-green">Settings saved.</p>
-
-          <div class="flex justify-end pt-1">
-            <button type="submit" class="btn btn-primary" :disabled="saving">
-              <span v-if="saving" class="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-              Save settings
-            </button>
-          </div>
-        </form>
-      </div>
-
       <!-- ── Tab: Login page ── -->
       <SettingsLoginPage
-        v-else-if="tab === 'login'"
+        v-if="tab === 'login'"
         ref="loginPageRef"
-        :business-name="form.voucherBusinessName"
+        :hotspot-name="form.hotspotName"
       />
 
       <!-- ── Tab: Vouchers ── -->
       <SettingsVoucher
         v-else-if="tab === 'voucher'"
         ref="voucherRef"
-        :business-name="form.voucherBusinessName"
+        :hotspot-name="form.hotspotName"
         :effective-currency="effectiveCurrency"
       />
 
@@ -144,21 +94,19 @@ import { ref, computed, watch } from 'vue'
 import { CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 import { useRoutersStore } from '@/stores/routers'
 import {
-  getHotspotSettings, putHotspotSettings,
+  getHotspotSettings,
   getCleanupScheduler, putCleanupScheduler,
 } from '@/api'
 import PageLayout from '@/components/PageLayout.vue'
 import NoRouterSelected from '@/components/NoRouterSelected.vue'
-import { CURRENCIES, KNOWN_CURRENCY_VALUES } from '@/utils/currencies'
 import SettingsLoginPage from './settings/SettingsLoginPage.vue'
 import SettingsVoucher from './settings/SettingsVoucher.vue'
 import SettingsMigration from './settings/SettingsMigration.vue'
 
 const store = useRoutersStore()
 
-const tab = ref<'general' | 'login' | 'voucher' | 'cleanup' | 'migration'>('general')
+const tab = ref<'login' | 'voucher' | 'cleanup' | 'migration'>('login')
 const tabs = [
-  { key: 'general' as const,  label: 'General' },
   { key: 'login' as const,    label: 'Login page' },
   { key: 'voucher' as const,  label: 'Vouchers' },
   { key: 'cleanup' as const,  label: 'Cleanup' },
@@ -166,16 +114,14 @@ const tabs = [
 ]
 
 const loading = ref(false)
-const saving = ref(false)
-const settingsSaved = ref(false)
 const settingsError = ref('')
-const customCurrency = ref('')
 
-const form = ref({ hotspotName: '', dnsName: '', currency: '', voucherBusinessName: '' })
+// hotspotName/dnsName/currency are edited from the router's Add/Edit dialog
+// (see Routers page) — loaded here read-only for the other tabs (login page
+// title, voucher pricing) to consume.
+const form = ref({ hotspotName: '', dnsName: '', currency: '' })
 
-const effectiveCurrency = computed(() =>
-  form.value.currency === 'custom' ? customCurrency.value : form.value.currency
-)
+const effectiveCurrency = computed(() => form.value.currency)
 
 const cleanupSaving = ref(false)
 const cleanupError = ref('')
@@ -201,11 +147,6 @@ async function load() {
     form.value.hotspotName = s.hotspotName ?? ''
     form.value.dnsName = s.dnsName ?? ''
     form.value.currency = s.currency ?? ''
-    form.value.voucherBusinessName = s.voucher?.businessName ?? ''
-    if (form.value.currency && !KNOWN_CURRENCY_VALUES.includes(form.value.currency)) {
-      customCurrency.value = form.value.currency
-      form.value.currency = 'custom'
-    }
     loginPageRef.value?.init(s.loginPage)
     voucherRef.value?.init(s.voucher)
     cleanup.value = { installed: c.installed, interval: c.interval || '7d' }
@@ -214,30 +155,6 @@ async function load() {
   } finally {
     loading.value = false
   }
-}
-
-async function save() {
-  if (!store.activeId) return
-  saving.value = true; settingsSaved.value = false; settingsError.value = ''
-  try {
-    const existing = await getHotspotSettings(store.activeId)
-    await putHotspotSettings(store.activeId, {
-      ...existing,
-      hotspotName: form.value.hotspotName,
-      dnsName: form.value.dnsName,
-      currency: effectiveCurrency.value,
-      voucher: {
-        showValidity: existing.voucher?.showValidity ?? true,
-        showPrice: existing.voucher?.showPrice ?? true,
-        layout: existing.voucher?.layout,
-        businessName: form.value.voucherBusinessName,
-      },
-    })
-    settingsSaved.value = true
-    setTimeout(() => { settingsSaved.value = false }, 3000)
-  } catch (e: any) {
-    settingsError.value = e?.response?.data?.error ?? e?.message ?? 'Failed to save settings'
-  } finally { saving.value = false }
 }
 
 async function saveCleanup() {

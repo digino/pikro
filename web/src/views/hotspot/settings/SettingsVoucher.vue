@@ -36,7 +36,7 @@
             </SwitchRoot>
           </label>
           <label class="flex items-center justify-between gap-3 cursor-pointer">
-            <span class="text-sm text-text-secondary">Price (currency from General tab)</span>
+            <span class="text-sm text-text-secondary">Price (currency set on the router)</span>
             <SwitchRoot v-model="voucher.showPrice" class="relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors data-[state=checked]:bg-text-primary data-[state=unchecked]:bg-border focus:outline-none">
               <SwitchThumb class="pointer-events-none block h-4 w-4 rounded-full bg-white shadow transition-transform translate-x-0.5 data-[state=checked]:translate-x-4.5" />
             </SwitchRoot>
@@ -83,7 +83,7 @@
             </div>
           </div>
           <div class="flex items-center justify-between border-t border-border pt-1.5 mt-auto">
-            <span v-if="businessName" class="text-text-muted" style="font-size: 9px">{{ businessName }}</span>
+            <span v-if="hotspotName" class="text-text-muted" style="font-size: 9px">{{ hotspotName }}</span>
             <span class="text-text-muted ml-auto" style="font-size: 9px">#{{ voucherSamples.indexOf(sample) + 1 }}</span>
           </div>
         </div>
@@ -98,7 +98,7 @@
         >
           <!-- Header band -->
           <div class="bg-muted border-b border-border px-4 py-2 flex items-center justify-between gap-2">
-            <span class="font-bold text-text-primary text-sm">{{ businessName || 'WiFi Voucher' }}</span>
+            <span class="font-bold text-text-primary text-sm">{{ hotspotName || 'WiFi Voucher' }}</span>
             <span v-if="voucher.showPrice && effectiveCurrency" class="font-bold text-text-primary">500 {{ effectiveCurrency }}</span>
             <span class="text-text-muted ml-auto" style="font-size: 9px">#{{ voucherSamples.indexOf(sample) + 1 }}</span>
           </div>
@@ -131,11 +131,11 @@ import { SwitchRoot, SwitchThumb } from 'reka-ui'
 import { useRoutersStore } from '@/stores/routers'
 import { getHotspotSettings, putHotspotSettings, type VoucherSettings } from '@/api'
 
-const props = defineProps<{ businessName: string; effectiveCurrency: string }>()
+const props = defineProps<{ hotspotName: string; effectiveCurrency: string }>()
 
 const store = useRoutersStore()
 
-const voucher = ref<VoucherSettings>({ businessName: '', showValidity: true, showPrice: true, layout: 'card' })
+const voucher = ref<VoucherSettings>({ showValidity: true, showPrice: true, layout: 'card' })
 const saving = ref(false)
 const saved = ref(false)
 const error = ref('')
@@ -155,7 +155,6 @@ const voucherSamples = [
 function init(v?: VoucherSettings) {
   if (v) {
     voucher.value = {
-      businessName: v.businessName ?? '',
       showValidity: v.showValidity ?? true,
       showPrice: v.showPrice ?? true,
       layout: v.layout ?? 'card',

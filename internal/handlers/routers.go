@@ -17,16 +17,17 @@ func ListRouters(w http.ResponseWriter, r *http.Request) {
 	}
 	// Never send passwords to the frontend
 	type safeProfile struct {
-		ID       string `json:"id"`
-		Name     string `json:"name"`
-		Host     string `json:"host"`
-		Port     int    `json:"port"`
-		Username string `json:"username"`
-		UseTLS   bool   `json:"useTls"`
+		ID              string                  `json:"id"`
+		Name            string                  `json:"name"`
+		Host            string                  `json:"host"`
+		Port            int                     `json:"port"`
+		Username        string                  `json:"username"`
+		UseTLS          bool                    `json:"useTls"`
+		HotspotSettings *config.HotspotSettings `json:"hotspotSettings,omitempty"`
 	}
 	safe := make([]safeProfile, len(cfg.Routers))
 	for i, p := range cfg.Routers {
-		safe[i] = safeProfile{p.ID, p.Name, p.Host, p.Port, p.Username, p.UseTLS}
+		safe[i] = safeProfile{p.ID, p.Name, p.Host, p.Port, p.Username, p.UseTLS, p.HotspotSettings}
 	}
 	jsonOK(w, safe)
 }
@@ -62,12 +63,17 @@ func AddRouter(w http.ResponseWriter, r *http.Request) {
 func UpdateRouter(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var input struct {
-		Name     string `json:"name"`
-		Host     string `json:"host"`
-		Port     int    `json:"port"`
-		Username string `json:"username"`
-		Password string `json:"password"`
-		UseTLS   bool   `json:"useTls"`
+		Name            string `json:"name"`
+		Host            string `json:"host"`
+		Port            int    `json:"port"`
+		Username        string `json:"username"`
+		Password        string `json:"password"`
+		UseTLS          bool   `json:"useTls"`
+		HotspotSettings *struct {
+			HotspotName string `json:"hotspotName"`
+			DNSName     string `json:"dnsName"`
+			Currency    string `json:"currency"`
+		} `json:"hotspotSettings"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		jsonError(w, "invalid body", http.StatusBadRequest)
@@ -100,6 +106,19 @@ func UpdateRouter(w http.ResponseWriter, r *http.Request) {
 			cfg.Routers[i].Password = input.Password
 		}
 		cfg.Routers[i].UseTLS = input.UseTLS
+		// Merge only the fields the router dialog owns — ProfileMetas, Voucher,
+		// and LoginPage live on the same struct but are managed elsewhere
+		// (Profiles page, Settings tabs) and must not be clobbered.
+		if input.HotspotSettings != nil {
+			hs := cfg.Routers[i].HotspotSettings
+			if hs == nil {
+				hs = &config.HotspotSettings{}
+				cfg.Routers[i].HotspotSettings = hs
+			}
+			hs.HotspotName = input.HotspotSettings.HotspotName
+			hs.DNSName = input.HotspotSettings.DNSName
+			hs.Currency = input.HotspotSettings.Currency
+		}
 		break
 	}
 	if !found {

@@ -22,6 +22,23 @@ export const listRouters = () =>
 export const addRouter = (profile: NewRouterProfile) =>
   api.post<{ id: string }>('/routers', profile).then(r => r.data)
 
+export interface UpdateRouterProfile {
+  name: string
+  host: string
+  port: number
+  username: string
+  password?: string
+  useTls: boolean
+  hotspotSettings?: {
+    hotspotName: string
+    dnsName: string
+    currency: string
+  }
+}
+
+export const updateRouter = (id: string, profile: UpdateRouterProfile) =>
+  api.patch(`/routers/${id}`, profile)
+
 export const deleteRouter = (id: string) =>
   api.delete(`/routers/${id}`)
 

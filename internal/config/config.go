@@ -22,7 +22,6 @@ type LoginPageSettings struct {
 }
 
 type VoucherSettings struct {
-	BusinessName string `json:"businessName,omitempty"`
 	ShowValidity bool   `json:"showValidity"`
 	ShowPrice    bool   `json:"showPrice"`
 	Layout       string `json:"layout,omitempty"` // "card" | "ticket", default "card"

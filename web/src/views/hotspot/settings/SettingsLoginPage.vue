@@ -28,8 +28,8 @@
       <div class="border-t border-border pt-4 space-y-4">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-text-secondary">Title</span>
-          <input v-model="loginPage.title" class="input" :placeholder="businessName || 'Sign in to continue'" />
-          <p class="text-xs text-text-muted">Leave blank to use your business name.</p>
+          <input v-model="loginPage.title" class="input" :placeholder="hotspotName || 'Sign in to continue'" />
+          <p class="text-xs text-text-muted">Leave blank to use your hotspot name.</p>
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-text-secondary">Subtitle</span>
@@ -88,7 +88,7 @@ import {
 } from '@/api'
 import { MINIMAL_TEMPLATE, BOLD_TEMPLATE } from './loginPageTemplates'
 
-const props = defineProps<{ businessName: string }>()
+const props = defineProps<{ hotspotName: string }>()
 
 const store = useRoutersStore()
 
@@ -123,7 +123,7 @@ defineExpose({ init })
 
 const preview = computed(() => {
   const accent = loginPage.value.accentColor || '#111827'
-  const title = loginPage.value.title || props.businessName || 'My Hotspot'
+  const title = loginPage.value.title || props.hotspotName || 'My Hotspot'
   const subtitle = loginPage.value.subtitle || 'myspot.spot'
   const tpl = loginPage.value.template === 'bold' ? BOLD_TEMPLATE : MINIMAL_TEMPLATE
   return tpl

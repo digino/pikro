@@ -276,21 +276,8 @@
       <!-- Branding (form phase) -->
       <div class="border border-border rounded-xl p-5 space-y-4 bg-surface">
         <h2 class="text-sm font-semibold text-text-primary">
-          Branding &amp; vouchers
+          Vouchers
         </h2>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-text-secondary"
-            >Business name</span
-          >
-          <input
-            v-model="branding.businessName"
-            class="input"
-            placeholder="e.g. CyberCafé Lumière"
-          />
-          <p class="text-xs text-text-muted">
-            Printed on vouchers and shown on the login page.
-          </p>
-        </label>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-text-secondary">Currency</span>
           <select v-model="branding.currency" class="input">
@@ -298,19 +285,11 @@
             <option v-for="c in CURRENCIES" :key="c.value" :value="c.value">
               {{ c.label }}
             </option>
-            <option value="custom">Custom…</option>
           </select>
-          <input
-            v-if="branding.currency === 'custom'"
-            v-model="branding.customCurrency"
-            class="input mt-1"
-            placeholder="Currency code, e.g. MGA"
-            maxlength="6"
-          />
         </label>
         <p class="text-xs text-text-muted">
-          Saved alongside the network setup. You can update these anytime in
-          Settings.
+          Saved alongside the network setup. You can update this anytime by
+          editing the router.
         </p>
       </div>
 
@@ -633,7 +612,7 @@ import {
 } from "@/api";
 import { useRoutersStore } from "@/stores/routers";
 import { friendlyError } from "@/utils/errors";
-import { CURRENCIES, KNOWN_CURRENCY_VALUES } from "@/utils/currencies";
+import { CURRENCIES } from "@/utils/currencies";
 import AppDialog from "@/components/AppDialog.vue";
 import PageLayout from "@/components/PageLayout.vue";
 
@@ -655,16 +634,12 @@ const tearing = ref(false);
 const teardownResult = ref<TeardownResult | null>(null);
 const showTeardownConfirm = ref(false);
 
-const branding = ref({ businessName: "", currency: "", customCurrency: "" });
+const branding = ref({ currency: "" });
 const brandingSaving = ref(false);
 const brandingError = ref("");
 const brandingSaved = ref(false);
 
-const effectiveCurrency = computed(() =>
-  branding.value.currency === "custom"
-    ? branding.value.customCurrency
-    : branding.value.currency,
-);
+const effectiveCurrency = computed(() => branding.value.currency);
 
 const bridgeAndWlan = computed(() =>
   interfaces.value.filter(
@@ -696,14 +671,7 @@ async function loadBranding() {
   if (!store.activeId) return;
   try {
     const s = await getHotspotSettings(store.activeId);
-    const cur = s.currency ?? "";
-    if (cur && !KNOWN_CURRENCY_VALUES.includes(cur)) {
-      branding.value.currency = "custom";
-      branding.value.customCurrency = cur;
-    } else {
-      branding.value.currency = cur;
-    }
-    branding.value.businessName = s.voucher?.businessName ?? "";
+    branding.value.currency = s.currency ?? "";
   } catch {
     // non-fatal — branding stays blank
   }
@@ -719,10 +687,6 @@ async function saveBranding() {
     await putHotspotSettings(store.activeId, {
       ...existing,
       currency: effectiveCurrency.value,
-      voucher: {
-        ...(existing.voucher ?? { showValidity: true, showPrice: true }),
-        businessName: branding.value.businessName,
-      },
     });
     brandingSaved.value = true;
     setTimeout(() => {
@@ -777,7 +741,7 @@ async function runSetup() {
       subnet: form.value.subnet,
       hotspotName: form.value.hotspotName,
     });
-    if (branding.value.businessName || effectiveCurrency.value) {
+    if (effectiveCurrency.value) {
       await saveBranding();
     }
   } catch (e: any) {

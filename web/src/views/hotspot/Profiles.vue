@@ -28,13 +28,13 @@
 
     <!-- Profile cards grid -->
     <div v-else-if="profiles.length > 0" class="space-y-3">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5">
         <div
           v-for="p in profiles"
           :key="p['.id']"
-          class="border border-border rounded-xl p-4 flex flex-col gap-3 transition-colors hover:border-muted bg-surface"
+          class="border border-border rounded-xl flex flex-col transition-colors hover:border-muted bg-surface"
         >
-          <div class="flex items-start justify-between gap-2">
+          <div class="p-4 flex flex-col gap-3">
             <div>
               <p class="text-sm font-semibold text-text-primary">
                 {{ p.name }}
@@ -46,41 +46,42 @@
                 {{ p["rate-limit"] }}
               </p>
             </div>
-            <div class="flex gap-1 shrink-0">
-              <button
-                class="btn btn-sm btn-ghost"
-                title="Edit"
-                @click="openEdit(p)"
-              >
-                <PencilSquareIcon class="size-3.5" />
-                Edit
-              </button>
-              <button
-                class="btn btn-sm btn-ghost hover:text-red hover:bg-red/10"
-                title="Delete"
-                @click="remove(p)"
-              >
-                <TrashIcon class="size-3.5" />
-                Delete
-              </button>
+
+            <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+              <span class="text-text-secondary">Validity</span>
+              <span class="text-text-primary">{{
+                profileMetas[p.name]?.validity || "—"
+              }}</span>
+              <span class="text-text-secondary">Shared users</span>
+              <span class="text-text-primary">{{
+                p["shared-users"] || "1"
+              }}</span>
+              <span class="text-text-secondary">Price</span>
+              <span class="text-text-primary">{{
+                profileMetas[p.name]?.price
+                  ? `${profileMetas[p.name].price} ${currency}`
+                  : "—"
+              }}</span>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-            <span class="text-text-secondary">Validity</span>
-            <span class="text-text-primary">{{
-              profileMetas[p.name]?.validity || "—"
-            }}</span>
-            <span class="text-text-secondary">Shared users</span>
-            <span class="text-text-primary">{{
-              p["shared-users"] || "1"
-            }}</span>
-            <span class="text-text-secondary">Price</span>
-            <span class="text-text-primary">{{
-              profileMetas[p.name]?.price
-                ? `${profileMetas[p.name].price} ${currency}`
-                : "—"
-            }}</span>
+          <div class="h-px bg-border" />
+
+          <div class="flex flex-wrap gap-2 py-3 px-3.5">
+            <button
+              class="btn btn-ghost flex-1 min-w-0 justify-center whitespace-normal text-center"
+              @click="openEdit(p)"
+            >
+              <PencilSquareIcon class="size-3.5 shrink-0" />
+              Edit
+            </button>
+            <button
+              class="btn border-transparent bg-red-10 text-red hover:bg-red/50 hover:text-white flex-1 min-w-0 justify-center whitespace-normal text-center"
+              @click="remove(p)"
+            >
+              <TrashIcon class="size-3.5 shrink-0" />
+              Delete
+            </button>
           </div>
         </div>
       </div>

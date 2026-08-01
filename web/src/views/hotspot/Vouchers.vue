@@ -161,6 +161,7 @@
         :profiles="profiles"
         :profile-metas="profileMetas"
         :error="batchError"
+        :initial-profile="pendingProfile"
         @cancel="showBatch = false"
         @submit="submitBatch"
       />
@@ -170,11 +171,7 @@
       :open="showPrintDialog"
       :entries="printEntries"
       :default-layout="hotspotSettings.voucher?.layout ?? 'card'"
-      :business-name="
-        hotspotSettings.voucher?.businessName ??
-        hotspotSettings.hotspotName ??
-        ''
-      "
+      :business-name="hotspotSettings.hotspotName ?? ''"
       :show-validity="hotspotSettings.voucher?.showValidity ?? true"
       :show-price="hotspotSettings.voucher?.showPrice ?? true"
       :currency="hotspotSettings.currency ?? ''"
@@ -186,7 +183,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import BatchWizard, { type BatchConfig } from "@/components/BatchWizard.vue";
 import {
   PlusIcon,
@@ -210,6 +207,8 @@ import PrintTemplateDialog from "@/components/PrintTemplateDialog.vue";
 import { type VoucherEntry } from "@/utils/vouchers";
 
 const store = useRoutersStore();
+const route = useRoute();
+const router = useRouter();
 
 const profiles = ref<Record<string, string>[]>([]);
 const profileMetas = ref<Record<string, ProfileMeta>>({});
@@ -239,6 +238,15 @@ async function load() {
     profiles.value = p;
     profileMetas.value = m;
     hotspotSettings.value = s;
+
+    // A `?profile=` query param (e.g. linked from the Profiles page) opens
+    // the wizard pre-filled for that profile, then clears the param so
+    // back/forward navigation doesn't keep reopening it.
+    const queryProfile = route.query.profile;
+    if (typeof queryProfile === "string" && queryProfile) {
+      openBatch(queryProfile);
+      router.replace({ query: { ...route.query, profile: undefined } });
+    }
   } catch (e: any) {
     error.value = friendlyError(e, "Failed to load profiles");
   } finally {
@@ -259,6 +267,7 @@ const batchResults = ref<
 >([]);
 const wizardRef = ref<InstanceType<typeof BatchWizard> | null>(null);
 const lastBatchProfile = ref("");
+const pendingProfile = ref("");
 
 function generateName(
   charset: string,
@@ -297,6 +306,7 @@ function openBatch(profileName = "") {
   batchRunning.value = false;
   batchResults.value = [];
   batchError.value = "";
+  pendingProfile.value = profileName;
   showBatch.value = true;
   wizardRef.value?.reset(profileName);
 }

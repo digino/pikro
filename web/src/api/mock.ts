@@ -56,7 +56,7 @@ let hotspotSettings: HotspotSettings = {
   dnsName: 'hotspot.local',
   currency: 'XOF',
   loginPage: { title: 'CyberCafé Abidjan', subtitle: 'Bienvenue — connectez-vous pour accéder à internet', accentColor: '#111827' },
-  voucher: { businessName: 'CyberCafé Abidjan', showValidity: true, showPrice: true },
+  voucher: { showValidity: true, showPrice: true },
 }
 
 let cleanup: CleanupSchedulerStatus = { installed: true, interval: '1d' }
