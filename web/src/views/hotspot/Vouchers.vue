@@ -119,7 +119,7 @@
             }}</span>
           </div>
         </div>
-        <div class="flex justify-end gap-2 pt-1 border-t border-border">
+        <div class="flex justify-end gap-2 border-border">
           <button
             type="button"
             class="btn btn-ghost"

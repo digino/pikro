@@ -76,35 +76,21 @@
 
     <div class="space-y-2">
       <p class="font-medium">Characters</p>
-      <div class="flex gap-4">
-        <label
-          class="flex items-center gap-1.5 text-sm text-text-secondary cursor-pointer"
+      <div class="grid grid-cols-3 gap-2">
+        <button
+          v-for="opt in CHARSET_OPTS"
+          :key="opt.key"
+          type="button"
+          class="border rounded-lg py-2 px-1 text-xs font-mono transition-colors"
+          :class="
+            charsetKey === opt.key
+              ? 'border-accent bg-accent/10 text-text-primary font-semibold'
+              : 'border-border text-text-secondary hover:border-muted'
+          "
+          @click="setCharset(opt.key)"
         >
-          <CheckboxRoot
-            :model-value="form.charsLetters"
-            class="size-4 rounded border border-border bg-base flex items-center justify-center transition-colors data-[state=checked]:bg-accent data-[state=checked]:border-accent"
-            @update:model-value="form.charsLetters = $event === true"
-          >
-            <CheckboxIndicator>
-              <CheckIcon class="size-3 text-base" />
-            </CheckboxIndicator>
-          </CheckboxRoot>
-          Letters (a–z)
-        </label>
-        <label
-          class="flex items-center gap-1.5 text-sm text-text-secondary cursor-pointer"
-        >
-          <CheckboxRoot
-            :model-value="form.charsDigits"
-            class="size-4 rounded border border-border bg-base flex items-center justify-center transition-colors data-[state=checked]:bg-accent data-[state=checked]:border-accent"
-            @update:model-value="form.charsDigits = $event === true"
-          >
-            <CheckboxIndicator>
-              <CheckIcon class="size-3 text-base" />
-            </CheckboxIndicator>
-          </CheckboxRoot>
-          Digits (0–9)
-        </label>
+          {{ opt.label }}
+        </button>
       </div>
       <p class="text-sm text-text-muted font-mono">
         Preview: <span class="text-text-primary">{{ namePreview }}</span>
@@ -368,8 +354,6 @@ import {
   SelectItem,
   SelectItemText,
   SelectItemIndicator,
-  CheckboxRoot,
-  CheckboxIndicator,
   StepperRoot,
   StepperItem,
   StepperTrigger,
@@ -377,11 +361,7 @@ import {
   StepperTitle,
   StepperSeparator,
 } from "reka-ui";
-import {
-  ChevronDownIcon,
-  CheckCircleIcon,
-  CheckIcon,
-} from "@heroicons/vue/24/outline";
+import { ChevronDownIcon, CheckCircleIcon } from "@heroicons/vue/24/outline";
 
 const props = defineProps<{
   profiles: Record<string, string>[];
@@ -411,6 +391,12 @@ export interface BatchConfig {
 }
 
 const STEPS = ["Quantity", "Password", "Profile", "Review"];
+
+const CHARSET_OPTS = [
+  { key: "letters" as const, label: "Random abcd", letters: true, digits: false },
+  { key: "digits" as const, label: "Random 8909", letters: false, digits: true },
+  { key: "alphanumeric" as const, label: "Random 5abcb", letters: true, digits: true },
+];
 
 const PASSWORD_OPTS = [
   {
@@ -452,6 +438,18 @@ const charset = computed(() => {
   if (form.value.charsDigits) s += "0123456789";
   return s;
 });
+
+const charsetKey = computed(() => {
+  if (form.value.charsLetters && form.value.charsDigits) return "alphanumeric";
+  if (form.value.charsDigits) return "digits";
+  return "letters";
+});
+
+function setCharset(key: (typeof CHARSET_OPTS)[number]["key"]) {
+  const opt = CHARSET_OPTS.find((o) => o.key === key)!;
+  form.value.charsLetters = opt.letters;
+  form.value.charsDigits = opt.digits;
+}
 
 const namePreview = computed(() => {
   if (!charset.value) return "—";

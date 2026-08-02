@@ -44,7 +44,9 @@
 
         <AppSelect
           v-model="filterProfile"
-          :options="allProfileNames.map((name) => ({ value: name, label: name }))"
+          :options="
+            allProfileNames.map((name) => ({ value: name, label: name }))
+          "
           placeholder="All profiles"
         />
 
@@ -70,46 +72,44 @@
         <!-- Summary cards -->
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div class="rounded-xl border border-border p-4 bg-surface">
-            <p class="text-sm text-text-secondary font-medium mb-1">
-              Vouchers generated
-            </p>
+            <p class="text-sm font-semibold mb-1">Vouchers generated</p>
             <div class="flex items-baseline gap-2">
               <p class="font-mono text-2xl font-bold text-text-primary">
                 {{ summary.generated }}
               </p>
               <TrendBadge :delta="generatedDelta" />
             </div>
-            <p class="text-xs text-text-muted mt-0.5">vs. {{ prevSummary.generated }} prior</p>
+            <p class="text-xs text-text-secondary mt-0.5">
+              vs. {{ prevSummary.generated }} prior
+            </p>
           </div>
           <div class="rounded-xl border border-border p-4 bg-surface">
-            <p class="text-sm text-text-secondary font-medium mb-1">Revenue</p>
+            <p class="text-sm font-semibold mb-1">Revenue</p>
             <div class="flex items-baseline gap-2">
               <p class="font-mono text-2xl font-bold">
                 {{ fmtAmount(summary.revenue) }}
               </p>
               <TrendBadge :delta="revenueDelta" />
             </div>
-            <p class="text-xs text-text-muted mt-0.5">vs. {{ fmtAmount(prevSummary.revenue) }} prior</p>
+            <p class="text-xs text-text-secondary mt-0.5">
+              vs. {{ fmtAmount(prevSummary.revenue) }} prior
+            </p>
           </div>
           <div class="rounded-xl border border-border p-4 bg-surface">
-            <p class="text-sm text-text-secondary font-medium mb-1">
-              Activated on router
-            </p>
-            <p class="font-mono text-2xl font-bold text-green">
+            <p class="text-sm font-semibold mb-1">Activated on router</p>
+            <p class="font-mono text-2xl font-bold">
               {{ activatedCount }}
             </p>
-            <p class="text-xs text-text-muted font-medium mt-0.5">
+            <p class="text-xs text-text-secondary font-medium mt-0.5">
               bytes-in &gt; 0
             </p>
           </div>
           <div class="rounded-xl border border-border p-4 bg-surface">
-            <p class="text-sm text-text-secondary font-medium mb-1">
-              Unused inventory
-            </p>
-            <p class="font-mono text-2xl font-bold text-amber">
+            <p class="text-sm font-medium mb-1">Unused inventory</p>
+            <p class="font-mono text-2xl font-bold">
               {{ unusedCount }}
             </p>
-            <p class="text-xs text-text-muted mt-0.5">
+            <p class="text-xs text-text-secondary mt-0.5">
               on router, not used yet
             </p>
           </div>
@@ -118,7 +118,7 @@
         <!-- Top profiles -->
         <div
           v-if="topProfiles.length > 1"
-          class="grid grid-cols-2 gap-3 sm:grid-cols-4"
+          class="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-5"
         >
           <div
             v-for="tp in topProfiles"
@@ -143,7 +143,9 @@
             <span class="font-semibold text-text-primary">
               {{ period === "monthly" ? "Monthly" : "Daily" }} sales
             </span>
-            <span class="text-xs text-text-muted">{{ activeCurrency || "" }}</span>
+            <span class="text-xs text-text-muted">{{
+              activeCurrency || ""
+            }}</span>
           </div>
           <div class="h-96">
             <SalesBarChart :points="chartPoints" :currency="activeCurrency" />
@@ -151,9 +153,7 @@
         </div>
 
         <!-- Breakdown table -->
-        <div
-          class="rounded-xl border border-border overflow-hidden bg-surface"
-        >
+        <div class="rounded-xl border border-border overflow-hidden bg-surface">
           <div
             class="flex items-center justify-between px-5 py-4 border-b border-border"
           >
@@ -240,7 +240,7 @@
           </table>
         </div>
 
-        <p class="text-xs text-text-muted">
+        <p class="text-xs text-text-secondary font-medium">
           * Activated count reflects users currently on the router with usage
           recorded. Cleaned-up users are not counted.
         </p>
@@ -419,12 +419,17 @@ const rows = computed(() => bucketEntries(filteredLedger.value));
 // Monthly view (a specific year) compares to the previous year.
 const prevRows = computed(() => {
   if (period.value === "monthly") {
-    return bucketEntriesForYear(filterByProfile(prevYearLedger.value), selectedYear.value - 1);
+    return bucketEntriesForYear(
+      filterByProfile(prevYearLedger.value),
+      selectedYear.value - 1,
+    );
   }
   // Previous month, possibly in the previous year (Jan -> prior Dec).
   const prevMonth = selectedMonth.value === 0 ? 11 : selectedMonth.value - 1;
-  const prevYear = selectedMonth.value === 0 ? selectedYear.value - 1 : selectedYear.value;
-  const source = prevYear === selectedYear.value ? ledger.value : prevYearLedger.value;
+  const prevYear =
+    selectedMonth.value === 0 ? selectedYear.value - 1 : selectedYear.value;
+  const source =
+    prevYear === selectedYear.value ? ledger.value : prevYearLedger.value;
   return bucketEntriesForMonth(filterByProfile(source), prevYear, prevMonth);
 });
 
@@ -446,7 +451,11 @@ function bucketEntriesForYear(entries: SaleEntry[], year: number): Row[] {
   return [...bucket.values()];
 }
 
-function bucketEntriesForMonth(entries: SaleEntry[], year: number, month: number): Row[] {
+function bucketEntriesForMonth(
+  entries: SaleEntry[],
+  year: number,
+  month: number,
+): Row[] {
   const bucket = new Map<string, Row>();
   for (const entry of entries) {
     const d = new Date(entry.at);
@@ -519,7 +528,11 @@ const visibleProfiles = computed(() =>
 
 // ── Chart points ───────────────────────────────────────────
 const chartPoints = computed(() =>
-  rows.value.map((r) => ({ label: r.label, count: r.count, revenue: r.revenue })),
+  rows.value.map((r) => ({
+    label: r.label,
+    count: r.count,
+    revenue: r.revenue,
+  })),
 );
 
 // ── Formatter ─────────────────────────────────────────────

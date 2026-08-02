@@ -182,6 +182,33 @@
             {{ r.host }}:{{ r.port }}<br />
             <span v-if="r.useTls"> · TLS</span>
           </p>
+
+          <!-- Hotspot info -->
+          <div
+            v-if="
+              r.hotspotSettings?.hotspotName ||
+              r.hotspotSettings?.dnsName ||
+              r.hotspotSettings?.currency
+            "
+            class="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-xs text-text-secondary font-medium px-2"
+          >
+            <span
+              v-if="r.hotspotSettings?.hotspotName"
+              class="inline-flex items-center gap-1"
+            >
+              <WifiIcon class="size-4" />{{ r.hotspotSettings.hotspotName }}
+              -
+            </span>
+            <span v-if="r.hotspotSettings?.dnsName">{{
+              r.hotspotSettings.dnsName
+            }} -</span>
+            <span
+              v-if="r.hotspotSettings?.currency"
+              class="inline-flex items-center gap-1"
+            >
+              <BanknotesIcon class="size-4" />{{ r.hotspotSettings.currency }}
+            </span>
+          </div>
         </div>
 
         <!-- Divider -->
@@ -259,6 +286,8 @@ import {
   CheckIcon,
   ExclamationTriangleIcon,
   PencilSquareIcon,
+  WifiIcon,
+  BanknotesIcon,
 } from "@heroicons/vue/24/outline";
 import { useRoutersStore } from "@/stores/routers";
 import {

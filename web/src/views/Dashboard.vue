@@ -21,22 +21,34 @@
           <span class="spinner spinner--sm" />
         </div>
         <template v-else>
-          <div class="grid grid-cols-4 gap-3 tracking-tight text-sm font-semibold text-secondary">
+          <div
+            class="grid grid-cols-4 gap-3 tracking-tight text-sm font-semibold text-secondary"
+          >
             <div class="rounded-lg border border-border p-3 bg-base">
               <div class="text-text-secondary">Users</div>
-              <div class="font-mono text-2xl font-bold mt-1 text-text-primary">{{ totalUsers }}</div>
+              <div class="font-mono text-2xl font-bold mt-1 text-text-primary">
+                {{ totalUsers }}
+              </div>
             </div>
             <div class="rounded-lg border border-border p-3 bg-base">
               <div class="text-text-secondary">Active</div>
-              <div class="font-mono text-2xl font-bold mt-1">{{ activeSessions }}</div>
+              <div class="font-mono text-2xl font-bold mt-1">
+                {{ activeSessions }}
+              </div>
             </div>
             <div class="rounded-lg border border-border p-3 bg-base">
               <div class="text-text-secondary">Expired</div>
-              <div class="font-mono text-2xl font-bold mt-1">{{ expiredUsers }}</div>
+              <div class="font-mono text-2xl font-bold mt-1">
+                {{ expiredUsers }}
+              </div>
             </div>
             <div class="rounded-lg border border-border p-3 bg-base">
               <div class="text-text-secondary">Disabled</div>
-              <div class="font-mono text-2xl font-bold mt-1 text-text-secondary">{{ disabledUsers }}</div>
+              <div
+                class="font-mono text-2xl font-bold mt-1 text-text-secondary"
+              >
+                {{ disabledUsers }}
+              </div>
             </div>
           </div>
 
@@ -46,14 +58,15 @@
           >
             <component
               :is="cleanupInstalled ? CheckCircleIcon : ExclamationTriangleIcon"
-              class="size-5 shrink-0"
+              class="size-6 shrink-0"
               :class="cleanupInstalled ? 'text-green' : 'text-amber'"
             />
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold text-text-primary">
-                Auto-cleanup {{ cleanupInstalled ? "active" : "not configured" }}
+              <div class="font-semibold text-text-primary">
+                Auto-cleanup
+                {{ cleanupInstalled ? "active" : "not configured" }}
               </div>
-              <div class="text-xs text-text-secondary mt-0.5">
+              <div class="text-sm text-text-secondary mt-0.5">
                 {{
                   cleanupInstalled
                     ? `Expired vouchers are removed automatically every ${cleanupIntervalLabel}.`
@@ -88,19 +101,37 @@
           >
             <span class="spinner spinner--sm" />
           </div>
-          <EmptyState v-else-if="salesLedger.length === 0" message="No sales recorded yet" />
+          <EmptyState
+            v-else-if="salesLedger.length === 0"
+            message="No sales recorded yet"
+          />
           <template v-else>
             <div class="grid grid-cols-3 gap-3">
               <div class="rounded-lg border border-border p-3 bg-base">
-                <div class="text-sm font-medium text-text-secondary">Vouchers generated</div>
-                <div class="font-mono text-2xl font-bold mt-1 text-text-primary">{{ monthSales.generated }}</div>
+                <div class="text-sm font-medium text-text-secondary">
+                  Vouchers generated
+                </div>
+                <div
+                  class="font-mono text-2xl font-bold mt-1 text-text-primary"
+                >
+                  {{ monthSales.generated }}
+                </div>
               </div>
               <div class="rounded-lg border border-border p-3 bg-base">
-                <div class="text-sm font-medium text-text-secondary">Revenue</div>
-                <div class="font-mono text-2xl font-bold mt-1">{{ fmtAmount(monthSales.revenue) }}</div>
+                <div class="text-sm font-medium text-text-secondary">
+                  Revenue
+                </div>
+                <div class="font-mono text-2xl font-bold mt-1">
+                  {{ fmtAmount(monthSales.revenue) }}
+                </div>
               </div>
-              <div class="rounded-lg border border-border p-3 bg-base" title="This month's revenue vs. last month.">
-                <div class="text-sm font-medium text-text-secondary">Performance</div>
+              <div
+                class="rounded-lg border border-border p-3 bg-base"
+                title="This month's revenue vs. last month."
+              >
+                <div class="text-sm font-medium text-text-secondary">
+                  Performance
+                </div>
                 <div
                   v-if="salesPerformance === null"
                   class="text-sm font-medium mt-1.5 text-text-muted"
@@ -112,14 +143,21 @@
                   class="font-mono text-2xl font-bold mt-1 flex items-center gap-1"
                   :class="salesPerformance >= 0 ? 'text-green' : 'text-red'"
                 >
-                  <ArrowTrendingUpIcon v-if="salesPerformance >= 0" class="size-4" />
+                  <ArrowTrendingUpIcon
+                    v-if="salesPerformance >= 0"
+                    class="size-4"
+                  />
                   <ArrowTrendingDownIcon v-else class="size-4" />
-                  {{ salesPerformance >= 0 ? "+" : "" }}{{ salesPerformance.toFixed(0) }}%
+                  {{ salesPerformance >= 0 ? "+" : ""
+                  }}{{ salesPerformance.toFixed(0) }}%
                 </div>
               </div>
             </div>
             <div class="h-40">
-              <SalesBarChart :points="dailySalesPoints" :currency="salesCurrency" />
+              <SalesBarChart
+                :points="dailySalesPoints"
+                :currency="salesCurrency"
+              />
             </div>
           </template>
         </DashboardCard>
@@ -138,7 +176,10 @@
           >
             <span class="spinner spinner--sm" />
           </div>
-          <EmptyState v-else-if="activeList.length === 0" message="No active sessions" />
+          <EmptyState
+            v-else-if="activeList.length === 0"
+            message="No active sessions"
+          />
           <div v-else class="overflow-x-auto">
             <table class="w-full text-xs">
               <thead>
@@ -186,10 +227,16 @@
       <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4 items-stretch">
         <!-- System card -->
         <DashboardCard title="System">
-          <div v-if="loading" class="flex items-center gap-2 text-sm text-text-muted py-4 justify-center">
+          <div
+            v-if="loading"
+            class="flex items-center gap-2 text-sm text-text-muted py-4 justify-center"
+          >
             <span class="spinner spinner--sm" /> Loading…
           </div>
-          <div v-else-if="error" class="flex items-center gap-1.5 text-xs text-red py-4 justify-center">
+          <div
+            v-else-if="error"
+            class="flex items-center gap-1.5 text-xs text-red py-4 justify-center"
+          >
             <ExclamationTriangleIcon class="size-3.5 shrink-0" />{{ error }}
           </div>
           <template v-else>
@@ -198,58 +245,103 @@
                 :board-name="resource['board-name'] ?? ''"
                 :size="88"
                 :power-led="healthColor"
-                :wifi-led="activeSessions > 0 ? 'var(--color-green)' : 'var(--color-border)'"
+                :wifi-led="
+                  activeSessions > 0
+                    ? 'var(--color-green)'
+                    : 'var(--color-border)'
+                "
                 wan-led="var(--color-amber)"
               />
               <div class="text-center space-y-0.5">
-                <div class="text-sm font-semibold text-text-primary font-mono leading-tight">
-                  {{ resource['board-name'] || store.active()?.name || '—' }}
+                <div
+                  class="text-sm font-semibold text-text-primary font-mono leading-tight"
+                >
+                  {{ resource["board-name"] || store.active()?.name || "—" }}
                 </div>
                 <div class="text-xs text-text-muted font-mono leading-tight">
-                  RouterOS {{ resource['version']?.split(' ')[0] || '—' }}
+                  RouterOS {{ resource["version"]?.split(" ")[0] || "—" }}
                 </div>
               </div>
               <div class="relative mt-1">
                 <svg width="72" height="72" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-border)" stroke-width="8"/>
                   <circle
-                    cx="60" cy="60" r="50" fill="none"
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    fill="none"
+                    stroke="var(--color-border)"
+                    stroke-width="8"
+                  />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    fill="none"
                     :stroke="healthColor"
                     stroke-width="8"
                     stroke-linecap="round"
                     :stroke-dasharray="ringCirc"
                     :stroke-dashoffset="ringOffset"
                     transform="rotate(-90 60 60)"
-                    style="transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease"
+                    style="
+                      transition:
+                        stroke-dashoffset 0.6s ease,
+                        stroke 0.4s ease;
+                    "
                   />
                 </svg>
-                <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span class="font-mono font-bold tracking-tight text-text-primary">{{ healthScore }}</span>
-                  <span class="text-xs font-bold text-text-secondary">Health</span>
+                <div
+                  class="absolute inset-0 flex flex-col items-center justify-center"
+                >
+                  <span
+                    class="font-mono font-bold tracking-tight text-text-primary"
+                    >{{ healthScore }}</span
+                  >
+                  <span class="text-xs font-bold text-text-secondary"
+                    >Health</span
+                  >
                 </div>
               </div>
             </div>
 
             <div class="grid grid-cols-1 text-xs">
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60">
+              <div
+                class="flex justify-between items-center py-1.5 border-b border-border/60"
+              >
                 <span class="text-text-muted">Uptime</span>
-                <span class="font-mono font-semibold text-text-primary">{{ resource["uptime"] ?? "—" }}</span>
+                <span class="font-mono font-semibold text-text-primary">{{
+                  resource["uptime"] ?? "—"
+                }}</span>
               </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60">
+              <div
+                class="flex justify-between items-center py-1.5 border-b border-border/60"
+              >
                 <span class="text-text-muted">CPU</span>
-                <span class="font-mono font-semibold text-text-primary">{{ resource["cpu-load"] ?? "—" }}%</span>
+                <span class="font-mono font-semibold text-text-primary"
+                  >{{ resource["cpu-load"] ?? "—" }}%</span
+                >
               </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60">
+              <div
+                class="flex justify-between items-center py-1.5 border-b border-border/60"
+              >
                 <span class="text-text-muted">Free RAM</span>
-                <span class="font-mono font-semibold text-text-primary">{{ formatBytes(freeMemory) }}</span>
+                <span class="font-mono font-semibold text-text-primary">{{
+                  formatBytes(freeMemory)
+                }}</span>
               </div>
-              <div class="flex justify-between items-center py-1.5 border-b border-border/60">
+              <div
+                class="flex justify-between items-center py-1.5 border-b border-border/60"
+              >
                 <span class="text-text-muted">Free disk</span>
-                <span class="font-mono font-semibold text-text-primary">{{ formatBytes(parseInt(resource["free-hdd-space"] ?? "0") || 0) }}</span>
+                <span class="font-mono font-semibold text-text-primary">{{
+                  formatBytes(parseInt(resource["free-hdd-space"] ?? "0") || 0)
+                }}</span>
               </div>
               <div class="flex justify-between items-center py-1.5">
                 <span class="text-text-muted">Date &amp; time</span>
-                <span class="font-mono font-semibold text-text-primary">{{ routerDate || "—" }} {{ routerTime || "" }}</span>
+                <span class="font-mono font-semibold text-text-primary"
+                  >{{ routerDate || "—" }} {{ routerTime || "" }}</span
+                >
               </div>
             </div>
           </template>
@@ -259,14 +351,24 @@
         <DashboardCard title="Bandwidth">
           <template #actions>
             <div class="flex items-center gap-1.5">
-              <span class="size-2 rounded-sm shrink-0" style="background:#22d3ee"/>
+              <span
+                class="size-2 rounded-sm shrink-0"
+                style="background: #22d3ee"
+              />
               <span class="text-xs text-text-secondary">Download</span>
-              <span class="font-mono text-xs font-semibold text-text-primary">{{ curDown }} Mbps</span>
+              <span class="font-mono text-xs font-semibold text-text-primary"
+                >{{ curDown }} Mbps</span
+              >
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="size-2 rounded-sm shrink-0" style="background:#f59e0b"/>
+              <span
+                class="size-2 rounded-sm shrink-0"
+                style="background: #f59e0b"
+              />
               <span class="text-xs text-text-secondary">Upload</span>
-              <span class="font-mono text-xs font-semibold text-text-primary">{{ curUp }} Mbps</span>
+              <span class="font-mono text-xs font-semibold text-text-primary"
+                >{{ curUp }} Mbps</span
+              >
             </div>
           </template>
           <div class="h-full">
@@ -557,7 +659,9 @@ const monthSalesEntries = computed(() => {
   const now = new Date();
   return salesLedger.value.filter((e) => {
     const d = new Date(e.at);
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    return (
+      d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+    );
   });
 });
 
@@ -579,7 +683,8 @@ const salesCurrency = computed(
 const prevMonthRevenue = computed(() => {
   const now = new Date();
   const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-  const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const prevYear =
+    now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
   let revenue = 0;
   for (const e of [...salesLedger.value, ...prevYearSalesLedger.value]) {
     const d = new Date(e.at);
@@ -595,7 +700,11 @@ const prevMonthRevenue = computed(() => {
 // falls back to showing the plain revenue figure in that case.
 const salesPerformance = computed(() => {
   if (prevMonthRevenue.value === 0) return null;
-  return ((monthSales.value.revenue - prevMonthRevenue.value) / prevMonthRevenue.value) * 100;
+  return (
+    ((monthSales.value.revenue - prevMonthRevenue.value) /
+      prevMonthRevenue.value) *
+    100
+  );
 });
 
 // By-day breakdown for the current month, for the bar chart.

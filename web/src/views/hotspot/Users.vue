@@ -1,10 +1,40 @@
 <template>
   <PageLayout title="Hotspot" subtitle="Users">
     <template #actions>
+      <template v-if="tab === 'users' && selected.size > 0">
+        <span class="text-sm text-text-secondary font-semibold">{{ selected.size }} selected</span>
+        <button
+          class="text-sm text-text-secondary hover:text-text-primary transition-colors cursor-pointer underline"
+          @click="selected = new Set()"
+        >
+          Clear
+        </button>
+        <button
+          class="btn btn-danger"
+          :disabled="bulkDeleting"
+          @click="removeSelected"
+        >
+          <span
+            v-if="bulkDeleting"
+            class="size-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+          />
+          <TrashIcon v-else class="size-3.5" />
+          Delete {{ selected.size }}
+        </button>
+      </template>
       <RouterLink to="/hotspot/vouchers" class="btn btn-ghost">
         <TicketIcon class="size-4" />
         Generate vouchers
       </RouterLink>
+      <button
+        v-if="tab === 'users'"
+        class="btn btn-ghost"
+        :disabled="filteredUsers.length === 0"
+        @click="openPrint"
+      >
+        <PrinterIcon class="size-4" />
+        {{ selected.size > 0 ? `Print ${selected.size} selected` : "Print" }}
+      </button>
       <button class="btn btn-primary" @click="openAdd">
         <PlusIcon class="size-4" />
         New user
@@ -72,38 +102,6 @@
 
     <!-- Users tab -->
     <div v-else-if="tab === 'users'" class="space-y-2">
-      <!-- Bulk action bar -->
-      <div
-        v-if="selected.size > 0"
-        class="flex items-center gap-3 px-3 py-2 border border-border rounded-xl text-sm font-medium bg-surface"
-      >
-        <span class="text-text-secondary font-semibold"
-          >{{ selected.size }} selected</span
-        >
-        <button
-          class="ml-auto text-text-secondary hover:text-text-primary transition-colors cursor-pointer underline"
-          @click="selected = new Set()"
-        >
-          Cancel
-        </button>
-        <button class="btn btn-ghost" @click="openPrintSelected">
-          <PrinterIcon class="size-3.5" />
-          Print
-        </button>
-        <button
-          class="btn btn-danger"
-          :disabled="bulkDeleting"
-          @click="removeSelected"
-        >
-          <span
-            v-if="bulkDeleting"
-            class="size-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"
-          />
-          <TrashIcon v-else class="size-3.5" />
-          Delete {{ selected.size }}
-        </button>
-      </div>
-
       <!-- Search & filters -->
       <div class="flex items-center gap-2.5 flex-wrap">
         <div class="relative flex-1 max-w-xs bg-wh">
@@ -1059,14 +1057,17 @@ async function toggleDisabled(u: Record<string, string>) {
 const showPrintDialog = ref(false);
 const printEntries = ref<VoucherEntry[]>([]);
 
-function openPrintSelected() {
-  printEntries.value = users.value
-    .filter((u) => selected.value.has(u[".id"]))
-    .map((u) => ({
-      name: u.name,
-      password: u.password ?? "",
-      profile: u.profile,
-    }));
+// With no selection, prints every currently filtered/visible user instead —
+// so the header Print button always does something useful.
+function openPrint() {
+  const source = selected.value.size > 0
+    ? users.value.filter((u) => selected.value.has(u[".id"]))
+    : filteredUsers.value;
+  printEntries.value = source.map((u) => ({
+    name: u.name,
+    password: u.password ?? "",
+    profile: u.profile,
+  }));
   showPrintDialog.value = true;
 }
 

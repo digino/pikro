@@ -35,7 +35,7 @@
           <EmptyState v-else-if="traffic.length === 0" message="No interface data" />
           <table v-else class="w-full text-xs">
             <thead>
-              <tr class="text-text-muted border-b border-border">
+              <tr class="border-b border-border">
                 <th class="text-left pb-2 font-medium">Interface</th>
                 <th class="text-left pb-2 font-medium">IP</th>
                 <th class="text-left pb-2 font-medium">Status</th>
