@@ -1,6 +1,7 @@
 # Build artifacts
 pikro
 pikro.exe
+*.syso
 dist/
 web/dist/
 web/node_modules/

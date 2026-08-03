@@ -4,8 +4,9 @@ LDFLAGS := -ldflags "-X main.Version=$(VERSION)"
 # -H windowsgui builds the exe as a GUI subsystem app so Windows doesn't pop a
 # console window on double-click. Windows-only — other GOOS ignore -H.
 WIN_LDFLAGS := -ldflags "-X main.Version=$(VERSION) -H windowsgui"
+RSRC_VERSION := v0.10.2
 
-.PHONY: dev backend build release clean
+.PHONY: dev backend build release clean _win_rsrc
 
 # Run Go backend + Vite dev server side by side.
 # Ctrl+C kills both via the trap.
@@ -36,7 +37,7 @@ build:
 # can't be cross-compiled from an arm64 host without a C cross-toolchain
 # (e.g. osxcross) or a native Intel builder. Long-term fix: build each OS/arch
 # natively via a GitHub Actions matrix instead of cross-compiling locally.
-release:
+release: _win_rsrc
 	@echo "Releasing $(VERSION)..."
 	@mkdir -p dist
 	@cd web && npm run build
@@ -45,8 +46,19 @@ release:
 	GOOS=linux   GOARCH=amd64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/$(BINARY)-linux-amd64 .
 	GOOS=linux   GOARCH=arm64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/$(BINARY)-linux-arm64 .
 	@$(MAKE) _bundle_app ARCH=arm64 BIN=dist/.pikro-mac-arm64-bin OUT=dist/Pikro-mac-arm64.zip
-	@rm -f dist/.pikro-mac-arm64-bin
+	@rm -f dist/.pikro-mac-arm64-bin rsrc_windows_amd64.syso
 	@echo "Done → dist/ for $(VERSION)"
+
+# Internal: generates rsrc_windows_amd64.syso, embedding the Common-Controls
+# manifest (needed so the launcher window's buttons render with modern
+# styling instead of Windows-95-style widgets) and the .exe icon.
+# Picked up automatically by `go build` for GOOS=windows — no linker flag needed.
+_win_rsrc:
+	go run github.com/akavel/rsrc@$(RSRC_VERSION) \
+		-manifest pikro.exe.manifest \
+		-ico assets/brand/pikro.ico \
+		-arch amd64 \
+		-o rsrc_windows_amd64.syso
 
 # Internal: wrap a Darwin binary in a .app bundle and zip it.
 # Usage: make _bundle_app BIN=<binary> OUT=<zip>
@@ -75,5 +87,6 @@ _bundle_app:
 
 clean:
 	rm -f $(BINARY)
+	rm -f rsrc_windows_amd64.syso
 	rm -rf dist/
 	rm -rf web/dist/

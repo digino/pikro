@@ -28,6 +28,13 @@ jobs:
       - run: cd web && npm ci
       - run: cd web && npm run build
 
+      - name: Verify frontend build output
+        run: |
+          if [ ! -s web/dist/index.html ]; then
+            echo "::error::web/dist/index.html is missing or empty — Vite build likely failed silently. Refusing to embed a blank frontend."
+            exit 1
+          fi
+
       - name: Build Mac binaries + .app bundles
         run: |
           VERSION="v${{ github.event.inputs.version }}"
@@ -64,11 +71,26 @@ jobs:
       - run: cd web && npm ci
       - run: cd web && npm run build
 
+      - name: Verify frontend build output
+        run: |
+          if [ ! -s web/dist/index.html ]; then
+            echo "::error::web/dist/index.html is missing or empty — Vite build likely failed silently. Refusing to embed a blank frontend."
+            exit 1
+          fi
+
+      - name: Generate Windows resources (manifest + icon)
+        run: |
+          go run github.com/akavel/rsrc@v0.10.2 \
+            -manifest pikro.exe.manifest \
+            -ico assets/brand/pikro.ico \
+            -arch amd64 \
+            -o rsrc_windows_amd64.syso
+
       - name: Build Windows + Linux binaries
         run: |
           VERSION="v${{ github.event.inputs.version }}"
           mkdir -p dist
-          GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro.exe .
+          GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION} -H windowsgui" -o dist/pikro.exe .
           GOOS=linux   GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-linux-amd64 .
           GOOS=linux   GOARCH=arm64 go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-linux-arm64 .
 
