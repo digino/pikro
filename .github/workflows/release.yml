@@ -39,8 +39,18 @@ jobs:
         run: |
           VERSION="v${{ github.event.inputs.version }}"
           mkdir -p dist
-          GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=${VERSION}" -o dist/.pikro-mac-arm64-bin .
-          GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION}" -o dist/.pikro-mac-intel-bin .
+          # systray uses cgo (Objective-C) on macOS, so CGO must stay enabled
+          # even when cross-compiling for the non-native arch — Go disables
+          # cgo by default whenever GOOS/GOARCH differ from the host, which
+          # silently drops the cgo-implemented systray functions and fails
+          # with "undefined: nativeLoop" etc. macOS's system clang is a
+          # universal compiler, so passing -arch/-target for the target arch
+          # is enough for it to cross-compile the Objective-C side too.
+          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=${VERSION}" -o dist/.pikro-mac-arm64-bin .
+          CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
+            CGO_CFLAGS="-arch x86_64" \
+            CGO_LDFLAGS="-arch x86_64" \
+            go build -ldflags "-X main.Version=${VERSION}" -o dist/.pikro-mac-intel-bin .
           make _bundle_app BIN=dist/.pikro-mac-arm64-bin  OUT=dist/Pikro-mac-arm64.zip  VERSION=${VERSION}
           make _bundle_app BIN=dist/.pikro-mac-intel-bin  OUT=dist/Pikro-mac-intel.zip  VERSION=${VERSION}
           rm -f dist/.pikro-mac-arm64-bin dist/.pikro-mac-intel-bin
