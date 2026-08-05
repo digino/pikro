@@ -127,7 +127,13 @@ func (c *Client) UploadLoginPage(profileName string, html string) error {
 	}
 
 	if profileName == "" {
-		profileName = "pikro-profile"
+		hsReply, hsErr := conn.RunArgs([]string{"/ip/hotspot/print"})
+		if hsErr == nil && len(hsReply.Re) > 0 {
+			profileName = hsReply.Re[0].Map["profile"]
+		}
+		if profileName == "" {
+			profileName = "default" // RouterOS default profile name
+		}
 	}
 	// numbers= expects a positional index into the last /print result, not a
 	// name — resolve the profile's .id explicitly rather than passing the

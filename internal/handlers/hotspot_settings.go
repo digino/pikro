@@ -55,7 +55,7 @@ func UploadLoginPage(w http.ResponseWriter, r *http.Request) {
 
 	client := router.NewClient(profile.Host, profile.Port, profile.Username, profile.Password, profile.UseTLS)
 
-	if err := client.UploadLoginPage("pikro-profile", input.HTML); err != nil {
+	if err := client.UploadLoginPage("", input.HTML); err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
 	}
