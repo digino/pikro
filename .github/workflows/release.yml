@@ -108,6 +108,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -129,6 +131,19 @@ jobs:
         with:
           name: other-binaries
           path: dist/
+
+      # Cryptographically attests these exact files were built by this exact
+      # workflow run from this exact commit — verifiable via
+      # `gh attestation verify <file> -R digino/pikro`.
+      - name: Generate SLSA build provenance
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: |
+            dist/Pikro-mac-arm64.zip
+            dist/Pikro-mac-intel.zip
+            dist/pikro.exe
+            dist/pikro-linux-amd64
+            dist/pikro-linux-arm64
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
