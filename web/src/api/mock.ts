@@ -5,7 +5,7 @@ export type * from './types'
 import type {
   RouterProfile, NewRouterProfile,
   NewHotspotUser, UpdateHotspotUser,
-  ProfileMeta, HotspotSettings, LoginPageSettings,
+  ProfileMeta, HotspotSettings,
   CleanupSchedulerStatus, HotspotProfileParams,
   PreflightResult, SetupResult, TeardownResult,
   DiscoveredDevice,
@@ -141,7 +141,7 @@ export const disconnectHotspotActive = (_routerId: string, sessionId: string) =>
 
 export const getHotspotSettings = (_id: string) => ok({ ...hotspotSettings })
 export const putHotspotSettings = (_id: string, s: HotspotSettings) => { hotspotSettings = s; return ok(s) }
-export const uploadLoginPage = (_id: string, p: LoginPageSettings & { html: string }) => {
+export const uploadLoginPage = (_id: string, p: { html: string }) => {
   liveLoginPageHTML = p.html
   return ok(undefined)
 }

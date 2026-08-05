@@ -339,7 +339,7 @@ func (c *Client) stepInstallCleanupScheduler() SetupStepResult {
 // is active (the hotspot/ directory only exists once /ip/hotspot/add has run).
 func (c *Client) stepUploadLoginPage(profileName string) SetupStepResult {
 	name := "Upload login page"
-	if err := c.UploadLoginPage(profileName, ""); err != nil {
+	if err := c.UploadLoginPage(profileName, LoginPageContent{}); err != nil {
 		// Non-fatal: the hotspot works with the default page if this fails.
 		return SetupStepResult{Name: name, OK: true, Skipped: true}
 	}

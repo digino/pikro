@@ -46,28 +46,48 @@ type hotspotFile struct {
 	content string
 }
 
-// UploadLoginPage uploads a fully-rendered login page (built by the frontend
-// from one of its template presets) plus the other hotspot pages (logout,
-// status, alogin, error, redirect) to the router's hotspot/ directory. If
-// html is empty, the built-in default template is rendered and used instead
-// — this is the path taken during initial hotspot setup, before an admin has
-// picked a template in Settings.
-func (c *Client) UploadLoginPage(profileName string, html string) error {
-	if html == "" {
+// LoginPageContent holds the fully-rendered HTML for each customizable
+// hotspot page (built by the frontend from one of its template presets).
+// Any field left empty falls back to the built-in fixed default for that
+// page — this is the path taken during initial hotspot setup, before an
+// admin has picked a template in Settings, and also covers alogin/error,
+// which are never customizable and always use their fixed default.
+type LoginPageContent struct {
+	Login    string
+	Logout   string
+	Status   string
+	Redirect string
+}
+
+// UploadLoginPage uploads the given (or default, if empty) rendered hotspot
+// pages — login, logout, status, alogin, error, redirect — to the router's
+// hotspot/ directory. alogin and error are never customizable and always use
+// their fixed built-in design.
+func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) error {
+	if content.Login == "" {
 		rendered, err := renderDefaultLoginPage(defaultLoginPageParams{})
 		if err != nil {
 			return err
 		}
-		html = rendered
+		content.Login = rendered
+	}
+	if content.Logout == "" {
+		content.Logout = string(assets.HotspotLogoutHTML)
+	}
+	if content.Status == "" {
+		content.Status = string(assets.HotspotStatusHTML)
+	}
+	if content.Redirect == "" {
+		content.Redirect = string(assets.HotspotRedirectHTML)
 	}
 
 	files := []hotspotFile{
-		{"hotspot/login.html", html},
-		{"hotspot/logout.html", string(assets.HotspotLogoutHTML)},
-		{"hotspot/status.html", string(assets.HotspotStatusHTML)},
+		{"hotspot/login.html", content.Login},
+		{"hotspot/logout.html", content.Logout},
+		{"hotspot/status.html", content.Status},
 		{"hotspot/alogin.html", string(assets.HotspotAloginHTML)},
 		{"hotspot/error.html", string(assets.HotspotErrorHTML)},
-		{"hotspot/redirect.html", string(assets.HotspotRedirectHTML)},
+		{"hotspot/redirect.html", content.Redirect},
 	}
 
 	conn, err := c.connect()
