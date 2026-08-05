@@ -55,10 +55,11 @@ let hotspotSettings: HotspotSettings = {
   hotspotName: 'Wifi Zone Nord-Ouest',
   dnsName: 'nordouest.spot',
   currency: 'XOF',
-  loginPage: { title: 'Wifi Zone Nord-Ouest', subtitle: 'Bienvenue — connectez-vous pour accéder à internet', accentColor: '#111827' },
+  loginPage: { title: 'Wifi Zone Nord-Ouest', subtitle: 'Bienvenue — connectez-vous pour accéder à internet', template: 'minimal' },
 }
 
 let cleanup: CleanupSchedulerStatus = { installed: true, interval: '1d' }
+let liveLoginPageHTML = '<!DOCTYPE html><html><body><p>No login page uploaded yet.</p></body></html>'
 
 let nextId = 9
 
@@ -134,7 +135,11 @@ export const deleteHotspotUser = (_routerId: string, userId: string) => {
 
 export const getHotspotSettings = (_id: string) => ok({ ...hotspotSettings })
 export const putHotspotSettings = (_id: string, s: HotspotSettings) => { hotspotSettings = s; return ok(s) }
-export const uploadLoginPage = (_id: string, _p: LoginPageSettings) => ok(undefined)
+export const uploadLoginPage = (_id: string, p: LoginPageSettings & { html: string }) => {
+  liveLoginPageHTML = p.html
+  return ok(undefined)
+}
+export const getLoginPageHTML = (_id: string) => ok(liveLoginPageHTML)
 
 export const getCleanupScheduler = (_id: string) => ok({ ...cleanup })
 export const putCleanupScheduler = (_id: string, enabled: boolean, interval: string) => {

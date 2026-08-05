@@ -691,6 +691,7 @@ import PageLayout from "@/components/PageLayout.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
 import PrintTemplateDialog from "@/components/PrintTemplateDialog.vue";
 import { type VoucherEntry } from "@/utils/vouchers";
+import { normalizeDnsName } from "@/utils/dnsName";
 
 const store = useRoutersStore();
 const route = useRoute();
@@ -776,10 +777,13 @@ const hotspotSettings = ref<HotspotSettings>({
 
 // Used by the Business voucher template's QR code — points at the
 // hotspot's own login page, since that DNS name is what devices on the
-// hotspot network actually resolve.
-const loginUrl = computed(() =>
-  hotspotSettings.value.dnsName ? `http://${hotspotSettings.value.dnsName}/login` : "",
-);
+// hotspot network actually resolve. normalizeDnsName guards against a
+// dnsName saved with a scheme already in it (e.g. from before this was
+// validated on input) producing a doubled "http://http://...".
+const loginUrl = computed(() => {
+  const host = normalizeDnsName(hotspotSettings.value.dnsName);
+  return host ? `http://${host}/login` : "";
+});
 
 const loading = ref(false);
 const error = ref("");

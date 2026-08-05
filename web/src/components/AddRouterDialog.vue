@@ -119,6 +119,7 @@ import { useRoutersStore } from '@/stores/routers'
 import type { DiscoveredDevice } from '@/api'
 import AppDialog from '@/components/AppDialog.vue'
 import RouterHotspotInfoFields from '@/components/RouterHotspotInfoFields.vue'
+import { normalizeDnsName } from '@/utils/dnsName'
 
 const props = defineProps<{ open: boolean; prefill?: Partial<DiscoveredDevice> }>()
 const emit = defineEmits<{ 'update:open': [value: boolean]; added: [ip: string] }>()
@@ -168,7 +169,7 @@ async function submit() {
       password: f.password, useTls: f.useTls,
       hotspotSettings: {
         hotspotName: f.hotspotName,
-        dnsName: f.dnsName,
+        dnsName: normalizeDnsName(f.dnsName),
         currency: f.currency,
       },
     })

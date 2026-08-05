@@ -2,6 +2,20 @@
   <div class="flex gap-6 items-start">
     <div class="w-72 shrink-0 space-y-5">
 
+      <button
+        type="button"
+        class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors"
+        :class="showingLive
+          ? 'border-text-primary bg-muted text-text-primary'
+          : 'border-border text-text-secondary hover:border-text-muted'"
+        :disabled="loadingLive"
+        @click="toggleLive"
+      >
+        <span v-if="loadingLive" class="size-3 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
+        {{ showingLive ? 'Back to editor preview' : 'View currently used' }}
+      </button>
+      <p v-if="liveError" class="text-xs text-red -mt-3">{{ liveError }}</p>
+
       <!-- Template picker -->
       <div class="flex flex-col gap-2">
         <span class="text-sm font-medium text-text-secondary">Template</span>
@@ -14,7 +28,7 @@
             :class="loginPage.template === t.key
               ? 'border-text-primary bg-muted'
               : 'border-border hover:border-text-muted'"
-            @click="loginPage.template = t.key"
+            @click="selectTemplate(t.key)"
           >
             <span class="text-xl leading-none mt-0.5 shrink-0">{{ t.icon }}</span>
             <div>
@@ -36,21 +50,6 @@
           <input v-model="loginPage.subtitle" class="input" placeholder="$(hostname)" />
           <p class="text-xs text-text-muted">Leave blank to show the hotspot DNS name.</p>
         </label>
-        <div class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-text-secondary">Accent color</span>
-          <div class="flex items-center gap-2">
-            <input ref="colorPickerRef" type="color" v-model="loginPage.accentColor" class="sr-only" />
-            <button
-              type="button"
-              class="h-9 w-9 shrink-0 rounded-lg border border-border cursor-pointer hover:scale-105 transition-transform"
-              :style="{ background: loginPage.accentColor || '#111827' }"
-              @click="colorPickerRef?.click()"
-              title="Pick color"
-            />
-            <input v-model="loginPage.accentColor" class="input font-mono" placeholder="#111827" />
-          </div>
-          <p class="text-xs text-text-muted">Button and highlight color.</p>
-        </div>
       </div>
 
       <p v-if="error" class="text-xs text-red">{{ error }}</p>
@@ -66,10 +65,12 @@
     </div>
 
     <div class="flex-1 min-w-0">
-      <p class="text-xs font-medium text-text-muted mb-2">Preview</p>
+      <p class="text-xs font-medium text-text-muted mb-2">
+        {{ showingLive ? 'Currently used on router' : 'Preview' }}
+      </p>
       <div class="border border-border rounded-xl overflow-hidden bg-surface" style="height: 520px">
         <iframe
-          :srcdoc="preview"
+          :srcdoc="showingLive ? liveHTML : preview"
           class="w-full h-full border-0"
           sandbox=""
           title="Login page preview"
@@ -84,9 +85,12 @@ import { ref, computed } from 'vue'
 import { useRoutersStore } from '@/stores/routers'
 import {
   getHotspotSettings, putHotspotSettings, uploadLoginPage as apiUploadLoginPage,
+  getLoginPageHTML,
   type LoginPageSettings,
 } from '@/api'
-import { MINIMAL_TEMPLATE, BOLD_TEMPLATE } from './loginPageTemplates'
+import {
+  MINIMAL_TEMPLATE, WAVE_TEMPLATE, CARD_TEMPLATE,
+} from './loginPageTemplates'
 
 const props = defineProps<{ hotspotName: string }>()
 
@@ -95,45 +99,75 @@ const store = useRoutersStore()
 const loginPage = ref<LoginPageSettings>({
   title: '',
   subtitle: '',
-  accentColor: '#111827',
   template: 'minimal',
 })
 const uploading = ref(false)
 const error = ref('')
 const saved = ref(false)
-const colorPickerRef = ref<HTMLInputElement | null>(null)
+
+const showingLive = ref(false)
+const loadingLive = ref(false)
+const liveError = ref('')
+const liveHTML = ref('')
+
+const TEMPLATE_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
+  minimal: MINIMAL_TEMPLATE,
+  wave: WAVE_TEMPLATE,
+  card: CARD_TEMPLATE,
+}
 
 const templates: { key: LoginPageSettings['template']; icon: string; label: string; description: string }[] = [
-  { key: 'minimal', icon: '◈', label: 'Minimal', description: 'Dark mesh background, glass card — sharp and focused' },
-  { key: 'bold',    icon: '▨', label: 'Bold',    description: 'Accent header with business name, white form — mobile-first' },
+  { key: 'minimal', icon: '◈', label: 'Minimal', description: 'Flat gray background, light card — sharp and focused' },
+  { key: 'wave',    icon: '〜', label: 'Wave',    description: 'Light rounded card with a decorative wave accent' },
+  { key: 'card',    icon: '▭', label: 'Card',    description: 'Classic centered card — traditional login form look' },
 ]
 
 function init(lp?: LoginPageSettings) {
   if (lp) {
     loginPage.value = {
-      title:       lp.title       ?? '',
-      subtitle:    lp.subtitle    ?? '',
-      accentColor: lp.accentColor ?? '#111827',
-      template:    lp.template    ?? 'minimal',
+      title:    lp.title    ?? '',
+      subtitle: lp.subtitle ?? '',
+      template: lp.template ?? 'minimal',
     }
   }
 }
 
 defineExpose({ init })
 
-const preview = computed(() => {
-  const accent = loginPage.value.accentColor || '#111827'
+function renderTemplate() {
   const title = loginPage.value.title || props.hotspotName || 'My Hotspot'
   const subtitle = loginPage.value.subtitle || 'myspot.spot'
-  const tpl = loginPage.value.template === 'bold' ? BOLD_TEMPLATE : MINIMAL_TEMPLATE
+  const tpl = TEMPLATE_SOURCE[loginPage.value.template ?? 'minimal']
   return tpl
-    .replace(/__ACCENT__/g, accent)
     .replace(/__TITLE__/g, title)
     .replace(/__SUBTITLE__/g, subtitle)
-})
+}
+
+const preview = computed(renderTemplate)
+
+function selectTemplate(key: LoginPageSettings['template']) {
+  loginPage.value.template = key
+  showingLive.value = false
+}
+
+async function toggleLive() {
+  if (showingLive.value) {
+    showingLive.value = false
+    return
+  }
+  if (!store.activeId) return
+  loadingLive.value = true; liveError.value = ''
+  try {
+    liveHTML.value = await getLoginPageHTML(store.activeId)
+    showingLive.value = true
+  } catch (e: any) {
+    liveError.value = e?.response?.data?.error ?? e?.message ?? 'Failed to fetch'
+  } finally { loadingLive.value = false }
+}
 
 function reset() {
-  loginPage.value = { title: '', subtitle: '', accentColor: '#111827', template: 'minimal' }
+  loginPage.value = { title: '', subtitle: '', template: 'minimal' }
+  showingLive.value = false
 }
 
 async function upload() {
@@ -142,8 +176,9 @@ async function upload() {
   uploading.value = true; error.value = ''; saved.value = false
   try {
     const existing = await getHotspotSettings(store.activeId)
-    await apiUploadLoginPage(store.activeId, loginPage.value)
+    await apiUploadLoginPage(store.activeId, { ...loginPage.value, html: renderTemplate() })
     await putHotspotSettings(store.activeId, { ...existing, loginPage: loginPage.value })
+    showingLive.value = false
     saved.value = true
     setTimeout(() => { saved.value = false }, 3000)
   } catch (e: any) {

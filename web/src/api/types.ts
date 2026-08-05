@@ -63,8 +63,7 @@ export interface ProfileMeta {
 export interface LoginPageSettings {
   title?: string
   subtitle?: string
-  accentColor?: string
-  template?: 'minimal' | 'bold'
+  template?: 'minimal' | 'wave' | 'card'
 }
 
 export interface HotspotSettings {

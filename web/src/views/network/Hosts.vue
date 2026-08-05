@@ -1,11 +1,23 @@
 <template>
   <PageLayout title="Network" subtitle="Hosts">
     <div class="rounded-xl border border-border p-5 bg-surface">
-      <div class="flex items-center justify-between mb-4">
-        <span class="font-semibold text-text-primary">Connected hosts</span>
-        <span v-if="hosts.length > 0" class="text-sm text-text-secon"
-          >{{ hosts.length }} total</span
-        >
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-text-primary">Connected hosts</span>
+          <span
+            v-if="hosts.length > 0"
+            class="inline-flex items-center whitespace-nowrap shrink-0 text-xs px-2 py-0.5 rounded-full text-text-secondary bg-muted"
+          >
+            {{ filtered.length }} total
+          </span>
+        </div>
+        <div class="w-64 shrink-0">
+          <input
+            v-model="search"
+            class="input"
+            placeholder="Search hosts…"
+          />
+        </div>
       </div>
       <div
         v-if="loading && hosts.length === 0"
@@ -16,6 +28,10 @@
       <EmptyState
         v-else-if="hosts.length === 0"
         message="No connected hosts found"
+      />
+      <EmptyState
+        v-else-if="filtered.length === 0"
+        message="No hosts match your search."
       />
       <template v-else>
         <table class="w-full text-sm">
@@ -32,7 +48,7 @@
           </thead>
           <tbody>
             <tr
-              v-for="host in pagedHosts"
+              v-for="host in paged"
               :key="host['.id']"
               class="border-b border-border/40 last:border-0"
             >
@@ -65,60 +81,37 @@
             </tr>
           </tbody>
         </table>
-        <div
-          v-if="hosts.length > PAGE_SIZE"
-          class="flex items-center justify-between pt-3 mt-1 border-t border-border"
-        >
-          <span class="text-xs text-text-muted">
-            {{ (page - 1) * PAGE_SIZE + 1 }}–{{
-              Math.min(page * PAGE_SIZE, hosts.length)
-            }}
-            of {{ hosts.length }}
-          </span>
-          <div class="flex items-center gap-1">
-            <button
-              class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
-              :disabled="page === 1"
-              @click="page--"
-            >
-              <ChevronLeftIcon class="size-3.5" />
-            </button>
-            <button
-              class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
-              :disabled="page >= pageCount"
-              @click="page++"
-            >
-              <ChevronRightIcon class="size-3.5" />
-            </button>
-          </div>
-        </div>
+        <TablePager
+          :page="page"
+          :page-count="pageCount"
+          :page-size="pageSize"
+          :total="filtered.length"
+          @update:page="page = $event"
+        />
       </template>
     </div>
   </PageLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from "vue";
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/24/outline";
+import { ref, watch, onUnmounted } from "vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
+import TablePager from "@/components/TablePager.vue";
 import { useRoutersStore } from "@/stores/routers";
 import { listHotspotHosts } from "@/api";
 import PageLayout from "@/components/PageLayout.vue";
+import { useSearchPagination } from "@/composables/useSearchPagination";
 
 const store = useRoutersStore();
 
 const hosts = ref<Record<string, string>[]>([]);
 const loading = ref(false);
-const PAGE_SIZE = 10;
-const page = ref(1);
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil(hosts.value.length / PAGE_SIZE)),
+
+const { search, filtered, page, pageCount, paged, pageSize } = useSearchPagination(
+  hosts,
+  (h) => `${h["mac-address"] ?? ""} ${h.address ?? ""} ${h["to-address"] ?? ""} ${h.server ?? ""}`,
 );
-const pagedHosts = computed(() => {
-  const start = (page.value - 1) * PAGE_SIZE;
-  return hosts.value.slice(start, start + PAGE_SIZE);
-});
 
 async function load() {
   if (!store.activeId) return;

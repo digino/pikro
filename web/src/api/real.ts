@@ -125,8 +125,11 @@ export const getHotspotSettings = (id: string) =>
 export const putHotspotSettings = (id: string, s: HotspotSettings) =>
   api.put<HotspotSettings>(`/routers/${id}/hotspot/settings`, s).then(r => r.data)
 
-export const uploadLoginPage = (id: string, p: LoginPageSettings) =>
+export const uploadLoginPage = (id: string, p: LoginPageSettings & { html: string }) =>
   api.put(`/routers/${id}/hotspot/login-page`, p).then(r => r.data)
+
+export const getLoginPageHTML = (id: string) =>
+  api.get<{ html: string }>(`/routers/${id}/hotspot/login-page`).then(r => r.data.html)
 
 // Cleanup scheduler
 export const getCleanupScheduler = (id: string) =>

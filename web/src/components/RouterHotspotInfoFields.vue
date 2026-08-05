@@ -12,7 +12,15 @@
       </label>
       <label class="flex flex-col gap-1">
         <span class="font-medium">DNS name</span>
-        <input v-model="dnsName" class="input" placeholder="e.g. myspot.spot" />
+        <div class="flex items-stretch rounded-lg border border-border overflow-hidden focus-within:outline-2 focus-within:outline-primary focus-within:outline-offset-1">
+          <span class="flex items-center px-2.5 text-sm text-text-secondary bg-muted border-r border-border shrink-0">http://</span>
+          <input
+            v-model="dnsName"
+            class="input-bare flex-1 min-w-0"
+            placeholder="myspot.spot"
+            @blur="dnsName = normalizeDnsName(dnsName)"
+          />
+        </div>
       </label>
     </div>
 
@@ -31,6 +39,7 @@
 <script setup lang="ts">
 import AppSelect from "@/components/AppSelect.vue";
 import { CURRENCIES } from "@/utils/currencies";
+import { normalizeDnsName } from "@/utils/dnsName";
 
 const hotspotName = defineModel<string>("hotspotName", { required: true });
 const dnsName = defineModel<string>("dnsName", { required: true });

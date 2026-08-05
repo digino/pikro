@@ -28,9 +28,6 @@ hotspot users without touching the router CLI.
 | Frontend | Vue 3, TypeScript, Vite, Tailwind CSS v4, Reka UI, Pinia |
 | Config | `~/.pikro.json` — plain JSON, no database |
 | Discovery | MNDP (MikroTik Neighbour Discovery Protocol) over UDP :5678 |
-
-Full architecture: see [docs/architecture.md](docs/architecture.md).
-
 ---
 
 ## Complexity signals specific to this project

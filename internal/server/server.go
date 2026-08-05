@@ -65,6 +65,7 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/settings", handlers.GetHotspotSettings)
 	mux.HandleFunc("PUT /api/routers/{id}/hotspot/settings", handlers.PutHotspotSettings)
 	mux.HandleFunc("PUT /api/routers/{id}/hotspot/login-page", handlers.UploadLoginPage)
+	mux.HandleFunc("GET /api/routers/{id}/hotspot/login-page", handlers.GetLoginPageHTML)
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/profile-metas", handlers.GetProfileMetas)
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/cleanup", handlers.GetCleanupScheduler)
 	mux.HandleFunc("PUT /api/routers/{id}/hotspot/cleanup", handlers.PutCleanupScheduler)

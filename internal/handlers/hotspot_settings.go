@@ -39,7 +39,9 @@ func GetProfileMetas(w http.ResponseWriter, r *http.Request) {
 
 func UploadLoginPage(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	var input config.LoginPageSettings
+	var input struct {
+		HTML string `json:"html"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		jsonError(w, "invalid body", http.StatusBadRequest)
 		return
@@ -53,15 +55,33 @@ func UploadLoginPage(w http.ResponseWriter, r *http.Request) {
 
 	client := router.NewClient(profile.Host, profile.Port, profile.Username, profile.Password, profile.UseTLS)
 
-	if err := client.UploadLoginPage("pikro-profile", router.LoginPageParams{
-		Title:       input.Title,
-		Subtitle:    input.Subtitle,
-		AccentColor: input.AccentColor,
-	}); err != nil {
+	if err := client.UploadLoginPage("pikro-profile", input.HTML); err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 	jsonOK(w, map[string]bool{"ok": true})
+}
+
+// GetLoginPageHTML returns the actual contents of hotspot/login.html as
+// currently stored on the router — what's really served to devices, which
+// may differ from the template selected in Pikro's local settings if the
+// router was edited outside Pikro or never had a template uploaded yet.
+func GetLoginPageHTML(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	profile, err := findProfile(id)
+	if err != nil {
+		jsonError(w, "router not found", http.StatusNotFound)
+		return
+	}
+
+	client := router.NewClient(profile.Host, profile.Port, profile.Username, profile.Password, profile.UseTLS)
+
+	html, err := client.GetLoginPageHTML()
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	jsonOK(w, map[string]string{"html": html})
 }
 
 func PutHotspotSettings(w http.ResponseWriter, r *http.Request) {

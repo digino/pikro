@@ -15,10 +15,9 @@ type ProfileMeta struct {
 }
 
 type LoginPageSettings struct {
-	Title       string `json:"title,omitempty"`
-	Subtitle    string `json:"subtitle,omitempty"`
-	AccentColor string `json:"accentColor,omitempty"` // hex e.g. "#111827"
-	Template    string `json:"template,omitempty"`   // "minimal" | "bold"
+	Title    string `json:"title,omitempty"`
+	Subtitle string `json:"subtitle,omitempty"`
+	Template string `json:"template,omitempty"` // "minimal" | "wave" | "card"
 }
 
 type HotspotSettings struct {

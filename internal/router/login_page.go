@@ -8,16 +8,18 @@ import (
 	"github.com/digino/pikro/internal/assets"
 )
 
-// LoginPageParams holds the visual customisation options for the hotspot login page.
-type LoginPageParams struct {
+// defaultLoginPageParams holds the visual customisation options for the
+// built-in fallback login page used during initial hotspot setup, before
+// the admin has picked a template in Settings.
+type defaultLoginPageParams struct {
 	Title       string // page heading / logo text, default "Sign in to continue"
 	Subtitle    string // subtitle below the heading, default "$(hostname)"
 	AccentColor string // CSS hex color for button + focus ring, default "#111827"
 }
 
-// renderLoginPage applies params to the embedded hotspot_login.html template.
-// Uses text/template so user-supplied values are not HTML-escaped.
-func renderLoginPage(p LoginPageParams) (string, error) {
+// renderDefaultLoginPage applies params to the embedded hotspot_login.html
+// template. Uses text/template so user-supplied values are not HTML-escaped.
+func renderDefaultLoginPage(p defaultLoginPageParams) (string, error) {
 	if p.Title == "" {
 		p.Title = "Sign in to continue"
 	}
@@ -44,13 +46,19 @@ type hotspotFile struct {
 	content string
 }
 
-// UploadLoginPage renders the login page template with the given params and
-// uploads all hotspot pages (login, logout, status, alogin, error, redirect)
-// to the router's hotspot/ directory.
-func (c *Client) UploadLoginPage(profileName string, p LoginPageParams) error {
-	html, err := renderLoginPage(p)
-	if err != nil {
-		return err
+// UploadLoginPage uploads a fully-rendered login page (built by the frontend
+// from one of its template presets) plus the other hotspot pages (logout,
+// status, alogin, error, redirect) to the router's hotspot/ directory. If
+// html is empty, the built-in default template is rendered and used instead
+// — this is the path taken during initial hotspot setup, before an admin has
+// picked a template in Settings.
+func (c *Client) UploadLoginPage(profileName string, html string) error {
+	if html == "" {
+		rendered, err := renderDefaultLoginPage(defaultLoginPageParams{})
+		if err != nil {
+			return err
+		}
+		html = rendered
 	}
 
 	files := []hotspotFile{
@@ -127,4 +135,28 @@ func (c *Client) UploadLoginPage(profileName string, p LoginPageParams) error {
 		"=html-directory=hotspot",
 	})
 	return err
+}
+
+// GetLoginPageHTML reads back the contents of hotspot/login.html as currently
+// stored on the router — i.e. the login page actually served to devices,
+// independent of whatever template Pikro's local config thinks is selected.
+func (c *Client) GetLoginPageHTML() (string, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+
+	reply, err := conn.RunArgs([]string{
+		"/file/print",
+		"?name=hotspot/login.html",
+		"=.proplist=contents",
+	})
+	if err != nil {
+		return "", err
+	}
+	if len(reply.Re) == 0 {
+		return "", fmt.Errorf("hotspot/login.html not found — run hotspot setup first")
+	}
+	return reply.Re[0].Map["contents"], nil
 }

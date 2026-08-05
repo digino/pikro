@@ -29,13 +29,6 @@
         :hotspot-name="form.hotspotName"
       />
 
-      <!-- ── Tab: Vouchers ── -->
-      <SettingsVoucher
-        v-else-if="tab === 'voucher'"
-        :hotspot-name="form.hotspotName"
-        :effective-currency="effectiveCurrency"
-      />
-
       <!-- ── Tab: Cleanup ── -->
       <div v-else-if="tab === 'cleanup'" class="max-w-lg space-y-5">
         <div>
@@ -99,15 +92,13 @@ import {
 import PageLayout from '@/components/PageLayout.vue'
 import NoRouterSelected from '@/components/NoRouterSelected.vue'
 import SettingsLoginPage from './settings/SettingsLoginPage.vue'
-import SettingsVoucher from './settings/SettingsVoucher.vue'
 import SettingsMigration from './settings/SettingsMigration.vue'
 
 const store = useRoutersStore()
 
-const tab = ref<'login' | 'voucher' | 'cleanup' | 'migration'>('login')
+const tab = ref<'login' | 'cleanup' | 'migration'>('login')
 const tabs = [
   { key: 'login' as const,    label: 'Login page' },
-  { key: 'voucher' as const,  label: 'Vouchers' },
   { key: 'cleanup' as const,  label: 'Cleanup' },
   { key: 'migration' as const, label: 'Migration' },
 ]
@@ -116,11 +107,8 @@ const loading = ref(false)
 const settingsError = ref('')
 
 // hotspotName/dnsName/currency are edited from the router's Add/Edit dialog
-// (see Routers page) — loaded here read-only for the other tabs (login page
-// title, voucher pricing) to consume.
+// (see Routers page) — loaded here read-only for the login-page-title tab to consume.
 const form = ref({ hotspotName: '', dnsName: '', currency: '' })
-
-const effectiveCurrency = computed(() => form.value.currency)
 
 const cleanupSaving = ref(false)
 const cleanupError = ref('')

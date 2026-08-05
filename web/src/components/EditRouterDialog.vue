@@ -173,6 +173,7 @@ import {
 import { updateRouter, type RouterProfile } from "@/api";
 import AppDialog from "@/components/AppDialog.vue";
 import RouterHotspotInfoFields from "@/components/RouterHotspotInfoFields.vue";
+import { normalizeDnsName } from "@/utils/dnsName";
 
 const props = defineProps<{ open: boolean; router: RouterProfile | null }>();
 const emit = defineEmits<{ "update:open": [value: boolean]; saved: [] }>();
@@ -210,7 +211,7 @@ watch(
       password: "",
       useTls: r.useTls,
       hotspotName: r.hotspotSettings?.hotspotName ?? "",
-      dnsName: r.hotspotSettings?.dnsName ?? "",
+      dnsName: normalizeDnsName(r.hotspotSettings?.dnsName ?? ""),
       currency: r.hotspotSettings?.currency ?? "",
     };
   },
@@ -245,7 +246,7 @@ async function submit() {
       useTls: f.useTls,
       hotspotSettings: {
         hotspotName: f.hotspotName,
-        dnsName: f.dnsName,
+        dnsName: normalizeDnsName(f.dnsName),
         currency: f.currency,
       },
     });

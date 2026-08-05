@@ -1,11 +1,23 @@
 <template>
   <PageLayout title="Network" subtitle="DHCP leases">
     <div class="rounded-xl border border-border p-5 bg-surface">
-      <div class="flex items-center justify-between mb-4">
-        <span class="font-semibold text-text-primary">DHCP leases</span>
-        <span v-if="leases.length > 0" class="text-sm text-text-secondary"
-          >{{ leases.length }} total</span
-        >
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-text-primary">DHCP leases</span>
+          <span
+            v-if="leases.length > 0"
+            class="inline-flex items-center whitespace-nowrap shrink-0 text-xs px-2 py-0.5 rounded-full text-text-secondary bg-muted"
+          >
+            {{ filtered.length }} total
+          </span>
+        </div>
+        <div class="w-64 shrink-0">
+          <input
+            v-model="search"
+            class="input"
+            placeholder="Search leases…"
+          />
+        </div>
       </div>
       <div
         v-if="leasesLoading && leases.length === 0"
@@ -16,6 +28,10 @@
       <EmptyState
         v-else-if="leases.length === 0"
         message="No DHCP leases found"
+      />
+      <EmptyState
+        v-else-if="filtered.length === 0"
+        message="No leases match your search."
       />
       <template v-else>
         <table class="w-full text-sm">
@@ -31,7 +47,7 @@
           </thead>
           <tbody>
             <tr
-              v-for="lease in pagedLeases"
+              v-for="lease in paged"
               :key="lease['.id']"
               class="border-b border-border/40 last:border-0"
             >
@@ -65,60 +81,37 @@
             </tr>
           </tbody>
         </table>
-        <div
-          v-if="leases.length > LEASES_PAGE_SIZE"
-          class="flex items-center justify-between pt-3 mt-1 border-t border-border"
-        >
-          <span class="text-xs text-text-muted">
-            {{ (leasesPage - 1) * LEASES_PAGE_SIZE + 1 }}–{{
-              Math.min(leasesPage * LEASES_PAGE_SIZE, leases.length)
-            }}
-            of {{ leases.length }}
-          </span>
-          <div class="flex items-center gap-1">
-            <button
-              class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
-              :disabled="leasesPage === 1"
-              @click="leasesPage--"
-            >
-              <ChevronLeftIcon class="size-3.5" />
-            </button>
-            <button
-              class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
-              :disabled="leasesPage >= leasesPageCount"
-              @click="leasesPage++"
-            >
-              <ChevronRightIcon class="size-3.5" />
-            </button>
-          </div>
-        </div>
+        <TablePager
+          :page="page"
+          :page-count="pageCount"
+          :page-size="pageSize"
+          :total="filtered.length"
+          @update:page="page = $event"
+        />
       </template>
     </div>
   </PageLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from "vue";
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/24/outline";
+import { ref, watch, onUnmounted } from "vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
+import TablePager from "@/components/TablePager.vue";
 import { useRoutersStore } from "@/stores/routers";
 import { getDHCPLeases } from "@/api";
 import PageLayout from "@/components/PageLayout.vue";
+import { useSearchPagination } from "@/composables/useSearchPagination";
 
 const store = useRoutersStore();
 
 const leases = ref<Record<string, string>[]>([]);
 const leasesLoading = ref(false);
-const LEASES_PAGE_SIZE = 10;
-const leasesPage = ref(1);
-const leasesPageCount = computed(() =>
-  Math.max(1, Math.ceil(leases.value.length / LEASES_PAGE_SIZE)),
+
+const { search, filtered, page, pageCount, paged, pageSize } = useSearchPagination(
+  leases,
+  (l) => `${l["host-name"] ?? ""} ${l.address ?? ""} ${l["mac-address"] ?? ""} ${l["active-server"] ?? ""}`,
 );
-const pagedLeases = computed(() => {
-  const start = (leasesPage.value - 1) * LEASES_PAGE_SIZE;
-  return leases.value.slice(start, start + LEASES_PAGE_SIZE);
-});
 
 function leaseStatusLabel(status: string | undefined): string {
   if (!status) return "—";
@@ -144,7 +137,7 @@ watch(
   async (id) => {
     clearInterval(leasesTimer);
     leases.value = [];
-    leasesPage.value = 1;
+    page.value = 1;
     if (!id) return;
     await loadLeases();
     leasesTimer = setInterval(() => {
