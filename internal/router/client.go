@@ -397,6 +397,12 @@ func (c *Client) UpdateHotspotUser(id string, p UpdateHotspotUserParams) error {
 }
 
 // DeleteHotspotUser removes a hotspot user by its RouterOS ID (e.g. "*1").
+//
+// Deleting /ip/hotspot/user does NOT disconnect an already-authenticated
+// session — RouterOS treats /ip/hotspot/active as a separate live-session
+// table that only clears on timeout, quota exhaustion, or an explicit
+// /ip/hotspot/active/remove. So a user removed here can still appear as
+// "active" until their session naturally expires unless we also kick it.
 func (c *Client) DeleteHotspotUser(id string) error {
 	conn, err := c.connect()
 	if err != nil {
@@ -404,7 +410,39 @@ func (c *Client) DeleteHotspotUser(id string) error {
 	}
 	defer conn.Close()
 
-	_, err = conn.Run("/ip/hotspot/user/remove", "=.id="+id)
+	// Look up the username before deleting, so we can find and kick any
+	// matching active session by name (active sessions are keyed by their
+	// own .id, unrelated to the user record's .id).
+	var username string
+	if reply, err := conn.Run("/ip/hotspot/user/print", "?.id="+id); err == nil && len(reply.Re) > 0 {
+		username = reply.Re[0].Map["name"]
+	}
+
+	if _, err := conn.Run("/ip/hotspot/user/remove", "=.id="+id); err != nil {
+		return err
+	}
+
+	if username != "" {
+		if reply, err := conn.Run("/ip/hotspot/active/print", "?user="+username); err == nil {
+			for _, re := range reply.Re {
+				conn.Run("/ip/hotspot/active/remove", "=.id="+re.Map[".id"])
+			}
+		}
+	}
+	return nil
+}
+
+// DisconnectHotspotActive kicks a live session from /ip/hotspot/active by
+// its own .id — this only ends the current connection, it does not touch
+// the underlying /ip/hotspot/user record (the user can log back in).
+func (c *Client) DisconnectHotspotActive(id string) error {
+	conn, err := c.connect()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	_, err = conn.Run("/ip/hotspot/active/remove", "=.id="+id)
 	return err
 }
 
@@ -580,8 +618,9 @@ func (c *Client) SystemClock() (map[string]string, error) {
 	return reply.Re[0].Map, nil
 }
 
-// SystemLogs returns the most recent N log entries.
-func (c *Client) SystemLogs(limit int) ([]map[string]any, error) {
+// SystemLogs returns log entries, newest first. If topic is non-empty, only
+// entries whose topics field contains it are returned.
+func (c *Client) SystemLogs(topic string) ([]map[string]any, error) {
 	conn, err := c.connect()
 	if err != nil {
 		return nil, err
@@ -593,11 +632,16 @@ func (c *Client) SystemLogs(limit int) ([]map[string]any, error) {
 		return nil, err
 	}
 	entries := replyToList(reply)
-	// Return last `limit` entries (RouterOS returns oldest first).
-	if limit > 0 && len(entries) > limit {
-		entries = entries[len(entries)-limit:]
+	if topic != "" {
+		filtered := entries[:0]
+		for _, e := range entries {
+			if topics, _ := e["topics"].(string); strings.Contains(topics, topic) {
+				filtered = append(filtered, e)
+			}
+		}
+		entries = filtered
 	}
-	// Reverse so newest is first.
+	// RouterOS returns oldest first — reverse so newest is first.
 	for i, j := 0, len(entries)-1; i < j; i, j = i+1, j-1 {
 		entries[i], entries[j] = entries[j], entries[i]
 	}

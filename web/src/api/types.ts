@@ -52,7 +52,6 @@ export interface UpdateHotspotUser {
   profile?: string
   limitUptime: string
   limitBytesTotal: string
-  comment?: string
 }
 
 export interface ProfileMeta {

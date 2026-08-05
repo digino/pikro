@@ -93,6 +93,9 @@ html, body, #app {
 @utility btn-danger {
   @apply border-transparent text-white bg-red hover:bg-[#c93d42];
 }
+@utility btn-warning {
+  @apply border-transparent text-white bg-amber hover:bg-[#d97706];
+}
 
 /* ── Shared form inputs ───────────────────────────────────── */
 .input {

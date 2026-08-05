@@ -209,6 +209,22 @@ func DeleteHotspotUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// DisconnectHotspotActive kicks a live session (by its /ip/hotspot/active
+// .id) without touching the underlying /ip/hotspot/user record.
+func DisconnectHotspotActive(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	sessionID := r.PathValue("sessionID")
+	if err := client.DisconnectHotspotActive(sessionID); err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func clientFromRequest(r *http.Request) (*router.Client, error) {
 	routerID := r.PathValue("id")
 	profile, err := findProfile(routerID)

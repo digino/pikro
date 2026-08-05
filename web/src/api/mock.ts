@@ -45,7 +45,7 @@ const profileMetas: Record<string, ProfileMeta> = {
   'VIP 24h':     { validity: '24h', price: '1000' },
 }
 
-const active: Record<string, string>[] = [
+let active: Record<string, string>[] = [
   { '.id': '*A', user: 'abc123', address: '192.168.99.10', 'mac-address': 'AA:BB:CC:DD:EE:01', uptime: '00:22:10', 'session-time-left': '00:37:50', 'bytes-in': '15728640', 'bytes-out': '4194304' },
   { '.id': '*B', user: 'ttt111', address: '192.168.99.15', 'mac-address': 'AA:BB:CC:DD:EE:02', uptime: '00:45:00', 'session-time-left': '00:15:00', 'bytes-in': '52428800', 'bytes-out': '10485760' },
   { '.id': '*C', user: 'bbb333', address: '192.168.99.22', 'mac-address': 'AA:BB:CC:DD:EE:03', uptime: '12:00:00', 'session-time-left': '12:00:00', 'bytes-in': '314572800','bytes-out': '104857600' },
@@ -115,7 +115,6 @@ export const updateHotspotUser = (_id: string, userID: string, u: UpdateHotspotU
     if (u.profile)         users[idx].profile = u.profile
     if (u.limitUptime !== undefined)    users[idx]['limit-uptime'] = u.limitUptime
     if (u.limitBytesTotal !== undefined) users[idx]['limit-bytes-total'] = u.limitBytesTotal
-    if (u.comment !== undefined) users[idx].comment = u.comment
   }
   return ok(undefined)
 }
@@ -129,7 +128,14 @@ export const toggleHotspotUser = (_id: string, userID: string, disabled: boolean
 export const getProfileMetas = (_id: string) => ok({ ...profileMetas })
 
 export const deleteHotspotUser = (_routerId: string, userId: string) => {
+  const deleted = users.find(u => u['.id'] === userId)
   users = users.filter(u => u['.id'] !== userId)
+  if (deleted) active = active.filter(s => s.user !== deleted.name)
+  return ok(undefined)
+}
+
+export const disconnectHotspotActive = (_routerId: string, sessionId: string) => {
+  active = active.filter(s => s['.id'] !== sessionId)
   return ok(undefined)
 }
 

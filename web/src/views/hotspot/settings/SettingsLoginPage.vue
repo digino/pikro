@@ -32,8 +32,8 @@
           >
             <span class="text-xl leading-none mt-0.5 shrink-0">{{ t.icon }}</span>
             <div>
-              <div class="text-xs font-semibold text-text-primary">{{ t.label }}</div>
-              <div class="text-xs text-text-muted mt-0.5">{{ t.description }}</div>
+              <div class="text-sm font-semibold text-text-primary">{{ t.label }}</div>
+              <div class="text-xs text-text-secondary mt-0.5">{{ t.description }}</div>
             </div>
           </button>
         </div>
@@ -83,6 +83,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoutersStore } from '@/stores/routers'
+import { useToastStore } from '@/stores/toast'
 import {
   getHotspotSettings, putHotspotSettings, uploadLoginPage as apiUploadLoginPage,
   getLoginPageHTML,
@@ -95,6 +96,7 @@ import {
 const props = defineProps<{ hotspotName: string }>()
 
 const store = useRoutersStore()
+const toast = useToastStore()
 
 const loginPage = ref<LoginPageSettings>({
   title: '',
@@ -180,9 +182,12 @@ async function upload() {
     await putHotspotSettings(store.activeId, { ...existing, loginPage: loginPage.value })
     showingLive.value = false
     saved.value = true
+    toast.success('Login page uploaded', 'The new page is now live on the router.')
     setTimeout(() => { saved.value = false }, 3000)
   } catch (e: any) {
-    error.value = e?.response?.data?.error ?? e?.message ?? 'Failed to upload'
+    const message = e?.response?.data?.error ?? e?.message ?? 'Failed to upload'
+    error.value = message
+    toast.error('Upload failed', message)
   } finally { uploading.value = false }
 }
 </script>

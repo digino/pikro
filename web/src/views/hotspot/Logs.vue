@@ -29,7 +29,18 @@
         </div>
       </div>
 
-      <div v-if="loading && logs.length === 0" class="flex justify-center py-8">
+      <div
+        v-if="error"
+        class="flex items-center gap-2 p-4 border rounded-xl text-sm bg-red/8 border-red/20 text-red"
+      >
+        <ExclamationTriangleIcon class="size-4 shrink-0" />
+        {{ error }}
+        <button class="ml-auto text-xs underline" @click="load">Retry</button>
+      </div>
+      <div
+        v-else-if="loading && logs.length === 0"
+        class="flex justify-center py-8"
+      >
         <span class="spinner spinner--sm" />
       </div>
       <EmptyState
@@ -79,7 +90,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { ArrowPathIcon } from "@heroicons/vue/24/outline";
+import { ArrowPathIcon, ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import TablePager from "@/components/TablePager.vue";
@@ -87,6 +98,7 @@ import { useRoutersStore } from "@/stores/routers";
 import { getSystemLogs } from "@/api";
 import PageLayout from "@/components/PageLayout.vue";
 import { useSearchPagination } from "@/composables/useSearchPagination";
+import { friendlyError } from "@/utils/errors";
 
 const store = useRoutersStore();
 
@@ -98,6 +110,7 @@ interface HotspotLogEntry {
 
 const logs = ref<HotspotLogEntry[]>([]);
 const loading = ref(false);
+const error = ref("");
 
 const { search, filtered, page, pageCount, paged, pageSize } = useSearchPagination(
   logs,
@@ -121,14 +134,13 @@ function parseEntry(e: Record<string, string>): HotspotLogEntry {
 async function load() {
   if (!store.activeId) return;
   loading.value = true;
+  error.value = "";
   try {
     const all = await getSystemLogs(store.activeId);
-    logs.value = all
-      .filter((e) => (e.topics ?? "").toLowerCase().includes("hotspot"))
-      .map(parseEntry);
+    logs.value = all.map(parseEntry);
     page.value = 1;
-  } catch {
-    // non-critical
+  } catch (e: any) {
+    error.value = friendlyError(e, "Failed to load logs");
   } finally {
     loading.value = false;
   }

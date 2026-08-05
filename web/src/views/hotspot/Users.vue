@@ -2,7 +2,9 @@
   <PageLayout title="Hotspot" subtitle="Users">
     <template #actions>
       <template v-if="tab === 'users' && selected.size > 0">
-        <span class="text-sm text-text-secondary font-semibold">{{ selected.size }} selected</span>
+        <span class="text-sm text-text-secondary font-semibold"
+          >{{ selected.size }} selected</span
+        >
         <button
           class="text-sm text-text-secondary hover:text-text-primary transition-colors cursor-pointer underline"
           @click="selected = new Set()"
@@ -42,44 +44,26 @@
     </template>
 
     <!-- Tabs -->
-    <div class="flex items-center justify-between border-b border-border -mt-2">
-      <div class="flex items-center gap-1">
-        <button
-          v-for="t in tabs"
-          :key="t.key"
-          class="px-3 py-2 text-sm font-semibold border-b-2 transition-colors"
-          :class="
-            tab === t.key
-              ? 'border-text-primary text-text-primary'
-              : 'border-transparent text-text-muted hover:text-text-secondary'
-          "
-          @click="switchTab(t.key)"
+    <div class="flex items-center gap-1 border-b border-border -mt-2">
+      <button
+        v-for="t in tabs"
+        :key="t.key"
+        class="px-3 py-2 text-sm font-semibold border-b-2 transition-colors"
+        :class="
+          tab === t.key
+            ? 'border-text-primary text-text-primary'
+            : 'border-transparent text-text-muted hover:text-text-secondary'
+        "
+        @click="switchTab(t.key)"
+      >
+        {{ t.label }}
+        <span
+          v-if="t.key === 'users' || active.length > 0"
+          class="ml-1 text-text-secondary"
         >
-          {{ t.label }}
-          <span
-            v-if="t.key === 'users' || active.length > 0"
-            class="ml-1 text-text-secondary"
-          >
-            ({{ t.key === "users" ? filteredUsers.length : active.length }})
-          </span>
-        </button>
-      </div>
-
-      <div class="flex items-center gap-2 pb-2">
-        <span class="text-sm text-text-secondary font-semibold"
-          >Auto-cleanup</span
-        >
-        <SwitchRoot
-          :model-value="cleanupInstalled === true"
-          :disabled="cleanupToggling"
-          class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors data-[state=checked]:bg-green data-[state=unchecked]:bg-border disabled:opacity-50"
-          @update:model-value="toggleCleanup"
-        >
-          <SwitchThumb
-            class="pointer-events-none block size-4 rounded-full bg-white shadow transform transition-transform translate-x-0.5 data-[state=checked]:translate-x-4"
-          />
-        </SwitchRoot>
-      </div>
+          ({{ t.key === "users" ? filteredUsers.length : active.length }})
+        </span>
+      </button>
     </div>
 
     <div v-if="loading" class="flex justify-center py-10">
@@ -289,24 +273,26 @@
                 />
               </td>
               <td class="px-4 py-3 text-right">
-                <div class="flex items-center justify-end gap-1">
+                <div class="flex items-center justify-end gap-2">
+                  <button class="btn btn-ghost" @click="openEdit(u)">
+                    <PencilIcon class="size-3.5" />
+                    Edit
+                  </button>
                   <button
-                    class="btn btn-ghost btn-sm"
+                    class="btn"
+                    :class="u.disabled === 'true' ? 'btn-ghost' : 'btn-warning'"
                     @click="toggleDisabled(u)"
                   >
                     <component
                       :is="
                         u.disabled === 'true' ? CheckCircleIcon : NoSymbolIcon
                       "
-                      class="size-3.5"
+                      class="size-4"
                     />
                     {{ u.disabled === "true" ? "Enable" : "Disable" }}
                   </button>
-                  <button
-                    class="btn btn-sm btn-ghost hover:text-red hover:bg-red/10"
-                    @click="removeUser(u['.id'])"
-                  >
-                    <TrashIcon class="size-3.5" />
+                  <button class="btn btn-danger" @click="removeUser(u['.id'])">
+                    <TrashIcon class="size-4" />
                     Delete
                   </button>
                 </div>
@@ -371,45 +357,50 @@
         <thead>
           <tr class="border-b border-border bg-surface">
             <th
-              class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+              class="text-left px-4 py-3 text-sm font-semibold text-text-primary"
             >
               User
             </th>
             <th
-              class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+              class="text-left px-4 py-3 text-sm font-semibold text-text-primary"
             >
               IP
             </th>
             <th
-              class="text-left px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+              class="text-left px-4 py-3 text-sm font-semibold text-text-primary"
             >
               MAC
             </th>
             <th
-              class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+              class="text-right px-4 py-3 text-sm font-semibold text-text-primary"
             >
               Uptime
             </th>
             <th
-              class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+              class="text-right px-4 py-3 text-sm font-semibold text-text-primary"
             >
               Down
             </th>
             <th
-              class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+              class="text-right px-4 py-3 text-sm font-semibold text-text-primary"
             >
               Up
             </th>
             <th
-              class="text-right px-4 py-3 text-xs font-semibold text-text-primary uppercase tracking-wide"
+              class="text-right px-4 py-3 text-sm font-semibold text-text-primary"
             >
               Left
+            </th>
+            <th
+              class="text-right px-4 py-3 text-sm font-semibold text-text-primary"
+            >
+              Actions
             </th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="active.length === 0">
-            <td colspan="7" class="text-center text-text-muted text-sm py-10">
+            <td colspan="8" class="text-center text-text-muted text-sm py-10">
               No active sessions
             </td>
           </tr>
@@ -449,6 +440,34 @@
             >
               {{ s["session-time-left"] || "—" }}
             </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-1">
+                <button
+                  v-if="userIdByName(s.user)"
+                  class="btn btn-warning"
+                  @click="disableSessionUser(s.user)"
+                >
+                  <NoSymbolIcon class="size-3.5" />
+                  Disable
+                </button>
+                <button
+                  v-if="userIdByName(s.user)"
+                  class="btn btn-danger"
+                  @click="removeSessionUser(s.user)"
+                >
+                  <TrashIcon class="size-3.5" />
+                  Delete
+                </button>
+                <button
+                  v-else
+                  class="btn btn-danger"
+                  @click="disconnectSession(s['.id'])"
+                >
+                  <TrashIcon class="size-3.5" />
+                  Disconnect
+                </button>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -480,7 +499,7 @@
           :total="active.length"
           @update:page="activePage = $event"
         >
-          <div class="flex items-center gap-1 text-xs text-text-muted">
+          <div class="flex items-center gap-1 text-sm text-text-secondary">
             <span
               >{{ (page - 1) * activePageSize + 1 }}–{{
                 Math.min(page * activePageSize, active.length)
@@ -623,6 +642,112 @@
       </form>
     </AppDialog>
 
+    <!-- Edit user dialog -->
+    <AppDialog
+      :open="showEdit"
+      :title="`Edit ${editForm.name}`"
+      @update:open="showEdit = $event"
+    >
+      <form @submit.prevent="submitEdit" class="space-y-4">
+        <label class="flex flex-col gap-1">
+          <span class="font-medium text-text-secondary">Password</span>
+          <input
+            v-model="editForm.password"
+            class="input"
+            placeholder="leave blank to keep current"
+          />
+        </label>
+
+        <label class="flex flex-col gap-1">
+          <span class="font-medium text-text-secondary">Profile</span>
+          <select v-model="editForm.profile" class="input">
+            <option value="">default</option>
+            <option v-for="p in profiles" :key="p['.id']" :value="p.name">
+              {{ p.name }}
+            </option>
+          </select>
+        </label>
+
+        <div class="border-t border-border pt-3 space-y-3">
+          <p
+            class="text-sm font-semibold text-text-muted uppercase tracking-wide"
+          >
+            Limits (override profile)
+          </p>
+
+          <div class="flex flex-col gap-1">
+            <span class="font-medium text-text-secondary">Time limit</span>
+            <input
+              v-model="editForm.limitUptimeRaw"
+              class="input font-mono"
+              placeholder="e.g. 1h, 1d, 1w, 1d12h — blank for unlimited"
+              @blur="normalizeEditUptime"
+            />
+            <p
+              v-if="editForm.limitUptimeRaw && !editUptimePreview"
+              class="text-sm text-red"
+            >
+              Invalid format — use: 30m, 2h, 1d, 1w or combinations like 1d12h
+            </p>
+            <p
+              v-else-if="editUptimePreview"
+              class="text-sm"
+              :class="editUptimeWarning ? 'text-amber' : 'text-text-muted'"
+            >
+              <span v-if="editUptimeWarning"
+                >⚠ Time limit exceeds the profile's validity — user may never
+                hit this limit.</span
+              >
+              <span v-else class="font-mono"
+                >Sends to router: <span>{{ editUptimePreview }}</span></span
+              >
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <span class="font-medium text-text-secondary">Data limit</span>
+            <div
+              class="flex w-full overflow-hidden rounded-lg border border-border focus-within:outline-2 focus-within:outline-accent focus-within:outline-offset-1"
+            >
+              <input
+                v-model.number="editForm.limitBytesTotalValue"
+                type="number"
+                min="0"
+                class="input-bare flex-1 min-w-0"
+                placeholder="0"
+              />
+              <select
+                v-model="editForm.limitBytesTotalUnit"
+                class="input-bare border-l border-border shrink-0 w-16 text-xs"
+              >
+                <option value="M">MB</option>
+                <option value="G">GB</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <p v-if="editError" class="text-sm text-red">{{ editError }}</p>
+
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" class="btn btn-ghost" @click="showEdit = false">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            :disabled="editing || (!!editForm.limitUptimeRaw && !editUptimePreview)"
+          >
+            <span
+              v-if="editing"
+              class="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin"
+            />
+            Save changes
+          </button>
+        </div>
+      </form>
+    </AppDialog>
+
     <PrintTemplateDialog
       :open="showPrintDialog"
       :entries="printEntries"
@@ -653,8 +778,6 @@ import {
   PaginationRoot,
   PaginationPrev,
   PaginationNext,
-  SwitchRoot,
-  SwitchThumb,
 } from "reka-ui";
 import {
   PlusIcon,
@@ -668,6 +791,7 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   CheckCircleIcon,
+  PencilIcon,
 } from "@heroicons/vue/24/outline";
 import { RouterLink, useRoute } from "vue-router";
 import { useRoutersStore } from "@/stores/routers";
@@ -676,12 +800,12 @@ import {
   listHotspotActive,
   listHotspotProfiles,
   createHotspotUser,
+  updateHotspotUser,
   toggleHotspotUser,
   deleteHotspotUser,
+  disconnectHotspotActive,
   getProfileMetas,
   getHotspotSettings,
-  getCleanupScheduler,
-  putCleanupScheduler,
   type ProfileMeta,
   type HotspotSettings,
 } from "@/api";
@@ -705,13 +829,27 @@ const STATUS_OPTS = [
   { value: "disabled", label: "Disabled" },
 ] as const;
 
-const tab = ref<"users" | "active">(route.query.tab === "active" ? "active" : "users");
+const tab = ref<"users" | "active">(
+  route.query.tab === "active" ? "active" : "users",
+);
 const tabs = [
   { key: "users" as const, label: "All Users" },
   { key: "active" as const, label: "Active Sessions" },
 ];
 const users = ref<Record<string, string>[]>([]);
 const active = ref<Record<string, string>[]>([]);
+
+// Active sessions are keyed by username, not the user record's .id — this
+// maps session.user -> the matching /ip/hotspot/user .id so the Active tab
+// can offer a Disable action on the underlying account.
+const userIdByNameMap = computed(() => {
+  const map = new Map<string, string>();
+  for (const u of users.value) map.set(u.name, u[".id"]);
+  return map;
+});
+function userIdByName(name: string) {
+  return userIdByNameMap.value.get(name);
+}
 
 const searchQuery = ref("");
 const filterProfile = ref("");
@@ -787,34 +925,6 @@ const loginUrl = computed(() => {
 
 const loading = ref(false);
 const error = ref("");
-const cleanupInstalled = ref<boolean | null>(null);
-const cleanupInterval = ref("7d");
-const cleanupToggling = ref(false);
-
-async function toggleCleanup(enabled: boolean) {
-  if (!store.activeId || cleanupToggling.value) return;
-  if (
-    !enabled &&
-    !confirm(
-      "Turn off auto-cleanup? Expired and quota-exhausted vouchers will no longer be removed automatically — they'll accumulate until you delete them manually.",
-    )
-  )
-    return;
-  cleanupToggling.value = true;
-  try {
-    const result = await putCleanupScheduler(
-      store.activeId,
-      enabled,
-      cleanupInterval.value,
-    );
-    cleanupInstalled.value = result.installed;
-    if (result.interval) cleanupInterval.value = result.interval;
-  } catch {
-    // non-critical — status stays as-is, user can retry
-  } finally {
-    cleanupToggling.value = false;
-  }
-}
 
 const selected = ref<Set<string>>(new Set());
 const bulkDeleting = ref(false);
@@ -875,6 +985,82 @@ const emptyForm = () => ({
   comment: "",
 });
 const form = ref(emptyForm());
+
+const showEdit = ref(false);
+const editing = ref(false);
+const editError = ref("");
+const editUserId = ref("");
+
+const emptyEditForm = () => ({
+  name: "",
+  password: "",
+  profile: "",
+  limitUptimeRaw: "",
+  limitBytesTotalValue: 0,
+  limitBytesTotalUnit: "M" as "M" | "G",
+});
+const editForm = ref(emptyEditForm());
+
+function bytesToValueUnit(val: string | undefined): { value: number; unit: "M" | "G" } {
+  const n = parseInt(val ?? "0");
+  if (!n) return { value: 0, unit: "M" };
+  if (n % 1024 ** 3 === 0) return { value: n / 1024 ** 3, unit: "G" };
+  return { value: Math.round(n / 1024 ** 2), unit: "M" };
+}
+
+function openEdit(u: Record<string, string>) {
+  editUserId.value = u[".id"];
+  const { value, unit } = bytesToValueUnit(u["limit-bytes-total"]);
+  editForm.value = {
+    name: u.name,
+    password: "",
+    profile: u.profile ?? "",
+    limitUptimeRaw: normalizeShorthand(u["limit-uptime"] ?? ""),
+    limitBytesTotalValue: value,
+    limitBytesTotalUnit: unit,
+  };
+  editError.value = "";
+  showEdit.value = true;
+}
+
+const editUptimePreview = computed(() =>
+  uptimePreviewFrom(editForm.value.limitUptimeRaw),
+);
+const editUptimeWarning = computed(() => {
+  if (!editUptimePreview.value || !editForm.value.profile) return false;
+  const validitySecs = selectedProfileValiditySeconds(editForm.value.profile);
+  if (!validitySecs) return false;
+  return shorthandToSeconds(editForm.value.limitUptimeRaw) > validitySecs;
+});
+function normalizeEditUptime() {
+  editForm.value.limitUptimeRaw = normalizeShorthand(editForm.value.limitUptimeRaw);
+}
+
+async function submitEdit() {
+  if (!store.activeId || !editUserId.value) return;
+  editing.value = true;
+  editError.value = "";
+  try {
+    const f = editForm.value;
+    const limitUptime = editUptimePreview.value;
+    const mul = f.limitBytesTotalUnit === "G" ? 1024 ** 3 : 1024 ** 2;
+    const limitBytesTotal = f.limitBytesTotalValue
+      ? String(f.limitBytesTotalValue * mul)
+      : "";
+    await updateHotspotUser(store.activeId, editUserId.value, {
+      ...(f.password ? { password: f.password } : {}),
+      profile: f.profile,
+      limitUptime,
+      limitBytesTotal,
+    });
+    showEdit.value = false;
+    await loadUsers();
+  } catch (e: any) {
+    editError.value = friendlyError(e, "Failed to update user");
+  } finally {
+    editing.value = false;
+  }
+}
 
 function parseShorthand(
   s: string,
@@ -966,7 +1152,7 @@ async function loadUsers() {
   loading.value = true;
   error.value = "";
   try {
-    const [u, p, m, s, cleanup] = await Promise.all([
+    const [u, p, m, s] = await Promise.all([
       listHotspotUsers(store.activeId),
       listHotspotProfiles(store.activeId),
       getProfileMetas(store.activeId).catch(
@@ -976,14 +1162,11 @@ async function loadUsers() {
         () =>
           ({ hotspotName: "", dnsName: "", currency: "" }) as HotspotSettings,
       ),
-      getCleanupScheduler(store.activeId).catch(() => null),
     ]);
     users.value = u;
     profiles.value = p;
     profileMetas.value = m;
     hotspotSettings.value = s;
-    cleanupInstalled.value = cleanup?.installed ?? false;
-    if (cleanup?.interval) cleanupInterval.value = cleanup.interval;
   } catch (e: any) {
     error.value = friendlyError(e, "Failed to load users");
   } finally {
@@ -1011,9 +1194,43 @@ function openAdd() {
 }
 
 async function removeUser(userId: string) {
-  if (!store.activeId || !confirm("Delete this user?")) return;
+  if (
+    !store.activeId ||
+    !confirm(
+      "Delete this user? This also disconnects them if currently active.",
+    )
+  )
+    return;
   await deleteHotspotUser(store.activeId, userId);
   await loadUsers();
+}
+
+// Deletes the underlying user record for an active session — used instead of
+// a plain session kick because RouterOS's mac-cookie auth (part of the
+// default login-by chain) silently re-authenticates the same device by MAC
+// as soon as it's disconnected, so a kick alone doesn't actually remove
+// access. Deleting the user (which cascades to kick any active session, see
+// DeleteHotspotUser) is the only way to truly revoke it.
+async function removeSessionUser(username: string) {
+  const userId = userIdByName(username);
+  if (
+    !store.activeId ||
+    !userId ||
+    !confirm("Delete this user? This also disconnects their active session.")
+  )
+    return;
+  await deleteHotspotUser(store.activeId, userId);
+  await Promise.all([loadUsers(), loadActive()]);
+}
+
+async function disconnectSession(sessionId: string) {
+  if (
+    !store.activeId ||
+    !confirm("Disconnect this session? The user can log back in.")
+  )
+    return;
+  await disconnectHotspotActive(store.activeId, sessionId);
+  await loadActive();
 }
 
 async function submitAdd() {
@@ -1058,15 +1275,31 @@ async function toggleDisabled(u: Record<string, string>) {
   }
 }
 
+// Disables the account behind an active session — this does not disconnect
+// the session itself (RouterOS keeps it live until it naturally expires);
+// use disconnectSession for that.
+async function disableSessionUser(username: string) {
+  if (!store.activeId) return;
+  const userId = userIdByName(username);
+  if (!userId) return;
+  try {
+    await toggleHotspotUser(store.activeId, userId, true);
+    await loadUsers();
+  } catch (e: any) {
+    error.value = friendlyError(e, "Failed to update user");
+  }
+}
+
 const showPrintDialog = ref(false);
 const printEntries = ref<VoucherEntry[]>([]);
 
 // With no selection, prints every currently filtered/visible user instead —
 // so the header Print button always does something useful.
 function openPrint() {
-  const source = selected.value.size > 0
-    ? users.value.filter((u) => selected.value.has(u[".id"]))
-    : filteredUsers.value;
+  const source =
+    selected.value.size > 0
+      ? users.value.filter((u) => selected.value.has(u[".id"]))
+      : filteredUsers.value;
   printEntries.value = source.map((u) => ({
     name: u.name,
     password: u.password ?? "",

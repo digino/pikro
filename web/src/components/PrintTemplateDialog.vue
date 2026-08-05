@@ -2,8 +2,8 @@
   <AppDialog :open="open" title="Print vouchers" size="xl" @update:open="emit('update:open', $event)">
     <div class="flex gap-5 items-start">
       <div class="w-56 shrink-0 space-y-4">
-        <p class="text-sm text-text-secondary">
-          {{ count }} voucher{{ count !== 1 ? "s" : "" }} ready to print
+        <p>
+          <span class="font-semibold">{{ count }} voucher{{ count !== 1 ? "s" : "" }}</span> ready to print
         </p>
 
         <div class="space-y-2">
@@ -34,7 +34,6 @@
 
       <!-- Preview -->
       <div class="flex-1 min-w-0">
-        <p class="text-xs font-medium text-text-muted mb-2">Preview</p>
         <div class="border border-border rounded-xl overflow-hidden bg-base" style="height: 420px">
           <div v-if="previewLoading" class="h-full flex items-center justify-center">
             <span class="spinner spinner--sm" />

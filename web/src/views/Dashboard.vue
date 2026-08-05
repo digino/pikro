@@ -5,84 +5,21 @@
     <div v-else class="grid gap-4">
       <!-- ── Row 1: hotspot ── -->
       <DashboardCard title="Hotspot">
-        <template #actions>
-          <RouterLink to="/hotspot/vouchers" class="btn btn-ghost">
-            Generate vouchers
-          </RouterLink>
-          <RouterLink to="/hotspot/users" class="btn btn-primary">
-            Manage
-          </RouterLink>
-        </template>
-
-        <div
-          v-if="hotspotLoading && totalUsers === 0"
-          class="flex items-center justify-center py-4"
-        >
-          <span class="spinner spinner--sm" />
-        </div>
-        <template v-else>
-          <div
-            class="grid grid-cols-4 gap-3 tracking-tight text-sm font-semibold text-secondary"
-          >
-            <div class="rounded-lg border border-border p-3 bg-base">
-              <div class="text-text-secondary">Users</div>
-              <div class="font-mono text-2xl font-bold mt-1 text-text-primary">
-                {{ totalUsers }}
-              </div>
-            </div>
-            <div class="rounded-lg border border-border p-3 bg-base">
-              <div class="text-text-secondary">Active</div>
-              <div class="font-mono text-2xl font-bold mt-1">
-                {{ activeSessions }}
-              </div>
-            </div>
-            <div class="rounded-lg border border-border p-3 bg-base">
-              <div class="text-text-secondary">Expired</div>
-              <div class="font-mono text-2xl font-bold mt-1">
-                {{ expiredUsers }}
-              </div>
-            </div>
-            <div class="rounded-lg border border-border p-3 bg-base">
-              <div class="text-text-secondary">Disabled</div>
-              <div
-                class="font-mono text-2xl font-bold mt-1 text-text-secondary"
-              >
-                {{ disabledUsers }}
-              </div>
-            </div>
-          </div>
-
-          <div
-            v-if="cleanupInstalled !== null"
-            class="flex items-center gap-3 p-3 rounded-lg border border-border bg-base"
-          >
-            <component
-              :is="cleanupInstalled ? CheckCircleIcon : ExclamationTriangleIcon"
-              class="size-6 shrink-0"
-              :class="cleanupInstalled ? 'text-green' : 'text-amber'"
-            />
-            <div class="flex-1 min-w-0">
-              <div class="font-semibold text-text-primary">
-                Auto-cleanup
-                {{ cleanupInstalled ? "active" : "not configured" }}
-              </div>
-              <div class="text-sm text-text-secondary mt-0.5">
-                {{
-                  cleanupInstalled
-                    ? `Expired vouchers are removed automatically every ${cleanupIntervalLabel}.`
-                    : "Not configured — expired users accumulate until removed manually."
-                }}
-              </div>
-            </div>
-            <RouterLink
-              to="/hotspot/settings"
-              class="btn btn-ghost"
-              :class="{ 'bg-primary': !cleanupInstalled }"
-            >
-              {{ cleanupInstalled ? "Change" : "Configure" }}
-            </RouterLink>
-          </div>
-        </template>
+        <HotspotSummaryCard
+          :loading="hotspotLoading"
+          :total-users="totalUsers"
+          :active-sessions="activeSessions"
+          :disabled-users="disabledUsers"
+        />
+        <AutoCleanupCard
+          :installed="cleanupInstalled"
+          :interval="cleanupInterval"
+          :toggling="cleanupToggling"
+          :saving="cleanupSaving"
+          :error="cleanupError"
+          @toggle="toggleCleanup"
+          @update:interval="saveCleanupInterval"
+        />
       </DashboardCard>
 
       <!-- ── Row 2: sales + active sessions ── -->
@@ -170,56 +107,7 @@
             </RouterLink>
           </template>
 
-          <div
-            v-if="hotspotLoading && activeList.length === 0"
-            class="flex justify-center py-6"
-          >
-            <span class="spinner spinner--sm" />
-          </div>
-          <EmptyState
-            v-else-if="activeList.length === 0"
-            message="No active sessions"
-          />
-          <div v-else class="overflow-x-auto">
-            <table class="w-full text-xs">
-              <thead>
-                <tr class="text-text-muted border-b border-border">
-                  <th class="text-left pb-2 font-medium">User</th>
-                  <th class="text-left pb-2 font-medium">IP</th>
-                  <th class="text-right pb-2 font-medium">Uptime</th>
-                  <th class="text-right pb-2 font-medium">Down</th>
-                  <th class="text-right pb-2 font-medium">Up</th>
-                  <th class="text-right pb-2 font-medium">Left</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="s in activeList.slice(0, 8)"
-                  :key="s['.id']"
-                  class="border-b border-border/40 last:border-0"
-                >
-                  <td class="py-2 font-mono font-medium text-text-primary">
-                    {{ s.user }}
-                  </td>
-                  <td class="py-2 font-mono text-text-secondary">
-                    {{ s.address }}
-                  </td>
-                  <td class="py-2 text-right font-mono text-text-secondary">
-                    {{ s.uptime || "—" }}
-                  </td>
-                  <td class="py-2 text-right font-mono text-text-primary">
-                    {{ formatBytes(parseInt(s["bytes-in"] ?? "0")) }}
-                  </td>
-                  <td class="py-2 text-right font-mono text-text-secondary">
-                    {{ formatBytes(parseInt(s["bytes-out"] ?? "0")) }}
-                  </td>
-                  <td class="py-2 text-right font-mono text-text-secondary">
-                    {{ s["session-time-left"] || "—" }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <ActiveSessionsTable :sessions="activeList" :loading="hotspotLoading" />
         </DashboardCard>
       </div>
 
@@ -227,124 +115,16 @@
       <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4 items-stretch">
         <!-- System card -->
         <DashboardCard title="System">
-          <div
-            v-if="loading"
-            class="flex items-center gap-2 text-sm text-text-muted py-4 justify-center"
-          >
-            <span class="spinner spinner--sm" /> Loading…
-          </div>
-          <div
-            v-else-if="error"
-            class="flex items-center gap-1.5 text-xs text-red py-4 justify-center"
-          >
-            <ExclamationTriangleIcon class="size-3.5 shrink-0" />{{ error }}
-          </div>
-          <template v-else>
-            <div class="flex flex-col items-center gap-2">
-              <RouterArt
-                :board-name="resource['board-name'] ?? ''"
-                :size="88"
-                :power-led="healthColor"
-                :wifi-led="
-                  activeSessions > 0
-                    ? 'var(--color-green)'
-                    : 'var(--color-border)'
-                "
-                wan-led="var(--color-amber)"
-              />
-              <div class="text-center space-y-0.5">
-                <div
-                  class="text-sm font-semibold text-text-primary font-mono leading-tight"
-                >
-                  {{ resource["board-name"] || store.active()?.name || "—" }}
-                </div>
-                <div class="text-xs text-text-muted font-mono leading-tight">
-                  RouterOS {{ resource["version"]?.split(" ")[0] || "—" }}
-                </div>
-              </div>
-              <div class="relative mt-1">
-                <svg width="72" height="72" viewBox="0 0 120 120">
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="50"
-                    fill="none"
-                    stroke="var(--color-border)"
-                    stroke-width="8"
-                  />
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="50"
-                    fill="none"
-                    :stroke="healthColor"
-                    stroke-width="8"
-                    stroke-linecap="round"
-                    :stroke-dasharray="ringCirc"
-                    :stroke-dashoffset="ringOffset"
-                    transform="rotate(-90 60 60)"
-                    style="
-                      transition:
-                        stroke-dashoffset 0.6s ease,
-                        stroke 0.4s ease;
-                    "
-                  />
-                </svg>
-                <div
-                  class="absolute inset-0 flex flex-col items-center justify-center"
-                >
-                  <span
-                    class="font-mono font-bold tracking-tight text-text-primary"
-                    >{{ healthScore }}</span
-                  >
-                  <span class="text-xs font-bold text-text-secondary"
-                    >Health</span
-                  >
-                </div>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 text-xs">
-              <div
-                class="flex justify-between items-center py-1.5 border-b border-border/60"
-              >
-                <span class="text-text-muted">Uptime</span>
-                <span class="font-mono font-semibold text-text-primary">{{
-                  resource["uptime"] ?? "—"
-                }}</span>
-              </div>
-              <div
-                class="flex justify-between items-center py-1.5 border-b border-border/60"
-              >
-                <span class="text-text-muted">CPU</span>
-                <span class="font-mono font-semibold text-text-primary"
-                  >{{ resource["cpu-load"] ?? "—" }}%</span
-                >
-              </div>
-              <div
-                class="flex justify-between items-center py-1.5 border-b border-border/60"
-              >
-                <span class="text-text-muted">Free RAM</span>
-                <span class="font-mono font-semibold text-text-primary">{{
-                  formatBytes(freeMemory)
-                }}</span>
-              </div>
-              <div
-                class="flex justify-between items-center py-1.5 border-b border-border/60"
-              >
-                <span class="text-text-muted">Free disk</span>
-                <span class="font-mono font-semibold text-text-primary">{{
-                  formatBytes(parseInt(resource["free-hdd-space"] ?? "0") || 0)
-                }}</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5">
-                <span class="text-text-muted">Date &amp; time</span>
-                <span class="font-mono font-semibold text-text-primary"
-                  >{{ routerDate || "—" }} {{ routerTime || "" }}</span
-                >
-              </div>
-            </div>
-          </template>
+          <SystemHealthCard
+            :loading="loading"
+            :error="error"
+            :resource="resource"
+            :router-name="store.active()?.name ?? ''"
+            :router-date="routerDate"
+            :router-time="routerTime"
+            :active-sessions="activeSessions"
+            :has-active-id="!!store.activeId"
+          />
         </DashboardCard>
 
         <!-- Bandwidth monitor -->
@@ -384,14 +164,13 @@
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { RouterLink } from "vue-router";
 import {
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
 } from "@heroicons/vue/24/outline";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { useRoutersStore } from "@/stores/routers";
+import { useToastStore } from "@/stores/toast";
 import {
   getSystemResource,
   getSystemClock,
@@ -399,18 +178,23 @@ import {
   listHotspotUsers,
   listHotspotActive,
   getCleanupScheduler,
+  putCleanupScheduler,
   getSalesLedger,
   type SaleEntry,
 } from "@/api";
 import { friendlyError } from "@/utils/errors";
 import { formatCompactAmount } from "@/utils/currencies";
 import PageLayout from "@/components/PageLayout.vue";
-import RouterArt from "@/components/router-art/RouterArt.vue";
 import SalesBarChart from "@/components/SalesBarChart.vue";
 import BandwidthChart from "@/components/BandwidthChart.vue";
 import DashboardCard from "@/components/DashboardCard.vue";
+import HotspotSummaryCard from "@/components/HotspotSummaryCard.vue";
+import AutoCleanupCard from "@/components/AutoCleanupCard.vue";
+import ActiveSessionsTable from "@/components/ActiveSessionsTable.vue";
+import SystemHealthCard from "@/components/SystemHealthCard.vue";
 
 const store = useRoutersStore();
+const toast = useToastStore();
 
 // ── State ─────────────────────────────────────────────────────
 const resource = ref<Record<string, string>>({});
@@ -422,7 +206,10 @@ const routerDate = ref("");
 const allUsers = ref<Record<string, string>[]>([]);
 const activeList = ref<Record<string, string>[]>([]);
 const cleanupInstalled = ref<boolean | null>(null);
-const cleanupInterval = ref("");
+const cleanupInterval = ref("7d");
+const cleanupToggling = ref(false);
+const cleanupSaving = ref(false);
+const cleanupError = ref("");
 const hotspotLoading = ref(false);
 const hotspotError = ref("");
 
@@ -444,66 +231,60 @@ const curUp = computed(() => bwHistory.value[N - 1].up.toFixed(2));
 // ── Hotspot computed counts ───────────────────────────────────
 const totalUsers = computed(() => allUsers.value.length);
 const activeSessions = computed(() => activeList.value.length);
-const expiredUsers = computed(() => {
-  const n = Math.floor(Date.now() / 1000);
-  return allUsers.value.filter((u) => {
-    const c = u.comment ?? "";
-    if (!c.startsWith("exp:")) return false;
-    const exp = c.slice(4);
-    const epoch = parseInt(exp);
-    if (!isNaN(epoch) && epoch > 1_000_000_000) return epoch < n;
-    if (exp.includes("-")) return new Date(exp.replace(" ", "T")) < new Date();
-    return false;
-  }).length;
-});
 const disabledUsers = computed(
   () => allUsers.value.filter((u) => u.disabled === "true").length,
 );
 
-// Cleanup interval is stored as a router-shorthand duration (e.g. "7d", "12h").
-// Expand it to a human phrase for the dashboard card.
-const cleanupIntervalLabel = computed(() => {
-  const s = cleanupInterval.value;
-  const m = s.match(/^(\d+)([wdhm])$/i);
-  if (!m) return s || "a regular interval";
-  const n = parseInt(m[1]);
-  const unit = { w: "week", d: "day", h: "hour", m: "minute" }[
-    m[2].toLowerCase()
-  ]!;
-  return `${n} ${unit}${n === 1 ? "" : "s"}`;
-});
+async function toggleCleanup(enabled: boolean) {
+  if (!store.activeId || cleanupToggling.value) return;
+  if (
+    !enabled &&
+    !confirm(
+      "Turn off auto-cleanup? Expired and quota-exhausted vouchers will no longer be removed automatically — they'll accumulate until you delete them manually.",
+    )
+  )
+    return;
+  cleanupToggling.value = true;
+  cleanupError.value = "";
+  try {
+    const result = await putCleanupScheduler(
+      store.activeId,
+      enabled,
+      cleanupInterval.value,
+    );
+    cleanupInstalled.value = result.installed;
+    if (result.interval) cleanupInterval.value = result.interval;
+    toast.success(
+      enabled ? "Auto-cleanup enabled" : "Auto-cleanup disabled",
+    );
+  } catch (e: any) {
+    cleanupError.value = friendlyError(e, "Failed to update scheduler");
+    toast.error("Failed to update auto-cleanup", cleanupError.value);
+  } finally {
+    cleanupToggling.value = false;
+  }
+}
 
-// ── Health computeds ──────────────────────────────────────────
-const cpuLoad = computed(
-  () => parseInt(resource.value["cpu-load"] ?? "0") || 0,
-);
-const freeMemory = computed(
-  () => parseInt(resource.value["free-memory"] ?? "0") || 0,
-);
-const totalMemory = computed(
-  () => parseInt(resource.value["total-memory"] ?? "1") || 1,
-);
-
-const healthScore = computed(() => {
-  if (!store.activeId || error.value) return "—";
-  const cpuScore = Math.round((1 - cpuLoad.value / 100) * 40);
-  const ramScore = Math.round(
-    Math.min(freeMemory.value / totalMemory.value / 0.5, 1) * 30,
-  );
-  return String(Math.min(100, cpuScore + ramScore + 30));
-});
-const healthColor = computed(() => {
-  if (error.value) return "var(--color-red)";
-  const s = parseInt(healthScore.value) || 0;
-  if (s >= 75) return "var(--color-green)";
-  if (s >= 50) return "var(--color-amber)";
-  return "var(--color-red)";
-});
-const ringCirc = (2 * Math.PI * 50).toFixed(1);
-const ringOffset = computed(() => {
-  const s = parseInt(healthScore.value) || 0;
-  return (2 * Math.PI * 50 * (1 - s / 100)).toFixed(1);
-});
+async function saveCleanupInterval(interval: string) {
+  if (!store.activeId) return;
+  cleanupInterval.value = interval;
+  cleanupSaving.value = true;
+  cleanupError.value = "";
+  try {
+    const result = await putCleanupScheduler(store.activeId, true, interval);
+    cleanupInstalled.value = result.installed;
+    if (result.interval) cleanupInterval.value = result.interval;
+    toast.success(
+      "Cleanup schedule updated",
+      `Now running every ${result.interval || interval}.`,
+    );
+  } catch (e: any) {
+    cleanupError.value = friendlyError(e, "Failed to update scheduler");
+    toast.error("Failed to update schedule", cleanupError.value);
+  } finally {
+    cleanupSaving.value = false;
+  }
+}
 
 // ── Data loading ──────────────────────────────────────────────
 async function loadStatic() {
@@ -725,14 +506,5 @@ const dailySalesPoints = computed(() => {
 
 function fmtAmount(n: number): string {
   return formatCompactAmount(n, salesCurrency.value);
-}
-
-// ── Formatters ────────────────────────────────────────────────
-function formatBytes(n: number): string {
-  if (!n || isNaN(n)) return "—";
-  if (n >= 1_073_741_824) return (n / 1_073_741_824).toFixed(1) + " GB";
-  if (n >= 1_048_576) return (n / 1_048_576).toFixed(1) + " MB";
-  if (n >= 1_024) return (n / 1_024).toFixed(0) + " KB";
-  return n + " B";
 }
 </script>

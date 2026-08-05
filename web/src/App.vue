@@ -5,6 +5,7 @@
       <RouterView />
     </div>
     <AddRouterDialog v-model:open="store.showAddDialog" />
+    <ToastHost />
   </div>
 </template>
 
@@ -15,6 +16,7 @@ import { useRoutersStore } from '@/stores/routers'
 import { useThemeStore } from '@/stores/theme'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AddRouterDialog from '@/components/AddRouterDialog.vue'
+import ToastHost from '@/components/ToastHost.vue'
 
 const store = useRoutersStore()
 const appVersion = ref('dev')

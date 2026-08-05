@@ -77,6 +77,7 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/routers/{id}/hotspot/users/{userID}/toggle", handlers.ToggleHotspotUser)
 	mux.HandleFunc("DELETE /api/routers/{id}/hotspot/users/{userID}", handlers.DeleteHotspotUser)
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/active", handlers.ListHotspotActive)
+	mux.HandleFunc("DELETE /api/routers/{id}/hotspot/active/{sessionID}", handlers.DisconnectHotspotActive)
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/hosts", handlers.ListHotspotHosts)
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/profiles", handlers.ListHotspotProfiles)
 	mux.HandleFunc("POST /api/routers/{id}/hotspot/profiles", handlers.CreateHotspotProfile)

@@ -118,6 +118,9 @@ export const getProfileMetas = (id: string) =>
 export const deleteHotspotUser = (routerId: string, userId: string) =>
   api.delete(`/routers/${routerId}/hotspot/users/${userId}`)
 
+export const disconnectHotspotActive = (routerId: string, sessionId: string) =>
+  api.delete(`/routers/${routerId}/hotspot/active/${sessionId}`)
+
 // Hotspot settings
 export const getHotspotSettings = (id: string) =>
   api.get<HotspotSettings>(`/routers/${id}/hotspot/settings`).then(r => r.data)

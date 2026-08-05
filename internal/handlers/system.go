@@ -85,7 +85,7 @@ func GetSystemLogs(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	logs, err := client.SystemLogs(20)
+	logs, err := client.SystemLogs("hotspot")
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return

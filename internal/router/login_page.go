@@ -129,9 +129,22 @@ func (c *Client) UploadLoginPage(profileName string, html string) error {
 	if profileName == "" {
 		profileName = "pikro-profile"
 	}
+	// numbers= expects a positional index into the last /print result, not a
+	// name — resolve the profile's .id explicitly rather than passing the
+	// name string as numbers= (which RouterOS rejects with "no such item").
+	profReply, err := conn.RunArgs([]string{
+		"/ip/hotspot/profile/print",
+		"?name=" + profileName,
+	})
+	if err != nil {
+		return err
+	}
+	if len(profReply.Re) == 0 {
+		return fmt.Errorf("hotspot profile %q not found", profileName)
+	}
 	_, err = conn.RunArgs([]string{
 		"/ip/hotspot/profile/set",
-		"=numbers=" + profileName,
+		"=.id=" + profReply.Re[0].Map[".id"],
 		"=html-directory=hotspot",
 	})
 	return err

@@ -301,9 +301,17 @@ func (c *Client) stepCreateHotspotProfile(profileName, gateway, dnsName string) 
 			return SetupStepResult{Name: name, Error: err.Error()}
 		}
 		// Profile exists — update dns-name and login-by so re-runs apply changes.
+		// numbers= expects a positional index, not a name — resolve .id first.
+		profReply, perr := conn.RunArgs([]string{
+			"/ip/hotspot/profile/print",
+			"?name=" + profileName,
+		})
+		if perr != nil || len(profReply.Re) == 0 {
+			return SetupStepResult{Name: name, Error: fmt.Sprintf("hotspot profile %q not found", profileName)}
+		}
 		setArgs := []string{
 			"/ip/hotspot/profile/set",
-			"=numbers=" + profileName,
+			"=.id=" + profReply.Re[0].Map[".id"],
 			"=login-by=cookie,http-chap,http-pap,mac-cookie",
 		}
 		if dnsName != "" {
