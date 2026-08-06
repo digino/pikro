@@ -63,7 +63,6 @@
       <EmptyState
         v-if="!loading && ledger.length === 0"
         bordered
-        size="lg"
         title="No sales recorded yet"
         message="Sales are recorded automatically each time you generate vouchers through Pikro."
       />

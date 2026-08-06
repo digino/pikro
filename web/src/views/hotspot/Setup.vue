@@ -525,47 +525,47 @@
     >
       <div class="space-y-4">
         <div
-          class="border border-border rounded-lg p-3 text-xs space-y-1.5 bg-base"
+          class="border border-border rounded-lg p-3 text-sm space-y-1.5 bg-base"
         >
-          <div class="flex justify-between">
-            <span class="text-text-muted">Router</span>
-            <span class="font-medium text-text-primary">{{
+          <div class="flex justify-between font-medium">
+            <span class="text-text-secondary">Router</span>
+            <span class="text-text-primary">{{
               store.routers.find((r) => r.id === store.activeId)?.name
             }}</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-text-muted">Host</span>
-            <span class="font-mono text-text-secondary">{{
+          <div class="flex justify-between font-medium">
+            <span class="text-text-secondary">Host</span>
+            <span class="font-mono text-text-primary">{{
               store.routers.find((r) => r.id === store.activeId)?.host
             }}</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-text-muted">Hotspot interface</span>
-            <span class="font-mono text-text-secondary">{{
+          <div class="flex justify-between font-medium">
+            <span class="text-text-secondary">Hotspot interface</span>
+            <span class="font-mono text-text-primary">{{
               preflight?.hotspotOnIface || form.lanIface || "—"
             }}</span>
           </div>
         </div>
 
         <div>
-          <p class="text-sm font-medium text-text-secondary mb-1.5">
+          <p class="font-medium text-text-primary text-sm mb-1.5">
             This will remove:
           </p>
-          <ul class="text-sm text-text-muted space-y-1">
-            <li class="flex items-center gap-1.5 size-3 shrink-0 text-red">
-              <TrashIcon /> Hotspot server
+          <ul class="text-sm text-text-secondary space-y-1">
+            <li class="flex items-center gap-1.5 shrink-0 text-red">
+              <TrashIcon class="size-4" /> Hotspot server
             </li>
-            <li class="flex items-center gap-1.5 size-3 shrink-0 text-red">
-              <TrashIcon /> Hotspot server profile
+            <li class="flex items-center gap-1.5 shrink-0 text-red">
+              <TrashIcon class="size-4" /> Hotspot server profile
             </li>
-            <li class="flex items-center gap-1.5 size-3 shrink-0 text-red">
-              <TrashIcon /> NAT masquerade rule
+            <li class="flex items-center gap-1.5 shrink-0 text-red">
+              <TrashIcon class="size-4" /> NAT masquerade rule
             </li>
-            <li class="flex items-center gap-1.5 size-3 shrink-0 text-red">
-              <TrashIcon /> Walled garden rules
+            <li class="flex items-center gap-1.5 shrink-0 text-red">
+              <TrashIcon class="size-4" /> Walled garden rules
             </li>
           </ul>
-          <p class="text-xs text-text-muted mt-2">
+          <p class="text-sm text-text-secondary font-medium mt-2">
             IP address, DHCP server, IP pool and DNS settings are kept.
           </p>
         </div>
