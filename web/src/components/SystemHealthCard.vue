@@ -48,19 +48,19 @@
 
     <div class="grid grid-cols-1 text-xs">
       <div class="flex justify-between items-center py-1.5 border-b border-border/60">
-        <span class="text-text-muted">Uptime</span>
+        <span class="text-text-secondary">Uptime</span>
         <span class="font-mono font-semibold text-text-primary">{{ resource["uptime"] ?? "—" }}</span>
       </div>
       <div class="flex justify-between items-center py-1.5 border-b border-border/60">
-        <span class="text-text-muted">CPU</span>
+        <span class="text-text-secondary">CPU</span>
         <span class="font-mono font-semibold text-text-primary">{{ resource["cpu-load"] ?? "—" }}%</span>
       </div>
       <div class="flex justify-between items-center py-1.5 border-b border-border/60">
-        <span class="text-text-muted">Free RAM</span>
+        <span class="text-text-secondary">Free RAM</span>
         <span class="font-mono font-semibold text-text-primary">{{ formatBytes(freeMemory) }}</span>
       </div>
       <div class="flex justify-between items-center py-1.5">
-        <span class="text-text-muted">Free disk</span>
+        <span class="text-text-secondary">Free disk</span>
         <span class="font-mono font-semibold text-text-primary">{{
           formatBytes(parseInt(resource["free-hdd-space"] ?? "0") || 0)
         }}</span>
