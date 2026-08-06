@@ -1,5 +1,11 @@
 <template>
   <PageLayout title="Dashboard" subtitle="Router Overview">
+    <template v-if="store.activeId" #actions>
+      <span class="text-xs font-mono text-text-secondary">
+        {{ routerDate || "—" }} {{ routerTime || "" }}
+      </span>
+    </template>
+
     <NoRouterSelected v-if="!store.activeId" />
 
     <div v-else class="grid gap-4">
@@ -112,7 +118,7 @@
       </div>
 
       <!-- ── Row 3: system + bandwidth ── -->
-      <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4 items-stretch">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
         <!-- System card -->
         <DashboardCard title="System">
           <SystemHealthCard
@@ -120,15 +126,13 @@
             :error="error"
             :resource="resource"
             :router-name="store.active()?.name ?? ''"
-            :router-date="routerDate"
-            :router-time="routerTime"
             :active-sessions="activeSessions"
             :has-active-id="!!store.activeId"
           />
         </DashboardCard>
 
         <!-- Bandwidth monitor -->
-        <DashboardCard title="Bandwidth">
+        <DashboardCard title="Bandwidth" class="lg:col-span-2">
           <template #actions>
             <div class="flex items-center gap-1.5">
               <span

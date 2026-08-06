@@ -59,15 +59,11 @@
         <span class="text-text-muted">Free RAM</span>
         <span class="font-mono font-semibold text-text-primary">{{ formatBytes(freeMemory) }}</span>
       </div>
-      <div class="flex justify-between items-center py-1.5 border-b border-border/60">
+      <div class="flex justify-between items-center py-1.5">
         <span class="text-text-muted">Free disk</span>
         <span class="font-mono font-semibold text-text-primary">{{
           formatBytes(parseInt(resource["free-hdd-space"] ?? "0") || 0)
         }}</span>
-      </div>
-      <div class="flex justify-between items-center py-1.5">
-        <span class="text-text-muted">Date &amp; time</span>
-        <span class="font-mono font-semibold text-text-primary">{{ routerDate || "—" }} {{ routerTime || "" }}</span>
       </div>
     </div>
   </template>
@@ -83,8 +79,6 @@ const props = defineProps<{
   error: string
   resource: Record<string, string>
   routerName: string
-  routerDate: string
-  routerTime: string
   activeSessions: number
   hasActiveId: boolean
 }>()
