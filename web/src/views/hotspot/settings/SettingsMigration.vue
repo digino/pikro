@@ -1,7 +1,10 @@
 <template>
   <div class="max-w-xl space-y-5">
     <div>
-      <h3 class="font-semibold text-text-primary">Migrate from Mikhmon</h3>
+      <div class="flex items-center gap-2">
+        <h3 class="font-semibold text-text-primary">Migrate from Mikhmon</h3>
+        <StatusBadge label="Beta" color="amber" variant="pill" />
+      </div>
       <p class="text-sm text-text-secondary mt-0.5">
         If this router was previously managed with Mikhmon, its hotspot users and
         profiles use a different expiry format that Pikro can't read yet — they'll
@@ -54,6 +57,7 @@
 import { ref } from 'vue'
 import { useRoutersStore } from '@/stores/routers'
 import { migrateFromMikhmon, type MikhmonMigrationResult } from '@/api'
+import StatusBadge from '@/components/StatusBadge.vue'
 
 const store = useRoutersStore()
 
