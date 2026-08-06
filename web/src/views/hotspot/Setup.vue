@@ -1,6 +1,5 @@
 <template>
   <PageLayout title="Hotspot" subtitle="Setup Wizard">
-    <!-- ── Phase: loading ─────────────────────────────────────────────────── -->
     <div
       v-if="phase === 'loading'"
       class="flex flex-col items-center py-16 gap-3"
@@ -275,9 +274,7 @@
 
       <!-- Branding (form phase) -->
       <div class="border border-border rounded-xl p-5 space-y-4 bg-surface">
-        <h2 class="text-sm font-semibold text-text-primary">
-          Vouchers
-        </h2>
+        <h2 class="text-sm font-semibold text-text-primary">Vouchers</h2>
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-text-secondary">Currency</span>
           <select v-model="branding.currency" class="input">
