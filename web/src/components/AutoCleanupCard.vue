@@ -34,17 +34,12 @@
     <div v-if="installed" class="flex items-center gap-2 pl-9">
       <span class="text-sm text-text-secondary shrink-0">Run every</span>
       <div class="w-52 shrink-0">
-        <select
-          :value="interval"
-          class="input"
+        <AppSelect
+          :model-value="interval"
+          :options="INTERVAL_OPTIONS"
           :disabled="saving"
-          @change="$emit('update:interval', ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="10m">Every 10 minutes (testing)</option>
-          <option value="1h">Every hour</option>
-          <option value="1d">Daily</option>
-          <option value="7d">Weekly (recommended)</option>
-        </select>
+          @update:model-value="$emit('update:interval', String($event))"
+        />
       </div>
     </div>
 
@@ -52,8 +47,8 @@
       <div class="flex items-start gap-2">
         <ExclamationTriangleIcon class="size-4 shrink-0 mt-0.5 text-amber" />
         <div class="space-y-1">
-          <p class="text-xs font-semibold text-amber">Scheduler blocked by RouterOS device-mode</p>
-          <p class="text-xs text-text-secondary">
+          <p class="font-semibold text-amber">Scheduler blocked by RouterOS device-mode</p>
+          <p class="text-sm text-text-secondary">
             Your router runs RouterOS 7.17+ with the scheduler disabled. Run the command below in
             Winbox Terminal or SSH, then press the physical button on your router (or cold-reboot) to
             confirm.
@@ -73,6 +68,14 @@
 import { computed } from 'vue'
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
 import { CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
+import AppSelect, { type SelectOption } from '@/components/AppSelect.vue'
+
+const INTERVAL_OPTIONS: SelectOption[] = [
+  { value: '10m', label: 'Every 10 minutes (testing)' },
+  { value: '1h', label: 'Every hour' },
+  { value: '1d', label: 'Daily' },
+  { value: '7d', label: 'Weekly (recommended)' },
+]
 
 const props = defineProps<{
   installed: boolean | null

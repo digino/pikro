@@ -6,6 +6,7 @@
     <SelectTrigger
       class="input-select flex items-center gap-1.5 cursor-pointer"
       :class="triggerClass"
+      :disabled="disabled"
     >
       <SelectValue :placeholder="placeholder" class="flex-1 text-left truncate" />
       <ChevronDownIcon class="size-3.5 text-text-secondary shrink-0" />
@@ -58,6 +59,7 @@ const props = defineProps<{
   /** When true, model-value/emitted values are coerced back to number. */
   numeric?: boolean
   triggerClass?: string
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
