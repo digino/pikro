@@ -162,7 +162,15 @@ export const deleteHotspotProfile = (id: string, profileId: string, profileName?
 export const hotspotPreflight = (id: string) =>
   api.get<PreflightResult>(`/routers/${id}/hotspot/preflight`).then(r => r.data)
 
-export const setupHotspot = (id: string, body: { lanIface: string; wanIface: string; subnet: string; hotspotName: string }) =>
+export const setupHotspot = (id: string, body: {
+  lanIface: string
+  wanIface: string
+  subnet: string
+  hotspotName: string
+  extension?: string
+  newBridgeName?: string
+  bridgePorts?: string[]
+}) =>
   api.post<SetupResult>(`/routers/${id}/hotspot/setup`, body).then(r => r.data)
 
 export const teardownHotspot = (id: string) =>

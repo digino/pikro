@@ -110,15 +110,44 @@
 
     <!-- ── Phase: form ────────────────────────────────────────────────────── -->
     <div v-else-if="phase === 'form'" class="space-y-5">
-      <div
-        class="flex items-start gap-2 p-3 border rounded-lg text-xs bg-amber/8 border-amber/20 text-amber"
+      <!-- Step indicator -->
+      <StepperRoot
+        :model-value="step"
+        linear
+        class="flex items-center gap-2"
+        @update:model-value="step = $event ?? step"
       >
-        <ExclamationTriangleIcon class="size-4 shrink-0 mt-0.5" />
-        <span
-          >Ensure no hotspot is already configured on this router. Running setup
-          on an existing configuration may cause conflicts.</span
-        >
-      </div>
+        <template v-for="(label, i) in STEPS" :key="i">
+          <StepperItem
+            :step="i + 1"
+            :completed="step > i + 1"
+            class="flex items-center gap-1.5"
+            :class="i < STEPS.length - 1 ? 'flex-1' : ''"
+          >
+            <StepperTrigger class="flex items-center gap-1.5" as="div">
+              <StepperIndicator
+                class="size-6 bg-primary rounded-full flex items-center justify-center text-xs font-bold transition-colors shrink-0 data-[state=active]:bg-accent data-[state=active]:text-base data-[state=completed]:bg-green/20 data-[state=completed]:text-green data-[state=inactive]:bg-muted data-[state=inactive]:text-text-muted"
+              >
+                {{ step > i + 1 ? "✓" : i + 1 }}
+              </StepperIndicator>
+              <StepperTitle
+                class="text-sm hidden sm:inline"
+                :class="
+                  step === i + 1
+                    ? 'text-text-primary font-medium'
+                    : 'text-text-muted'
+                "
+              >
+                {{ label }}
+              </StepperTitle>
+            </StepperTrigger>
+            <StepperSeparator
+              v-if="i < STEPS.length - 1"
+              class="flex-1 h-px bg-border"
+            />
+          </StepperItem>
+        </template>
+      </StepperRoot>
 
       <div
         v-if="preflightError"
@@ -131,189 +160,271 @@
         >
       </div>
 
-      <div class="border border-border rounded-xl p-5 space-y-4 bg-surface">
-        <h2 class="text-sm font-semibold text-text-primary">
-          Network configuration
-        </h2>
-
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-red"
-            >LAN / Hotspot interface <span>*</span></span
+      <form @submit.prevent="onFormSubmit" class="space-y-5">
+        <!-- Step: Bridge (conditional) -->
+        <div
+          v-if="STEPS[step - 1] === 'Bridge'"
+          class="border border-border rounded-xl p-5 space-y-4 bg-surface"
+        >
+          <div
+            class="flex items-start gap-2 p-3 rounded-lg border text-xs bg-amber/8 border-amber/20 text-amber"
           >
-          <select
-            v-if="interfaces.length"
-            v-model="form.lanIface"
-            class="input"
-          >
-            <option value="" disabled>Select interface…</option>
-            <optgroup
-              v-if="bridgeAndWlan.length"
-              label="Bridge / WiFi (recommended)"
-            >
-              <option v-for="i in bridgeAndWlan" :key="i.name" :value="i.name">
-                {{ i.name }}{{ !i.running ? " — down" : ""
-                }}{{ i.comment ? ` (${i.comment})` : "" }}
-              </option>
-            </optgroup>
-            <optgroup label="All interfaces">
-              <option v-for="i in interfaces" :key="i.name" :value="i.name">
-                {{ i.name }} [{{ i.type }}]{{ !i.running ? " — down" : "" }}
-              </option>
-            </optgroup>
-          </select>
-          <input
-            v-else
-            v-model="form.lanIface"
-            class="input"
-            placeholder="e.g. bridge1 or ether2"
-          />
-          <p class="text-xs text-text-muted">
-            The interface clients connect to (usually a bridge or wlan)
-          </p>
-        </label>
-
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-red"
-            >WAN interface <span>*</span></span
-          >
-          <select
-            v-if="interfaces.length"
-            v-model="form.wanIface"
-            class="input"
-          >
-            <option value="" disabled>Select interface…</option>
-            <option v-for="i in interfaces" :key="i.name" :value="i.name">
-              {{ i.name }} [{{ i.type }}]{{ !i.running ? " — down" : "" }}
-            </option>
-          </select>
-          <input
-            v-else
-            v-model="form.wanIface"
-            class="input"
-            placeholder="e.g. ether1"
-          />
-          <p class="text-xs text-text-muted">
-            The interface connected to the internet (usually ether1)
-          </p>
-        </label>
-
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-red"
-            >Subnet (CIDR) <span>*</span></span
-          >
-          <input
-            v-model="form.subnet"
-            class="input font-mono"
-            placeholder="192.168.88.0/24"
-          />
-        </label>
-
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-text-secondary"
-            >Hotspot name</span
-          >
-          <div class="flex items-stretch">
-            <input
-              v-model="form.hotspotName"
-              class="input rounded-r-none border-r-0"
-              placeholder="myhotspot"
-              pattern="[a-zA-Z0-9\-]+"
-            />
+            <ExclamationTriangleIcon class="size-4 shrink-0 mt-0.5" />
             <span
-              class="flex items-center px-3 border border-border rounded-r-lg text-xs font-mono text-text-muted shrink-0 bg-surface"
-              >.spot</span
+              >No bridge or wireless interface was found on this router. Create
+              a bridge to use as the hotspot LAN.</span
             >
           </div>
-          <p class="text-xs text-text-muted font-mono">
-            Clients are redirected to
-            <span>{{ form.hotspotName || "myhotspot" }}.spot</span> — leave
-            blank to use the router IP instead
-          </p>
-        </label>
 
-        <div
-          v-if="derived"
-          class="border border-border rounded-lg p-3 text-xs bg-base"
-        >
-          <div class="grid grid-cols-2 gap-x-4 gap-y-1.5">
-            <span class="text-text-muted">Router IP (gateway)</span>
-            <span class="font-mono text-text-secondary">{{
-              derived.gateway
-            }}</span>
-            <span class="text-text-muted">DHCP pool</span>
-            <span class="font-mono text-text-secondary"
-              >{{ derived.poolStart }} – {{ derived.poolEnd }}</span
-            >
-            <span class="text-text-muted">Hotspot profile name</span>
-            <span class="font-mono text-text-secondary">pikro-profile</span>
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium">Bridge name</span>
+            <input
+              v-model="bridge.name"
+              class="input"
+              placeholder="bridge1"
+              required
+            />
+          </label>
+
+          <div class="flex flex-col gap-1.5">
+            <span class="text-sm font-medium">Ports to add</span>
+            <p class="text-xs text-text-muted">
+              Select the physical ports clients will connect through. Leave your
+              uplink port (usually ether1) unchecked.
+            </p>
+            <div class="grid grid-cols-2 gap-1.5 mt-1">
+              <label
+                v-for="i in etherInterfaces"
+                :key="i.name"
+                class="flex items-center gap-2 cursor-pointer select-none text-sm"
+              >
+                <span
+                  class="relative inline-flex items-center justify-center size-4 rounded border shrink-0 transition-colors"
+                  :style="
+                    bridge.ports.includes(i.name)
+                      ? 'background: var(--color-accent); border-color: var(--color-accent)'
+                      : 'background: transparent; border-color: var(--color-border)'
+                  "
+                >
+                  <svg
+                    v-if="bridge.ports.includes(i.name)"
+                    viewBox="0 0 10 8"
+                    fill="none"
+                    class="size-2.5"
+                  >
+                    <path
+                      d="M1 4l2.5 2.5L9 1"
+                      stroke="#09090b"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                <input
+                  type="checkbox"
+                  :value="i.name"
+                  v-model="bridge.ports"
+                  class="sr-only"
+                />
+                <span class="text-text-secondary"
+                  >{{ i.name }}{{ !i.running ? " — down" : "" }}</span
+                >
+              </label>
+            </div>
           </div>
         </div>
-      </div>
 
-      <details class="text-xs text-text-muted">
-        <summary
-          class="cursor-pointer hover:text-text-secondary transition-colors font-medium"
+        <!-- Step: Network -->
+        <div
+          v-else-if="STEPS[step - 1] === 'Network'"
+          class="border border-border rounded-xl p-5 space-y-4 bg-surface"
         >
-          What will be configured
-        </summary>
-        <ul class="mt-2 space-y-1 pl-2 text-text-muted">
-          <li>
-            • Assign {{ derived?.gateway ?? "…" }} to
-            {{ form.lanIface || "(LAN interface)" }}
-          </li>
-          <li>• Create IP pool <span class="font-mono">hotspot-pool</span></li>
-          <li>• Create DHCP server + network</li>
-          <li>• Create hotspot server profile with Pikro login page</li>
-          <li>• Enable hotspot on {{ form.lanIface || "(LAN interface)" }}</li>
-          <li>
-            • Add NAT masquerade on {{ form.wanIface || "(WAN interface)" }}
-          </li>
-          <li>• Enable DNS remote requests</li>
-        </ul>
-      </details>
+          <h2 class="font-semibold text-text-primary">Network configuration</h2>
 
-      <!-- Branding (form phase) -->
-      <div class="border border-border rounded-xl p-5 space-y-4 bg-surface">
-        <h2 class="text-sm font-semibold text-text-primary">Vouchers</h2>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-text-secondary">Currency</span>
-          <select v-model="branding.currency" class="input">
-            <option value="">None</option>
-            <option v-for="c in CURRENCIES" :key="c.value" :value="c.value">
-              {{ c.label }}
-            </option>
-          </select>
-        </label>
-        <p class="text-xs text-text-muted">
-          Saved alongside the network setup. You can update this anytime by
-          editing the router.
-        </p>
-      </div>
+          <label class="flex flex-col gap-1">
+            <span class="font-medium text-red"
+              >LAN / Hotspot interface <span>*</span></span
+            >
+            <AppSelect
+              v-if="lanOptions.length"
+              v-model="form.lanIface"
+              :options="lanOptions"
+              placeholder="Select interface…"
+            />
+            <input
+              v-else
+              v-model="form.lanIface"
+              class="input"
+              placeholder="e.g. bridge1 or ether2"
+            />
+            <p class="text-sm text-text-muted">
+              The interface clients connect to (usually a bridge or wlan)
+            </p>
+          </label>
 
-      <div class="flex items-center gap-3">
-        <button
-          class="btn btn-primary"
-          :disabled="!canSubmit"
-          @click="runSetup"
+          <label class="flex flex-col gap-1">
+            <span class="font-medium text-red"
+              >WAN interface <span>*</span></span
+            >
+            <AppSelect
+              v-if="wanOptions.length"
+              v-model="form.wanIface"
+              :options="wanOptions"
+              placeholder="Select interface…"
+            />
+            <input
+              v-else
+              v-model="form.wanIface"
+              class="input"
+              placeholder="e.g. ether1"
+            />
+            <p class="text-sm text-text-muted">
+              The interface connected to the internet (usually ether1)
+            </p>
+          </label>
+
+          <label class="flex flex-col gap-1">
+            <span class="font-medium">Hotspot name</span>
+            <div class="join">
+              <input
+                v-model="form.hotspotName"
+                class="input flex-1 min-w-0"
+                placeholder="myhotspot"
+                pattern="[a-zA-Z0-9\-]+"
+              />
+              <AppSelect
+                v-model="form.hotspotExtension"
+                :options="extensionOptions"
+                trigger-class="w-auto shrink-0"
+              />
+            </div>
+            <p class="text-sm text-text-muted">
+              Clients are redirected to
+              <span
+                >{{ form.hotspotName || "myhotspot"
+                }}{{ form.hotspotExtension }}</span
+              >
+              — leave blank to use the router IP instead
+            </p>
+          </label>
+        </div>
+
+        <!-- Step: Subnet -->
+        <div
+          v-else-if="STEPS[step - 1] === 'Subnet'"
+          class="border border-border rounded-xl p-5 space-y-4 bg-surface"
         >
-          Run Setup
-        </button>
-        <button
-          class="btn btn-ghost btn-sm border-transparent"
-          @click="runPreflight"
-        >
-          <ArrowPathIcon class="size-3.5" />
-          Re-check router
-        </button>
-        <button
-          class="btn btn-sm ml-auto border-red/30 text-red hover:bg-red/8"
-          :disabled="tearing"
-          @click="runTeardown"
-        >
-          <TrashIcon class="size-3.5" />
-          {{ tearing ? "Resetting…" : "Reset config" }}
-        </button>
-      </div>
+          <label class="flex flex-col gap-1">
+            <span class="font-medium text-red"
+              >Subnet (CIDR) <span>*</span></span
+            >
+            <input
+              v-model="form.subnet"
+              class="input font-mono"
+              placeholder="192.168.88.0/24"
+            />
+            <p v-if="subnetError" class="text-sm text-red">{{ subnetError }}</p>
+          </label>
+
+          <div
+            v-if="derived"
+            class="border border-border rounded-lg p-3 text-sm bg-base"
+          >
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1.5">
+              <span class="text-text-secondary">Router IP (gateway)</span>
+              <span class="font-mono text-text-primary font-medium">{{
+                derived.gateway
+              }}</span>
+              <span class="text-text-secondary">DHCP pool</span>
+              <span class="font-mono text-text-primary font-medium"
+                >{{ derived.poolStart }} – {{ derived.poolEnd }}</span
+              >
+              <span class="text-text-secondary">Hotspot profile name</span>
+              <span class="font-mono text-text-primary font-medium"
+                >pikro-profile</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Step: Review -->
+        <template v-else-if="STEPS[step - 1] === 'Review'">
+          <div
+            class="flex items-start gap-2 text-sm p-3 border rounded-lg bg-amber/8 border-amber/20 text-amber"
+          >
+            <ExclamationTriangleIcon class="size-5 shrink-0 mt-0.5" />
+            <span
+              >Ensure no hotspot is already configured on this router. Running
+              setup on an existing configuration may cause conflicts.</span
+            >
+          </div>
+
+          <div class="border border-border rounded-xl p-5 space-y-4 bg-surface">
+            <h2 class="text-sm font-semibold text-text-primary">
+              What will be configured
+            </h2>
+            <ul class="space-y-1 text-sm text-text-secondary">
+              <li v-if="needsBridge">
+                • Create bridge {{ bridge.name || "(bridge)"
+                }}{{
+                  bridge.ports.length
+                    ? ` with ports ${bridge.ports.join(", ")}`
+                    : ""
+                }}
+              </li>
+              <li>
+                • Assign {{ derived?.gateway ?? "…" }} to
+                {{ form.lanIface || "(LAN interface)" }}
+              </li>
+              <li>
+                • Create IP pool <span class="font-mono">hotspot-pool</span>
+              </li>
+              <li>• Create DHCP server + network</li>
+              <li>• Create hotspot server profile with Pikro login page</li>
+              <li>
+                • Enable hotspot on {{ form.lanIface || "(LAN interface)" }}
+              </li>
+              <li>
+                • Add NAT masquerade on {{ form.wanIface || "(WAN interface)" }}
+              </li>
+              <li>• Enable DNS remote requests</li>
+            </ul>
+          </div>
+        </template>
+
+        <div class="flex items-center gap-3">
+          <button type="button" class="btn btn-ghost" @click="onBack">
+            {{ step === 1 ? "Re-check router" : "Back" }}
+          </button>
+          <button
+            v-if="step < STEPS.length"
+            type="button"
+            class="btn btn-primary"
+            :disabled="!canAdvance"
+            @click="step++"
+          >
+            Next
+          </button>
+          <button
+            v-else
+            type="submit"
+            class="btn btn-primary"
+            :disabled="!canSubmit"
+          >
+            Run Setup
+          </button>
+          <!-- <button
+            type="button"
+            class="btn ml-auto border-red/30 text-red hover:bg-red/8"
+            :disabled="tearing"
+            @click="runTeardown"
+          >
+            <TrashIcon class="size-3.5" />
+            {{ tearing ? "Resetting…" : "Reset config" }}
+          </button> -->
+        </div>
+      </form>
 
       <div
         v-if="teardownResult"
@@ -456,7 +567,9 @@
               >Connect a client device to the router's WiFi or LAN — it will be
               redirected to
               <span class="font-mono">{{
-                form.hotspotName ? form.hotspotName + ".spot" : "the login page"
+                form.hotspotName
+                  ? form.hotspotName + form.hotspotExtension
+                  : "the login page"
               }}</span
               >.</span
             >
@@ -586,6 +699,14 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import {
+  StepperRoot,
+  StepperItem,
+  StepperTrigger,
+  StepperIndicator,
+  StepperTitle,
+  StepperSeparator,
+} from "reka-ui";
+import {
   ExclamationTriangleIcon,
   ArrowPathIcon,
   CheckCircleIcon,
@@ -600,8 +721,6 @@ import {
   hotspotPreflight,
   setupHotspot,
   teardownHotspot,
-  getHotspotSettings,
-  putHotspotSettings,
   type PreflightResult,
   type SetupResult,
   type TeardownResult,
@@ -609,9 +728,9 @@ import {
 } from "@/api";
 import { useRoutersStore } from "@/stores/routers";
 import { friendlyError } from "@/utils/errors";
-import { CURRENCIES } from "@/utils/currencies";
 import AppDialog from "@/components/AppDialog.vue";
 import PageLayout from "@/components/PageLayout.vue";
+import AppSelect, { type SelectOption } from "@/components/AppSelect.vue";
 
 const store = useRoutersStore();
 
@@ -626,17 +745,21 @@ const form = ref({
   wanIface: "",
   subnet: "192.168.88.0/24",
   hotspotName: "",
+  hotspotExtension: ".spot",
 });
+
+const EXTENSIONS: SelectOption[] = [
+  { value: ".spot", label: ".spot" },
+  { value: ".hotspot", label: ".hotspot" },
+  { value: ".info", label: ".info" },
+  { value: ".wifi", label: ".wifi" },
+];
+const extensionOptions = EXTENSIONS;
 const tearing = ref(false);
 const teardownResult = ref<TeardownResult | null>(null);
 const showTeardownConfirm = ref(false);
 
-const branding = ref({ currency: "" });
-const brandingSaving = ref(false);
-const brandingError = ref("");
-const brandingSaved = ref(false);
-
-const effectiveCurrency = computed(() => branding.value.currency);
+const bridge = ref({ name: "bridge1", ports: [] as string[] });
 
 const bridgeAndWlan = computed(() =>
   interfaces.value.filter(
@@ -644,12 +767,68 @@ const bridgeAndWlan = computed(() =>
   ),
 );
 
+const etherInterfaces = computed(() =>
+  interfaces.value.filter((i) => i.type === "ether"),
+);
+
+const needsBridge = ref(false);
+
+const STEPS = ref<string[]>(["Network", "Subnet", "Review"]);
+const step = ref(1);
+
+function ifaceLabel(i: InterfaceInfo): string {
+  return `${i.name} [${i.type}]${!i.running ? " — down" : ""}${i.comment ? ` (${i.comment})` : ""}`;
+}
+
+const lanOptions = computed<SelectOption[]>(() => {
+  if (!interfaces.value.length) return [];
+  if (needsBridge.value && bridge.value.name) {
+    return [
+      { value: bridge.value.name, label: `${bridge.value.name} (new bridge)` },
+    ];
+  }
+  const preferred = bridgeAndWlan.value.map((i) => ({
+    value: i.name,
+    label: ifaceLabel(i),
+  }));
+  const rest = interfaces.value
+    .filter((i) => !bridgeAndWlan.value.includes(i))
+    .map((i) => ({ value: i.name, label: ifaceLabel(i) }));
+  return [...preferred, ...rest];
+});
+
+const wanOptions = computed<SelectOption[]>(() =>
+  interfaces.value.map((i) => ({ value: i.name, label: ifaceLabel(i) })),
+);
+
+const subnetError = computed(() => {
+  const raw = form.value.subnet.trim();
+  if (!raw) return "";
+  const m = raw.match(
+    /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/,
+  );
+  if (!m) return "Enter a valid CIDR, e.g. 192.168.88.0/24";
+  const octets = [m[1], m[2], m[3], m[4]].map(Number);
+  if (octets.some((o) => o > 255)) return "Octets must be 0-255";
+  const prefix = parseInt(m[5]);
+  if (prefix < 16 || prefix > 30) {
+    return "Prefix must be between /16 and /30 (too small or too large for a hotspot LAN)";
+  }
+  if (octets[3] !== 0) {
+    return "Use the network address (last octet 0), e.g. 192.168.88.0/24";
+  }
+  if (octets[0] === 127 || (octets[0] === 169 && octets[1] === 254)) {
+    return "That range is reserved and can't be used for a LAN";
+  }
+  return "";
+});
+
 const derived = computed(() => {
-  const m = form.value.subnet.trim().match(/^(\d+\.\d+\.\d+)\.(\d+)\/(\d+)$/);
+  if (subnetError.value) return null;
+  const raw = form.value.subnet.trim();
+  const m = raw.match(/^(\d+\.\d+\.\d+)\.(\d+)\/(\d+)$/);
   if (!m) return null;
   const base3 = m[1];
-  const prefix = parseInt(m[3]);
-  if (prefix < 1 || prefix > 30) return null;
   return {
     gateway: `${base3}.1`,
     poolStart: `${base3}.2`,
@@ -661,70 +840,72 @@ const canSubmit = computed(
   () =>
     form.value.lanIface.trim() !== "" &&
     form.value.wanIface.trim() !== "" &&
-    derived.value !== null,
+    derived.value !== null &&
+    (!needsBridge.value || bridge.value.name.trim() !== ""),
 );
 
-async function loadBranding() {
-  if (!store.activeId) return;
-  try {
-    const s = await getHotspotSettings(store.activeId);
-    branding.value.currency = s.currency ?? "";
-  } catch {
-    // non-fatal — branding stays blank
-  }
-}
-
-async function saveBranding() {
-  if (!store.activeId) return;
-  brandingSaving.value = true;
-  brandingError.value = "";
-  brandingSaved.value = false;
-  try {
-    const existing = await getHotspotSettings(store.activeId);
-    await putHotspotSettings(store.activeId, {
-      ...existing,
-      currency: effectiveCurrency.value,
-    });
-    brandingSaved.value = true;
-    setTimeout(() => {
-      brandingSaved.value = false;
-    }, 3000);
-  } catch (e: any) {
-    brandingError.value = friendlyError(e, "Failed to save");
-  } finally {
-    brandingSaving.value = false;
-  }
-}
+const canAdvance = computed(() => {
+  const current = STEPS.value[step.value - 1];
+  if (current === "Bridge") return bridge.value.name.trim() !== "";
+  if (current === "Network")
+    return (
+      form.value.lanIface.trim() !== "" && form.value.wanIface.trim() !== ""
+    );
+  if (current === "Subnet") return derived.value !== null;
+  return true;
+});
 
 async function runPreflight() {
   if (!store.activeId) return;
   phase.value = "loading";
   preflightError.value = "";
   try {
-    const [pf] = await Promise.all([
-      hotspotPreflight(store.activeId),
-      loadBranding(),
-    ]);
+    const pf = await hotspotPreflight(store.activeId);
     preflight.value = pf;
     interfaces.value = pf.interfaces;
     if (pf.hotspotExists) {
       phase.value = "blocked";
       return;
     }
-    const bridge = interfaces.value.find((i) => i.type === "bridge");
+    const bridgeIface = interfaces.value.find((i) => i.type === "bridge");
     const wlan = interfaces.value.find((i) => i.type === "wlan");
     const ether = interfaces.value.find((i) => i.type === "ether");
-    form.value.lanIface = bridge?.name ?? wlan?.name ?? "";
+    needsBridge.value = bridgeAndWlan.value.length === 0;
+    STEPS.value = needsBridge.value
+      ? ["Bridge", "Network", "Subnet", "Review"]
+      : ["Network", "Subnet", "Review"];
+    if (bridgeIface || wlan) {
+      form.value.lanIface = bridgeIface?.name ?? wlan?.name ?? "";
+    } else {
+      form.value.lanIface = bridge.value.name;
+    }
     form.value.wanIface =
       interfaces.value.find(
         (i) => i.type === "ether" && i.name !== form.value.lanIface,
       )?.name ??
       ether?.name ??
       "";
+    step.value = 1;
     phase.value = "form";
   } catch (e: any) {
     preflightError.value = friendlyError(e, "Connection failed");
     phase.value = "form";
+  }
+}
+
+function onFormSubmit() {
+  if (step.value < STEPS.value.length) {
+    step.value++;
+    return;
+  }
+  runSetup();
+}
+
+function onBack() {
+  if (step.value === 1) {
+    runPreflight();
+  } else {
+    step.value--;
   }
 }
 
@@ -737,10 +918,11 @@ async function runSetup() {
       wanIface: form.value.wanIface,
       subnet: form.value.subnet,
       hotspotName: form.value.hotspotName,
+      extension: form.value.hotspotExtension,
+      ...(needsBridge.value
+        ? { newBridgeName: bridge.value.name, bridgePorts: bridge.value.ports }
+        : {}),
     });
-    if (effectiveCurrency.value) {
-      await saveBranding();
-    }
   } catch (e: any) {
     result.value = {
       success: false,
@@ -794,5 +976,13 @@ watch(
     if (id) runPreflight();
   },
   { immediate: true },
+);
+
+// Keep the LAN interface in sync with the bridge name while it's being created.
+watch(
+  () => bridge.value.name,
+  (name) => {
+    if (needsBridge.value) form.value.lanIface = name;
+  },
 );
 </script>

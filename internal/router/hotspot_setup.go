@@ -16,13 +16,13 @@ type InterfaceInfo struct {
 }
 
 type PreflightResult struct {
-	Interfaces      []InterfaceInfo `json:"interfaces"`
-	HotspotExists   bool            `json:"hotspotExists"`
-	HotspotOnIface  string          `json:"hotspotOnIface"`
-	HotspotName     string          `json:"hotspotName"`
-	HotspotProfile  string          `json:"hotspotProfile"`
-	HotspotDNSName  string          `json:"hotspotDnsName"`
-	HotspotAddPool  string          `json:"hotspotAddressPool"`
+	Interfaces     []InterfaceInfo `json:"interfaces"`
+	HotspotExists  bool            `json:"hotspotExists"`
+	HotspotOnIface string          `json:"hotspotOnIface"`
+	HotspotName    string          `json:"hotspotName"`
+	HotspotProfile string          `json:"hotspotProfile"`
+	HotspotDNSName string          `json:"hotspotDnsName"`
+	HotspotAddPool string          `json:"hotspotAddressPool"`
 }
 
 // ─── Setup types ──────────────────────────────────────────────────────────────
@@ -31,7 +31,12 @@ type SetupRequest struct {
 	LANIface    string `json:"lanIface"`
 	WANIface    string `json:"wanIface"`
 	Subnet      string `json:"subnet"`
-	HotspotName string `json:"hotspotName"` // user-chosen label, e.g. "myspot" → DNS: myspot.spot
+	HotspotName string `json:"hotspotName"` // user-chosen label, e.g. "myspot" -> DNS: myspot + Extension
+	// Extension is the DNS TLD appended to HotspotName, e.g. ".spot". Defaults
+	// to ".spot" when empty, for backward compatibility with older clients.
+	Extension     string   `json:"extension,omitempty"`
+	NewBridgeName string   `json:"newBridgeName,omitempty"`
+	BridgePorts   []string `json:"bridgePorts,omitempty"`
 }
 
 type SetupStepResult struct {
@@ -111,6 +116,13 @@ func (c *Client) HotspotPreflight() (*PreflightResult, error) {
 var validIfaceName = regexp.MustCompile(`^[a-zA-Z0-9_\-\.]+$`)
 var validHotspotName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}$`)
 
+// validExtensions are the DNS TLDs users may pick for their hotspot's login
+// domain. Kept to a fixed set since these are fake/local-only TLDs resolved
+// by the router's own DNS, not real ones.
+var validExtensions = map[string]bool{
+	".spot": true, ".hotspot": true, ".info": true, ".wifi": true,
+}
+
 // SetupHotspot runs all setup steps and always returns a populated SetupResult.
 // It returns (nil, err) only for a connection failure or invalid subnet.
 func (c *Client) SetupHotspot(req SetupRequest) (*SetupResult, error) {
@@ -125,13 +137,20 @@ func (c *Client) SetupHotspot(req SetupRequest) (*SetupResult, error) {
 		}, nil
 	}
 
-	// Build DNS name: user label + forced .spot TLD
+	// Build DNS name: user label + chosen TLD
 	dnsName := ""
 	if req.HotspotName != "" {
 		if !validHotspotName.MatchString(req.HotspotName) {
 			return nil, fmt.Errorf("invalid hotspot name: use letters, numbers and hyphens only")
 		}
-		dnsName = req.HotspotName + ".spot"
+		ext := req.Extension
+		if ext == "" {
+			ext = ".spot"
+		}
+		if !validExtensions[ext] {
+			return nil, fmt.Errorf("invalid extension: must be one of .spot, .hotspot, .info, .wifi")
+		}
+		dnsName = req.HotspotName + ext
 	}
 
 	poolName := "hotspot-pool"
@@ -144,6 +163,9 @@ func (c *Client) SetupHotspot(req SetupRequest) (*SetupResult, error) {
 		steps = append(steps, s)
 	}
 
+	if req.NewBridgeName != "" {
+		run(c.stepCreateBridge(req.NewBridgeName, req.BridgePorts))
+	}
 	run(c.stepAssignIP(req.LANIface, ipWithPrefix))
 	run(c.stepCreateIPPool(poolName, poolStart, poolEnd))
 	run(c.stepCreateDHCPNetwork(networkAddr, gw))
@@ -194,6 +216,41 @@ func containsStr(s, sub string) bool {
 		}
 	}
 	return false
+}
+
+// stepCreateBridge creates a new bridge interface and adds the given ports
+// to it — for a bare router with no existing bridge/wlan interface to use
+// as the hotspot LAN. Idempotent: an existing bridge/port with the same
+// name is treated as already done, not an error.
+func (c *Client) stepCreateBridge(bridgeName string, ports []string) SetupStepResult {
+	name := "Create bridge"
+	conn, err := c.connect()
+	if err != nil {
+		return SetupStepResult{Name: name, Error: err.Error()}
+	}
+	defer conn.Close()
+
+	_, err = conn.RunArgs([]string{"/interface/bridge/add", "=name=" + bridgeName})
+	if err != nil && !isAlreadyExists(err) {
+		return SetupStepResult{Name: name, Error: err.Error()}
+	}
+	bridgeAlreadyExisted := isAlreadyExists(err)
+
+	var firstErr error
+	for _, port := range ports {
+		_, perr := conn.RunArgs([]string{
+			"/interface/bridge/port/add",
+			"=bridge=" + bridgeName,
+			"=interface=" + port,
+		})
+		if perr != nil && !isAlreadyExists(perr) && firstErr == nil {
+			firstErr = fmt.Errorf("add port %s: %w", port, perr)
+		}
+	}
+	if firstErr != nil {
+		return SetupStepResult{Name: name, Error: firstErr.Error()}
+	}
+	return SetupStepResult{Name: name, OK: true, Skipped: bridgeAlreadyExisted}
 }
 
 func (c *Client) stepAssignIP(iface, ipWithPrefix string) SetupStepResult {
