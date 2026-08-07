@@ -4,7 +4,7 @@
     :class="[sizeClasses, bordered ? 'rounded-xl border border-border bg-surface' : '']"
   >
     <slot>
-      <p v-if="title" class="font-medium text-text-primary mb-1">{{ title }}</p>
+      <p v-if="title" class="font-semibold text-text-primary mb-1">{{ title }}</p>
       <p class="text-text-secondary" :class="textClasses">{{ message }}</p>
     </slot>
   </div>

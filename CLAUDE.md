@@ -14,9 +14,6 @@ native API (port 8728/8729 — the same protocol WinBox uses).
 Target users: small ISPs, café/hotel operators, community network admins in markets
 where MikroTik is dominant.
 
-Key feature: hotspot voucher management — generate, print, expire, and clean up
-hotspot users without touching the router CLI.
-
 ---
 
 ## Stack

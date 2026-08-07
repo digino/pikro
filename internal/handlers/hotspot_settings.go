@@ -40,7 +40,10 @@ func GetProfileMetas(w http.ResponseWriter, r *http.Request) {
 func UploadLoginPage(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var input struct {
-		HTML string `json:"html"`
+		HTML         string `json:"html"`
+		LogoutHTML   string `json:"logoutHtml"`
+		StatusHTML   string `json:"statusHtml"`
+		RedirectHTML string `json:"redirectHtml"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		jsonError(w, "invalid body", http.StatusBadRequest)
@@ -55,7 +58,12 @@ func UploadLoginPage(w http.ResponseWriter, r *http.Request) {
 
 	client := router.NewClient(profile.Host, profile.Port, profile.Username, profile.Password, profile.UseTLS)
 
-	if err := client.UploadLoginPage("pikro-profile", input.HTML); err != nil {
+	if err := client.UploadLoginPage("", router.LoginPageContent{
+		Login:    input.HTML,
+		Logout:   input.LogoutHTML,
+		Status:   input.StatusHTML,
+		Redirect: input.RedirectHTML,
+	}); err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
 	}

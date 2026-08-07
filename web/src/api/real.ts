@@ -128,7 +128,14 @@ export const getHotspotSettings = (id: string) =>
 export const putHotspotSettings = (id: string, s: HotspotSettings) =>
   api.put<HotspotSettings>(`/routers/${id}/hotspot/settings`, s).then(r => r.data)
 
-export const uploadLoginPage = (id: string, p: LoginPageSettings & { html: string }) =>
+export interface UploadLoginPagePayload extends LoginPageSettings {
+  html: string
+  logoutHtml?: string
+  statusHtml?: string
+  redirectHtml?: string
+}
+
+export const uploadLoginPage = (id: string, p: UploadLoginPagePayload) =>
   api.put(`/routers/${id}/hotspot/login-page`, p).then(r => r.data)
 
 export const getLoginPageHTML = (id: string) =>

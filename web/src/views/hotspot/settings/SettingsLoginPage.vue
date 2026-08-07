@@ -91,6 +91,9 @@ import {
 } from '@/api'
 import {
   MINIMAL_TEMPLATE, WAVE_TEMPLATE, CARD_TEMPLATE,
+  MINIMAL_LOGOUT_TEMPLATE, MINIMAL_STATUS_TEMPLATE, MINIMAL_REDIRECT_TEMPLATE,
+  WAVE_LOGOUT_TEMPLATE, WAVE_STATUS_TEMPLATE, WAVE_REDIRECT_TEMPLATE,
+  CARD_LOGOUT_TEMPLATE, CARD_STATUS_TEMPLATE, CARD_REDIRECT_TEMPLATE,
 } from './loginPageTemplates'
 
 const props = defineProps<{ hotspotName: string }>()
@@ -118,6 +121,26 @@ const TEMPLATE_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string
   card: CARD_TEMPLATE,
 }
 
+// logout/status/redirect don't have a template picker of their own — they
+// always match whichever login template is currently selected, so the whole
+// hotspot page set stays visually consistent (alogin/error stay fixed and
+// are never customized, handled entirely on the Go side).
+const LOGOUT_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
+  minimal: MINIMAL_LOGOUT_TEMPLATE,
+  wave: WAVE_LOGOUT_TEMPLATE,
+  card: CARD_LOGOUT_TEMPLATE,
+}
+const STATUS_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
+  minimal: MINIMAL_STATUS_TEMPLATE,
+  wave: WAVE_STATUS_TEMPLATE,
+  card: CARD_STATUS_TEMPLATE,
+}
+const REDIRECT_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
+  minimal: MINIMAL_REDIRECT_TEMPLATE,
+  wave: WAVE_REDIRECT_TEMPLATE,
+  card: CARD_REDIRECT_TEMPLATE,
+}
+
 const templates: { key: LoginPageSettings['template']; icon: string; label: string; description: string }[] = [
   { key: 'minimal', icon: '◈', label: 'Minimal', description: 'Flat gray background, light card — sharp and focused' },
   { key: 'wave',    icon: '〜', label: 'Wave',    description: 'Light rounded card with a decorative wave accent' },
@@ -136,13 +159,17 @@ function init(lp?: LoginPageSettings) {
 
 defineExpose({ init })
 
-function renderTemplate() {
+function renderFrom(source: Record<NonNullable<LoginPageSettings['template']>, string>) {
   const title = loginPage.value.title || props.hotspotName || 'My Hotspot'
   const subtitle = loginPage.value.subtitle || 'myspot.spot'
-  const tpl = TEMPLATE_SOURCE[loginPage.value.template ?? 'minimal']
+  const tpl = source[loginPage.value.template ?? 'minimal']
   return tpl
     .replace(/__TITLE__/g, title)
     .replace(/__SUBTITLE__/g, subtitle)
+}
+
+function renderTemplate() {
+  return renderFrom(TEMPLATE_SOURCE)
 }
 
 const preview = computed(renderTemplate)
@@ -178,7 +205,13 @@ async function upload() {
   uploading.value = true; error.value = ''; saved.value = false
   try {
     const existing = await getHotspotSettings(store.activeId)
-    await apiUploadLoginPage(store.activeId, { ...loginPage.value, html: renderTemplate() })
+    await apiUploadLoginPage(store.activeId, {
+      ...loginPage.value,
+      html: renderTemplate(),
+      logoutHtml: renderFrom(LOGOUT_SOURCE),
+      statusHtml: renderFrom(STATUS_SOURCE),
+      redirectHtml: renderFrom(REDIRECT_SOURCE),
+    })
     await putHotspotSettings(store.activeId, { ...existing, loginPage: loginPage.value })
     showingLive.value = false
     saved.value = true
