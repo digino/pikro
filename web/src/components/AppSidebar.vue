@@ -129,7 +129,6 @@ import {
   ComputerDesktopIcon,
   ServerStackIcon,
   BoltIcon,
-  WrenchScrewdriverIcon,
   UsersIcon,
   TicketIcon,
   RectangleGroupIcon,
@@ -176,7 +175,6 @@ const navSections: NavSection[] = [
   {
     label: "Hotspot",
     items: [
-      { to: "/hotspot/setup", icon: WrenchScrewdriverIcon, label: "Setup" },
       { to: "/hotspot/users", icon: UsersIcon, label: "Users" },
       { to: "/hotspot/vouchers", icon: TicketIcon, label: "Vouchers" },
       { to: "/hotspot/profiles", icon: RectangleGroupIcon, label: "Profiles" },
