@@ -97,6 +97,33 @@ html, body, #app {
   @apply border-transparent text-white bg-amber hover:bg-[#d97706];
 }
 
+/* ── Join: fuse adjacent controls into one visual group ──────
+   Each child keeps its own border; shared edges collapse via
+   negative margin and inner corners square off. */
+.join {
+  display: flex;
+  align-items: stretch;
+}
+.join > :not(:first-child) {
+  margin-left: -1px;
+}
+.join > :first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.join > :last-child {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.join > :not(:first-child):not(:last-child) {
+  border-radius: 0;
+}
+.join > :focus,
+.join > :focus-within {
+  position: relative;
+  z-index: 1;
+}
+
 /* ── Shared form inputs ───────────────────────────────────── */
 .input {
   width: 100%;
