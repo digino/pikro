@@ -25,6 +25,35 @@
 
 > A free, open-source alternative to Mikhmon — built for ISPs, café/hotel operators, and community WiFi admins who sell or hand out WiFi vouchers and want a simple, reliable tool in markets where MikroTik is dominant.
 
+If you love this project, please consider giving it a ⭐.
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="assets/screenshots/user-management.png" alt="User management" /><br/><sub>User management</sub></td>
+    <td><img src="assets/screenshots/profile-management.png" alt="Hotspot profiles" /><br/><sub>Hotspot profiles</sub></td>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshots/profile-creation.png" alt="Creating a profile" /><br/><sub>Creating a profile</sub></td>
+    <td><img src="assets/screenshots/auto-cleanup setup.png" alt="Auto-cleanup scheduler" /><br/><sub>Auto-cleanup scheduler</sub></td>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshots/router-add.png" alt="Adding a router" /><br/><sub>Adding a router</sub></td>
+    <td><img src="assets/screenshots/router-auto-discovery.png" alt="Automatic router discovery" /><br/><sub>Automatic router discovery</sub></td>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshots/router-search.png" alt="Multi-router dashboard" /><br/><sub>Multi-router dashboard</sub></td>
+    <td><img src="assets/screenshots/system-health.png" alt="System health and bandwidth" /><br/><sub>System health &amp; bandwidth</sub></td>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshots/logs.png" alt="Hotspot logs" /><br/><sub>Hotspot logs</sub></td>
+    <td></td>
+  </tr>
+</table>
+
 ---
 
 ## Quick start

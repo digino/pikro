@@ -34,7 +34,7 @@ export default createRouter({
     {
       path: '/hotspot',
       component: HotspotLayout,
-      redirect: '/hotspot/setup',
+      redirect: '/hotspot/users',
       children: [
         { path: 'setup',    component: HotspotSetup },
         { path: 'users',    component: HotspotUsers },
