@@ -393,6 +393,27 @@
           </div>
         </template>
 
+        <!-- Step: Cleanup -->
+        <template v-else-if="STEPS[step - 1] === 'Cleanup'">
+          <div class="border border-border rounded-xl p-5 space-y-4 bg-surface">
+            <h2 class="text-sm font-semibold text-text-primary">
+              Protect your vouchers
+            </h2>
+            <p class="text-sm text-text-secondary">
+              RouterOS doesn't remove expired vouchers on its own — Pikro installs
+              a cleanup scheduler on the router so expired and quota-exhausted
+              vouchers get removed automatically, on the schedule you pick below.
+            </p>
+            <label class="flex flex-col gap-1">
+              <span class="text-sm font-medium text-text-secondary">Run every</span>
+              <AppSelect
+                v-model="form.cleanupInterval"
+                :options="CLEANUP_INTERVAL_OPTIONS"
+              />
+            </label>
+          </div>
+        </template>
+
         <div class="flex items-center gap-3">
           <button type="button" class="btn btn-ghost" @click="onBack">
             {{ step === 1 ? "Re-check router" : "Back" }}
@@ -728,6 +749,8 @@ import {
 } from "@/api";
 import { useRoutersStore } from "@/stores/routers";
 import { friendlyError } from "@/utils/errors";
+import { HOTSPOT_EXTENSION_OPTIONS } from "@/utils/hotspotExtensions";
+import { CLEANUP_INTERVAL_OPTIONS } from "@/utils/cleanupIntervals";
 import AppDialog from "@/components/AppDialog.vue";
 import PageLayout from "@/components/PageLayout.vue";
 import AppSelect, { type SelectOption } from "@/components/AppSelect.vue";
@@ -746,15 +769,10 @@ const form = ref({
   subnet: "192.168.88.0/24",
   hotspotName: "",
   hotspotExtension: ".spot",
+  cleanupInterval: "7d",
 });
 
-const EXTENSIONS: SelectOption[] = [
-  { value: ".spot", label: ".spot" },
-  { value: ".hotspot", label: ".hotspot" },
-  { value: ".info", label: ".info" },
-  { value: ".wifi", label: ".wifi" },
-];
-const extensionOptions = EXTENSIONS;
+const extensionOptions = HOTSPOT_EXTENSION_OPTIONS;
 const tearing = ref(false);
 const teardownResult = ref<TeardownResult | null>(null);
 const showTeardownConfirm = ref(false);
@@ -872,8 +890,8 @@ async function runPreflight() {
     const ether = interfaces.value.find((i) => i.type === "ether");
     needsBridge.value = bridgeAndWlan.value.length === 0;
     STEPS.value = needsBridge.value
-      ? ["Bridge", "Network", "Subnet", "Review"]
-      : ["Network", "Subnet", "Review"];
+      ? ["Bridge", "Network", "Subnet", "Review", "Cleanup"]
+      : ["Network", "Subnet", "Review", "Cleanup"];
     if (bridgeIface || wlan) {
       form.value.lanIface = bridgeIface?.name ?? wlan?.name ?? "";
     } else {
@@ -919,6 +937,7 @@ async function runSetup() {
       subnet: form.value.subnet,
       hotspotName: form.value.hotspotName,
       extension: form.value.hotspotExtension,
+      cleanupInterval: form.value.cleanupInterval,
       ...(needsBridge.value
         ? { newBridgeName: bridge.value.name, bridgePorts: bridge.value.ports }
         : {}),

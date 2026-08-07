@@ -2,7 +2,7 @@
   <div class="max-w-xl space-y-5">
     <div>
       <div class="flex items-center gap-2">
-        <h3 class="font-semibold text-text-primary">Migrate from Mikhmon</h3>
+        <h3 class="font-semibold text-text-primary">Migrate from Mikhmonv3</h3>
         <StatusBadge label="Beta" color="amber" variant="pill" />
       </div>
       <p class="text-sm text-text-secondary mt-0.5">
@@ -18,6 +18,8 @@
         <li>Unused vouchers (never logged in) — comment cleared, same as a fresh Pikro voucher</li>
         <li>Already-activated users — expiry converted to Pikro's format (already-expired ones will be removed by auto-cleanup on its normal schedule)</li>
         <li>Hotspot profiles — on-login script replaced so future logins use Pikro's format</li>
+        <li>Mikhmon's own leftover per-user schedulers and scripts (created by its old on-login script at every login) are removed</li>
+        <li>Pikro's own cleanup scheduler is installed, so expired vouchers keep getting removed automatically</li>
         <li>Anything already in Pikro's format, or not recognized, is left untouched</li>
       </ul>
       <p class="text-sm">Safe to run more than once.</p>
@@ -34,6 +36,13 @@
       <p class="text-text-secondary">
         {{ result.profilesConverted }} profile{{ result.profilesConverted !== 1 ? 's' : '' }} converted
         ({{ result.profilesScanned }} scanned)
+      </p>
+      <p class="text-text-secondary">
+        {{ result.schedulersRemoved }} leftover scheduler{{ result.schedulersRemoved !== 1 ? 's' : '' }} and
+        {{ result.scriptsRemoved }} leftover script{{ result.scriptsRemoved !== 1 ? 's' : '' }} removed
+      </p>
+      <p class="text-text-secondary">
+        {{ result.cleanupInstalled ? 'Pikro cleanup scheduler installed' : 'Could not install Pikro cleanup scheduler — set it up manually from the Dashboard' }}
       </p>
     </div>
     <p v-else-if="error" class="text-xs text-red">{{ error }}</p>
@@ -68,7 +77,8 @@ const error = ref('')
 async function runMigration() {
   if (!store.activeId) return
   if (!confirm(
-    'This will rewrite hotspot user comments and profile on-login scripts on this router. ' +
+    'This will rewrite hotspot user comments and profile on-login scripts, remove Mikhmon\'s ' +
+    'own leftover schedulers/scripts, and install Pikro\'s cleanup scheduler on this router. ' +
     'Already-migrated data is left untouched. Continue?',
   )) return
   migrating.value = true
