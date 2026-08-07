@@ -33,10 +33,11 @@ type SetupRequest struct {
 	Subnet      string `json:"subnet"`
 	HotspotName string `json:"hotspotName"` // user-chosen label, e.g. "myspot" -> DNS: myspot + Extension
 	// Extension is the DNS TLD appended to HotspotName, e.g. ".spot". Defaults
-	// to ".spot" when empty, for backward compatibility with older clients.
-	Extension     string   `json:"extension,omitempty"`
-	NewBridgeName string   `json:"newBridgeName,omitempty"`
-	BridgePorts   []string `json:"bridgePorts,omitempty"`
+	// to ".spot" when empty.
+	Extension       string   `json:"extension,omitempty"`
+	NewBridgeName   string   `json:"newBridgeName,omitempty"`
+	BridgePorts     []string `json:"bridgePorts,omitempty"`
+	CleanupInterval string   `json:"cleanupInterval,omitempty"`
 }
 
 type SetupStepResult struct {
@@ -181,7 +182,11 @@ func (c *Client) SetupHotspot(req SetupRequest) (*SetupResult, error) {
 	run(c.stepUploadLoginPage(profileName))
 	run(c.stepAddNATMasquerade(req.WANIface))
 	run(c.stepEnableDNS())
-	run(c.stepInstallCleanupScheduler())
+	cleanupInterval := req.CleanupInterval
+	if cleanupInterval == "" {
+		cleanupInterval = "7d"
+	}
+	run(c.stepInstallCleanupScheduler(cleanupInterval))
 
 	success := true
 	for _, s := range steps {
@@ -382,12 +387,14 @@ func (c *Client) stepCreateHotspotProfile(profileName, gateway, dnsName string) 
 	return SetupStepResult{Name: name, OK: true}
 }
 
-// stepInstallCleanupScheduler installs the cleanup scheduler with a weekly interval.
-// Non-fatal if it fails (e.g. device-mode restriction).
-func (c *Client) stepInstallCleanupScheduler() SetupStepResult {
+// stepInstallCleanupScheduler installs the cleanup scheduler at the given
+// interval. Surfaces real failures (e.g. RouterOS 7.17+ device-mode blocking
+// the scheduler) instead of masking them as skipped, so the wizard result can
+// tell the user cleanup genuinely isn't protecting their vouchers yet.
+func (c *Client) stepInstallCleanupScheduler(interval string) SetupStepResult {
 	name := "Install cleanup scheduler"
-	if err := c.InstallCleanupScheduler("7d"); err != nil {
-		return SetupStepResult{Name: name, OK: true, Skipped: true}
+	if err := c.InstallCleanupScheduler(interval); err != nil {
+		return SetupStepResult{Name: name, Error: err.Error()}
 	}
 	return SetupStepResult{Name: name, OK: true}
 }
