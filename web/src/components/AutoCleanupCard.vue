@@ -68,14 +68,8 @@
 import { computed } from 'vue'
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
 import { CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
-import AppSelect, { type SelectOption } from '@/components/AppSelect.vue'
-
-const INTERVAL_OPTIONS: SelectOption[] = [
-  { value: '10m', label: 'Every 10 minutes (testing)' },
-  { value: '1h', label: 'Every hour' },
-  { value: '1d', label: 'Daily' },
-  { value: '7d', label: 'Weekly (recommended)' },
-]
+import AppSelect from '@/components/AppSelect.vue'
+import { CLEANUP_INTERVAL_OPTIONS as INTERVAL_OPTIONS } from '@/utils/cleanupIntervals'
 
 const props = defineProps<{
   installed: boolean | null
