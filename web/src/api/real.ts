@@ -82,6 +82,9 @@ export interface MikhmonMigrationResult {
   usersSkipped: number
   profilesScanned: number
   profilesConverted: number
+  schedulersRemoved: number
+  scriptsRemoved: number
+  cleanupInstalled: boolean
 }
 
 export const migrateFromMikhmon = (id: string) =>
@@ -170,6 +173,7 @@ export const setupHotspot = (id: string, body: {
   extension?: string
   newBridgeName?: string
   bridgePorts?: string[]
+  cleanupInterval?: string
 }) =>
   api.post<SetupResult>(`/routers/${id}/hotspot/setup`, body).then(r => r.data)
 
