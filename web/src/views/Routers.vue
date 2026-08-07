@@ -253,7 +253,6 @@
     <EmptyState
       v-else-if="!scanning && !scanned"
       bordered
-      size="lg"
       title="No routers configured"
       message="Click Scan to find devices on your network, or add one manually"
     />

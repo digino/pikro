@@ -1,7 +1,7 @@
 <template>
   <span
     v-if="variant === 'pill'"
-    class="text-xs font-medium px-2 py-0.5 rounded-full"
+    class="text-sm font-semibold px-2 py-0.5 rounded-full"
     :class="[colorClasses.bg, colorClasses.text]"
   >
     {{ label }}

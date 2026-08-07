@@ -262,7 +262,7 @@
               <td class="px-4 py-3 text-sm text-text-muted font-mono">
                 {{ u.comment || "—" }}
               </td>
-              <td class="px-4 py-3 text-xs" :class="expiryClass(u)">
+              <td class="px-4 py-3 text-sm" :class="expiryClass(u)">
                 {{ expiryLabel(u) }}
               </td>
               <td class="px-4 py-3">
