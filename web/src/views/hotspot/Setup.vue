@@ -54,22 +54,21 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <RouterLink to="/hotspot/settings" class="btn btn-primary mr-auto">
-          <Cog6ToothIcon class="size-3.5" />
-          Configure branding &amp; vouchers
+        <RouterLink to="/hotspot/profiles" class="btn btn-primary">
+          Add profiles
         </RouterLink>
         <button class="btn btn-ghost" @click="runPreflight">
           <ArrowPathIcon class="size-3.5" />
           Re-check
         </button>
-        <button
+        <!-- <button
           class="btn border-red/30 text-red hover:bg-red/8"
           :disabled="tearing"
           @click="runTeardown"
         >
           <TrashIcon class="size-3.5" />
           {{ tearing ? "Resetting…" : "Reset config" }}
-        </button>
+        </button> -->
       </div>
 
       <div
@@ -581,7 +580,7 @@
         class="border border-border rounded-xl p-4 space-y-3 bg-surface"
       >
         <p
-          class="text-xs font-semibold text-text-muted uppercase tracking-wide"
+          class="text-sm font-semibold text-text-secondary uppercase tracking-wide"
         >
           What's next
         </p>
@@ -634,7 +633,7 @@
               >4</span
             >
             <span>
-              Configure your business name, currency, voucher layout, and login
+              Configure your login
               page in
               <RouterLink
                 to="/hotspot/settings"
@@ -664,11 +663,10 @@
           to="/hotspot/users"
           class="btn btn-primary"
         >
-          <UsersIcon class="size-4" />
           Add users
         </RouterLink>
-        <button class="btn btn-ghost btn-sm border-transparent" @click="reset">
-          <ArrowPathIcon class="size-3.5" />
+        <button class="btn btn-ghost border-transparent" @click="reset">
+          <ArrowPathIcon class="size-4" />
           Run again
         </button>
       </div>
@@ -756,7 +754,6 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   MinusCircleIcon,
-  UsersIcon,
   TrashIcon,
   Cog6ToothIcon,
 } from "@heroicons/vue/24/outline";
