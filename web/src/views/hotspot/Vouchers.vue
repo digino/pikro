@@ -273,6 +273,7 @@ const batchResults = ref<
 >([]);
 const wizardRef = ref<InstanceType<typeof BatchWizard> | null>(null);
 const lastBatchProfile = ref("");
+const lastBatchTimeLimit = ref("");
 const pendingProfile = ref("");
 
 function generateName(
@@ -334,6 +335,7 @@ async function submitBatch(cfg: BatchConfig) {
   batchRunning.value = true;
   batchTotal.value = cfg.count;
   lastBatchProfile.value = cfg.profile;
+  lastBatchTimeLimit.value = cfg.uptimePreview;
   batchProgress.value = 0;
   batchResults.value = [];
   batchError.value = "";
@@ -392,6 +394,7 @@ function openPrintResults() {
       name: r.name,
       password: r.password,
       profile: profileName,
+      timeLimit: lastBatchTimeLimit.value,
     }));
   showPrintDialog.value = true;
 }
