@@ -39,7 +39,7 @@ Pick from 3 printable templates, each with a live preview before you print:
 
 The QR code is generated entirely client-side (no external service, no network
 call — the old "generate it via Mikhmon's website" workaround isn't needed).
-When the hotspot profile's auth mode supports it, the code carries the
+When the hotspot profile's auth mode supports it (http-pap), the code carries the
 username and password pre-filled, so scanning it connects the user straight
 away with no typing.
 
