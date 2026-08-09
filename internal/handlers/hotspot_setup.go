@@ -65,8 +65,8 @@ func SetupHotspot(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "invalid body", http.StatusBadRequest)
 		return
 	}
-	if req.LANIface == "" || req.WANIface == "" || req.Subnet == "" {
-		jsonError(w, "lanIface, wanIface and subnet are required", http.StatusBadRequest)
+	if req.LANIface == "" || req.WANIface == "" || req.Subnet == "" || req.HotspotName == "" {
+		jsonError(w, "lanIface, wanIface, subnet and hotspotName are required", http.StatusBadRequest)
 		return
 	}
 	result, err := client.SetupHotspot(req)

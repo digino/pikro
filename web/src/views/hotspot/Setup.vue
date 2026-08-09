@@ -284,7 +284,9 @@
           </label>
 
           <label class="flex flex-col gap-1">
-            <span class="font-medium">Hotspot name</span>
+            <span class="font-medium text-red"
+              >Hotspot name <span>*</span></span
+            >
             <div class="join">
               <input
                 v-model="form.hotspotName"
@@ -304,7 +306,6 @@
                 >{{ form.hotspotName || "myhotspot"
                 }}{{ form.hotspotExtension }}</span
               >
-              — leave blank to use the router IP instead
             </p>
           </label>
         </div>
@@ -914,6 +915,7 @@ const canSubmit = computed(
   () =>
     form.value.lanIface.trim() !== "" &&
     form.value.wanIface.trim() !== "" &&
+    form.value.hotspotName.trim() !== "" &&
     derived.value !== null &&
     (!needsBridge.value || bridge.value.name.trim() !== ""),
 );
@@ -923,7 +925,9 @@ const canAdvance = computed(() => {
   if (current === "Bridge") return bridge.value.name.trim() !== "";
   if (current === "Network")
     return (
-      form.value.lanIface.trim() !== "" && form.value.wanIface.trim() !== ""
+      form.value.lanIface.trim() !== "" &&
+      form.value.wanIface.trim() !== "" &&
+      form.value.hotspotName.trim() !== ""
     );
   if (current === "Subnet") return derived.value !== null;
   return true;

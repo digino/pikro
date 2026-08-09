@@ -183,10 +183,7 @@
     </div>
 
     <div class="flex flex-col gap-1">
-      <span class="font-medium text-text-secondary">
-        Time limit
-        <span class="text-text-muted font-normal">(overrides profile)</span>
-      </span>
+      <span class="font-medium text-text-secondary"> Time limit </span>
       <input
         v-model="form.limitUptimeRaw"
         class="input font-mono"
@@ -211,10 +208,7 @@
     </div>
 
     <div class="flex flex-col gap-1">
-      <span class="font-medium text-text-secondary">
-        Data limit
-        <span class="text-text-muted font-normal">(overrides profile)</span>
-      </span>
+      <span class="font-medium text-text-secondary"> Data limit </span>
       <div
         class="flex w-full overflow-hidden rounded-lg border border-border focus-within:outline-2 focus-within:outline-accent focus-within:outline-offset-1"
       >
@@ -393,9 +387,24 @@ export interface BatchConfig {
 const STEPS = ["Quantity", "Password", "Profile", "Review"];
 
 const CHARSET_OPTS = [
-  { key: "letters" as const, label: "Random abcd", letters: true, digits: false },
-  { key: "digits" as const, label: "Random 8909", letters: false, digits: true },
-  { key: "alphanumeric" as const, label: "Random 5abcb", letters: true, digits: true },
+  {
+    key: "letters" as const,
+    label: "Random abcd",
+    letters: true,
+    digits: false,
+  },
+  {
+    key: "digits" as const,
+    label: "Random 8909",
+    letters: false,
+    digits: true,
+  },
+  {
+    key: "alphanumeric" as const,
+    label: "Random 5abcb",
+    letters: true,
+    digits: true,
+  },
 ];
 
 const PASSWORD_OPTS = [
