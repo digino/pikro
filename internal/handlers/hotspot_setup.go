@@ -35,6 +35,25 @@ func TeardownHotspot(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, result)
 }
 
+func CheckExistingDHCP(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	iface := r.URL.Query().Get("iface")
+	if iface == "" {
+		jsonError(w, "iface is required", http.StatusBadRequest)
+		return
+	}
+	result, err := client.CheckExistingDHCP(iface)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	jsonOK(w, result)
+}
+
 func SetupHotspot(w http.ResponseWriter, r *http.Request) {
 	client, err := clientFromRequest(r)
 	if err != nil {

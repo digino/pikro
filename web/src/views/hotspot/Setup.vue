@@ -315,6 +315,28 @@
           v-else-if="STEPS[step - 1] === 'Subnet'"
           class="border border-border rounded-xl p-5 space-y-4 bg-surface"
         >
+          <div
+            v-if="dhcpChecking"
+            class="flex items-center gap-2 text-sm text-text-muted"
+          >
+            <span
+              class="inline-block size-3.5 border-2 rounded-full animate-spin border-border border-t-text-secondary"
+            />
+            Checking for an existing DHCP server on {{ form.lanIface }}…
+          </div>
+          <div
+            v-else-if="dhcpCheck?.exists"
+            class="flex items-start gap-2 p-3 rounded-lg border text-sm bg-amber/8 border-amber/20 text-amber"
+          >
+            <ExclamationTriangleIcon class="size-4 shrink-0 mt-0.5" />
+            <span
+              >{{ form.lanIface }} already has a DHCP server for
+              <span class="font-mono">{{ dhcpCheck.subnet }}</span> — reusing
+              it instead of creating a new one, so the subnet is fixed to
+              this network.</span
+            >
+          </div>
+
           <label class="flex flex-col gap-1">
             <span class="font-medium text-red"
               >Subnet (CIDR) <span>*</span></span
@@ -323,6 +345,7 @@
               v-model="form.subnet"
               class="input font-mono"
               placeholder="192.168.88.0/24"
+              :disabled="dhcpCheck?.exists"
             />
             <p v-if="subnetError" class="text-sm text-red">{{ subnetError }}</p>
           </label>
@@ -742,10 +765,12 @@ import {
   hotspotPreflight,
   setupHotspot,
   teardownHotspot,
+  checkExistingDHCP,
   type PreflightResult,
   type SetupResult,
   type TeardownResult,
   type InterfaceInfo,
+  type DHCPCheckResult,
 } from "@/api";
 import { useRoutersStore } from "@/stores/routers";
 import { friendlyError } from "@/utils/errors";
@@ -793,6 +818,40 @@ const needsBridge = ref(false);
 
 const STEPS = ref<string[]>(["Network", "Subnet", "Review"]);
 const step = ref(1);
+
+const dhcpCheck = ref<DHCPCheckResult | null>(null);
+const dhcpChecking = ref(false);
+const dhcpCheckedIface = ref("");
+
+async function checkDHCP() {
+  if (!store.activeId || !form.value.lanIface) return;
+  if (dhcpCheckedIface.value === form.value.lanIface) return;
+  dhcpChecking.value = true;
+  try {
+    dhcpCheck.value = await checkExistingDHCP(store.activeId, form.value.lanIface);
+    dhcpCheckedIface.value = form.value.lanIface;
+    if (dhcpCheck.value.exists && dhcpCheck.value.subnet) {
+      form.value.subnet = dhcpCheck.value.subnet;
+    }
+  } catch {
+    dhcpCheck.value = null;
+  } finally {
+    dhcpChecking.value = false;
+  }
+}
+
+watch(step, (s) => {
+  if (STEPS.value[s - 1] === "Subnet") checkDHCP();
+});
+
+// A different LAN interface invalidates any previous check.
+watch(
+  () => form.value.lanIface,
+  () => {
+    dhcpCheckedIface.value = "";
+    dhcpCheck.value = null;
+  },
+);
 
 function ifaceLabel(i: InterfaceInfo): string {
   return `${i.name} [${i.type}]${!i.running ? " — down" : ""}${i.comment ? ` (${i.comment})` : ""}`;
