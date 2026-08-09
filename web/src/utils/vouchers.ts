@@ -5,12 +5,13 @@ export interface VoucherEntry {
   name: string;
   password: string;
   profile?: string;
+  /** Time-limit (RouterOS limit-uptime) set for this voucher at generation time, e.g. "24h". */
+  timeLimit?: string;
 }
 
 export interface PrintVouchersOptions {
   template: VoucherTemplate["key"];
   businessName: string;
-  showValidity: boolean;
   showPrice: boolean;
   currency: string;
   profileMetas: Record<string, ProfileMeta>;
@@ -24,7 +25,6 @@ export async function printVouchers(entries: VoucherEntry[], opts: PrintVouchers
   const {
     template,
     businessName,
-    showValidity,
     showPrice,
     currency,
     profileMetas,
@@ -34,9 +34,14 @@ export async function printVouchers(entries: VoucherEntry[], opts: PrintVouchers
 
   const items: VoucherItem[] = entries.map((r) => {
     const meta = profileMetas[r.profile || "default"];
-    const validity = showValidity && meta?.validity ? meta.validity : "";
     const price = showPrice && meta?.price ? `${meta.price}${currency ? " " + currency : ""}` : "";
-    return { name: r.name, password: r.password, validity, price };
+    return {
+      name: r.name,
+      password: r.password,
+      profile: r.profile ?? "",
+      timeLimit: r.timeLimit ?? "",
+      price,
+    };
   });
 
   const html = await getVoucherTemplate(template).render(items, {

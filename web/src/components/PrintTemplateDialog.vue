@@ -93,10 +93,10 @@ const previewLoading = ref(false);
 // passed in yet) so the admin sees actual usernames/passwords, not filler.
 const PREVIEW_COUNT = 6;
 const sampleEntries: VoucherEntry[] = [
-  { name: "ab3f", password: "ab3f" },
-  { name: "x9kz", password: "x9kz" },
-  { name: "p7mw", password: "p7mw" },
-  { name: "q2nt", password: "q2nt" },
+  { name: "ab3f", password: "ab3f", profile: "24H", timeLimit: "24h" },
+  { name: "x9kz", password: "x9kz", profile: "24H", timeLimit: "24h" },
+  { name: "p7mw", password: "p7mw", profile: "24H", timeLimit: "24h" },
+  { name: "q2nt", password: "q2nt", profile: "24H", timeLimit: "24h" },
 ];
 
 async function renderPreview() {
@@ -108,7 +108,8 @@ async function renderPreview() {
       return {
         name: e.name,
         password: e.password,
-        validity: meta?.validity ?? "1 day",
+        profile: e.profile ?? "",
+        timeLimit: e.timeLimit ?? "",
         price: meta?.price ? `${meta.price}${props.currency ? " " + props.currency : ""}` : `500${props.currency ? " " + props.currency : ""}`,
       };
     });
@@ -144,7 +145,6 @@ async function handlePrint() {
     await printVouchers(props.entries, {
       template: template.value,
       businessName: props.businessName,
-      showValidity: true,
       showPrice: true,
       currency: props.currency,
       profileMetas: props.profileMetas,
