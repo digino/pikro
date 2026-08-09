@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	ros "github.com/go-routeros/routeros/v3"
 )
 
 // Mikhmon writes two comment formats onto hotspot users:
@@ -31,6 +33,11 @@ type MigrationResult struct {
 	UsersSkipped      int `json:"usersSkipped"`      // comment format not recognized, left untouched
 	ProfilesScanned   int `json:"profilesScanned"`
 	ProfilesConverted int `json:"profilesConverted"` // on-login script replaced with Pikro's
+	// SchedulersRemoved/ScriptsRemoved count Mikhmon's own leftover per-user
+	// /system scheduler and /system script entries (see removeMikhmonArtifacts).
+	SchedulersRemoved int  `json:"schedulersRemoved"`
+	ScriptsRemoved    int  `json:"scriptsRemoved"`
+	CleanupInstalled  bool `json:"cleanupInstalled"` // Pikro's own cleanup scheduler was (re-)installed
 }
 
 // MigrateFromMikhmon scans all hotspot users and profiles on the router,
@@ -57,6 +64,13 @@ func (c *Client) MigrateFromMikhmon() (*MigrationResult, error) {
 		return nil, fmt.Errorf("listing hotspot users: %w", err)
 	}
 	result.UsersScanned = len(userReply.Re)
+
+	usernames := make(map[string]bool, len(userReply.Re))
+	for _, s := range userReply.Re {
+		if name := s.Map["name"]; name != "" {
+			usernames[name] = true
+		}
+	}
 
 	for _, s := range userReply.Re {
 		id := s.Map[".id"]
@@ -111,7 +125,64 @@ func (c *Client) MigrateFromMikhmon() (*MigrationResult, error) {
 		result.ProfilesConverted++
 	}
 
+	if err := removeMikhmonArtifacts(conn, usernames, result); err != nil {
+		return result, fmt.Errorf("removing Mikhmon scheduler/script leftovers: %w", err)
+	}
+
+	if err := c.InstallCleanupScheduler("7d"); err == nil {
+		result.CleanupInstalled = true
+	}
+
 	return result, nil
+}
+
+// removeMikhmonArtifacts removes Mikhmon's own leftover /system scheduler and
+// /system script entries — created one-per-user by its on-login script at
+// login time (name == the hotspot username, confirmed against Mikhmon's own
+// source: laksa19/mikrotik-hotspot-monitor, mikhmon/app/uprofileadd.php).
+// Mikhmon never removes these itself, so on a long-lived router hundreds can
+// accumulate. Matches strictly by exact name equality against real hotspot
+// usernames on this router, so an admin's own unrelated scheduler/script is
+// never touched unless it happens to share a voucher's exact username.
+//
+// The remc/ntfc on-login variants additionally log each transaction as a
+// /system script named "<date>-|-<time>-|-<user>-|-<price>" tagged
+// comment=mikhmon (a literal, Mikhmon-specific marker) — those are matched
+// on that comment instead, since their names aren't usernames.
+func removeMikhmonArtifacts(conn *ros.Client, usernames map[string]bool, result *MigrationResult) error {
+	schedReply, err := conn.Run("/system/scheduler/print")
+	if err != nil {
+		return fmt.Errorf("listing schedulers: %w", err)
+	}
+	for _, s := range schedReply.Re {
+		name := s.Map["name"]
+		if !usernames[name] {
+			continue
+		}
+		if _, err := conn.Run("/system/scheduler/remove", "=.id="+s.Map[".id"]); err != nil {
+			return fmt.Errorf("removing scheduler %s: %w", name, err)
+		}
+		result.SchedulersRemoved++
+	}
+
+	scriptReply, err := conn.Run("/system/script/print")
+	if err != nil {
+		return fmt.Errorf("listing scripts: %w", err)
+	}
+	for _, s := range scriptReply.Re {
+		name := s.Map["name"]
+		isPerUser := usernames[name]
+		isTransactionLog := s.Map["comment"] == "mikhmon"
+		if !isPerUser && !isTransactionLog {
+			continue
+		}
+		if _, err := conn.Run("/system/script/remove", "=.id="+s.Map[".id"]); err != nil {
+			return fmt.Errorf("removing script %s: %w", name, err)
+		}
+		result.ScriptsRemoved++
+	}
+
+	return nil
 }
 
 // mikhmonExpiryToEpoch parses Mikhmon's "YYYY-MM-DD HH:MM:SS" expiry comment

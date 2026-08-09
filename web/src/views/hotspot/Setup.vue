@@ -54,22 +54,21 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <RouterLink to="/hotspot/settings" class="btn btn-primary mr-auto">
-          <Cog6ToothIcon class="size-3.5" />
-          Configure branding &amp; vouchers
+        <RouterLink to="/hotspot/profiles" class="btn btn-primary">
+          Add profiles
         </RouterLink>
         <button class="btn btn-ghost" @click="runPreflight">
           <ArrowPathIcon class="size-3.5" />
           Re-check
         </button>
-        <button
+        <!-- <button
           class="btn border-red/30 text-red hover:bg-red/8"
           :disabled="tearing"
           @click="runTeardown"
         >
           <TrashIcon class="size-3.5" />
           {{ tearing ? "Resetting…" : "Reset config" }}
-        </button>
+        </button> -->
       </div>
 
       <div
@@ -285,7 +284,9 @@
           </label>
 
           <label class="flex flex-col gap-1">
-            <span class="font-medium">Hotspot name</span>
+            <span class="font-medium text-red"
+              >Hotspot name <span>*</span></span
+            >
             <div class="join">
               <input
                 v-model="form.hotspotName"
@@ -305,7 +306,6 @@
                 >{{ form.hotspotName || "myhotspot"
                 }}{{ form.hotspotExtension }}</span
               >
-              — leave blank to use the router IP instead
             </p>
           </label>
         </div>
@@ -315,6 +315,28 @@
           v-else-if="STEPS[step - 1] === 'Subnet'"
           class="border border-border rounded-xl p-5 space-y-4 bg-surface"
         >
+          <div
+            v-if="dhcpChecking"
+            class="flex items-center gap-2 text-sm text-text-muted"
+          >
+            <span
+              class="inline-block size-3.5 border-2 rounded-full animate-spin border-border border-t-text-secondary"
+            />
+            Checking for an existing DHCP server on {{ form.lanIface }}…
+          </div>
+          <div
+            v-else-if="dhcpCheck?.exists"
+            class="flex items-start gap-2 p-3 rounded-lg border text-sm bg-amber/8 border-amber/20 text-amber"
+          >
+            <ExclamationTriangleIcon class="size-4 shrink-0 mt-0.5" />
+            <span
+              >{{ form.lanIface }} already has a DHCP server for
+              <span class="font-mono">{{ dhcpCheck.subnet }}</span> — reusing
+              it instead of creating a new one, so the subnet is fixed to
+              this network.</span
+            >
+          </div>
+
           <label class="flex flex-col gap-1">
             <span class="font-medium text-red"
               >Subnet (CIDR) <span>*</span></span
@@ -323,6 +345,7 @@
               v-model="form.subnet"
               class="input font-mono"
               placeholder="192.168.88.0/24"
+              :disabled="dhcpCheck?.exists"
             />
             <p v-if="subnetError" class="text-sm text-red">{{ subnetError }}</p>
           </label>
@@ -390,6 +413,27 @@
               </li>
               <li>• Enable DNS remote requests</li>
             </ul>
+          </div>
+        </template>
+
+        <!-- Step: Cleanup -->
+        <template v-else-if="STEPS[step - 1] === 'Cleanup'">
+          <div class="border border-border rounded-xl p-5 space-y-4 bg-surface">
+            <h2 class="text-sm font-semibold text-text-primary">
+              Protect your vouchers
+            </h2>
+            <p class="text-sm text-text-secondary">
+              RouterOS doesn't remove expired vouchers on its own — Pikro installs
+              a cleanup scheduler on the router so expired and quota-exhausted
+              vouchers get removed automatically, on the schedule you pick below.
+            </p>
+            <label class="flex flex-col gap-1">
+              <span class="text-sm font-medium text-text-secondary">Run every</span>
+              <AppSelect
+                v-model="form.cleanupInterval"
+                :options="CLEANUP_INTERVAL_OPTIONS"
+              />
+            </label>
           </div>
         </template>
 
@@ -537,7 +581,7 @@
         class="border border-border rounded-xl p-4 space-y-3 bg-surface"
       >
         <p
-          class="text-xs font-semibold text-text-muted uppercase tracking-wide"
+          class="text-sm font-semibold text-text-secondary uppercase tracking-wide"
         >
           What's next
         </p>
@@ -590,7 +634,7 @@
               >4</span
             >
             <span>
-              Configure your business name, currency, voucher layout, and login
+              Configure your login
               page in
               <RouterLink
                 to="/hotspot/settings"
@@ -620,11 +664,10 @@
           to="/hotspot/users"
           class="btn btn-primary"
         >
-          <UsersIcon class="size-4" />
           Add users
         </RouterLink>
-        <button class="btn btn-ghost btn-sm border-transparent" @click="reset">
-          <ArrowPathIcon class="size-3.5" />
+        <button class="btn btn-ghost border-transparent" @click="reset">
+          <ArrowPathIcon class="size-4" />
           Run again
         </button>
       </div>
@@ -712,7 +755,6 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   MinusCircleIcon,
-  UsersIcon,
   TrashIcon,
   Cog6ToothIcon,
 } from "@heroicons/vue/24/outline";
@@ -721,13 +763,17 @@ import {
   hotspotPreflight,
   setupHotspot,
   teardownHotspot,
+  checkExistingDHCP,
   type PreflightResult,
   type SetupResult,
   type TeardownResult,
   type InterfaceInfo,
+  type DHCPCheckResult,
 } from "@/api";
 import { useRoutersStore } from "@/stores/routers";
 import { friendlyError } from "@/utils/errors";
+import { HOTSPOT_EXTENSION_OPTIONS } from "@/utils/hotspotExtensions";
+import { CLEANUP_INTERVAL_OPTIONS } from "@/utils/cleanupIntervals";
 import AppDialog from "@/components/AppDialog.vue";
 import PageLayout from "@/components/PageLayout.vue";
 import AppSelect, { type SelectOption } from "@/components/AppSelect.vue";
@@ -746,15 +792,10 @@ const form = ref({
   subnet: "192.168.88.0/24",
   hotspotName: "",
   hotspotExtension: ".spot",
+  cleanupInterval: "7d",
 });
 
-const EXTENSIONS: SelectOption[] = [
-  { value: ".spot", label: ".spot" },
-  { value: ".hotspot", label: ".hotspot" },
-  { value: ".info", label: ".info" },
-  { value: ".wifi", label: ".wifi" },
-];
-const extensionOptions = EXTENSIONS;
+const extensionOptions = HOTSPOT_EXTENSION_OPTIONS;
 const tearing = ref(false);
 const teardownResult = ref<TeardownResult | null>(null);
 const showTeardownConfirm = ref(false);
@@ -775,6 +816,40 @@ const needsBridge = ref(false);
 
 const STEPS = ref<string[]>(["Network", "Subnet", "Review"]);
 const step = ref(1);
+
+const dhcpCheck = ref<DHCPCheckResult | null>(null);
+const dhcpChecking = ref(false);
+const dhcpCheckedIface = ref("");
+
+async function checkDHCP() {
+  if (!store.activeId || !form.value.lanIface) return;
+  if (dhcpCheckedIface.value === form.value.lanIface) return;
+  dhcpChecking.value = true;
+  try {
+    dhcpCheck.value = await checkExistingDHCP(store.activeId, form.value.lanIface);
+    dhcpCheckedIface.value = form.value.lanIface;
+    if (dhcpCheck.value.exists && dhcpCheck.value.subnet) {
+      form.value.subnet = dhcpCheck.value.subnet;
+    }
+  } catch {
+    dhcpCheck.value = null;
+  } finally {
+    dhcpChecking.value = false;
+  }
+}
+
+watch(step, (s) => {
+  if (STEPS.value[s - 1] === "Subnet") checkDHCP();
+});
+
+// A different LAN interface invalidates any previous check.
+watch(
+  () => form.value.lanIface,
+  () => {
+    dhcpCheckedIface.value = "";
+    dhcpCheck.value = null;
+  },
+);
 
 function ifaceLabel(i: InterfaceInfo): string {
   return `${i.name} [${i.type}]${!i.running ? " — down" : ""}${i.comment ? ` (${i.comment})` : ""}`;
@@ -840,6 +915,7 @@ const canSubmit = computed(
   () =>
     form.value.lanIface.trim() !== "" &&
     form.value.wanIface.trim() !== "" &&
+    form.value.hotspotName.trim() !== "" &&
     derived.value !== null &&
     (!needsBridge.value || bridge.value.name.trim() !== ""),
 );
@@ -849,7 +925,9 @@ const canAdvance = computed(() => {
   if (current === "Bridge") return bridge.value.name.trim() !== "";
   if (current === "Network")
     return (
-      form.value.lanIface.trim() !== "" && form.value.wanIface.trim() !== ""
+      form.value.lanIface.trim() !== "" &&
+      form.value.wanIface.trim() !== "" &&
+      form.value.hotspotName.trim() !== ""
     );
   if (current === "Subnet") return derived.value !== null;
   return true;
@@ -872,8 +950,8 @@ async function runPreflight() {
     const ether = interfaces.value.find((i) => i.type === "ether");
     needsBridge.value = bridgeAndWlan.value.length === 0;
     STEPS.value = needsBridge.value
-      ? ["Bridge", "Network", "Subnet", "Review"]
-      : ["Network", "Subnet", "Review"];
+      ? ["Bridge", "Network", "Subnet", "Review", "Cleanup"]
+      : ["Network", "Subnet", "Review", "Cleanup"];
     if (bridgeIface || wlan) {
       form.value.lanIface = bridgeIface?.name ?? wlan?.name ?? "";
     } else {
@@ -919,6 +997,7 @@ async function runSetup() {
       subnet: form.value.subnet,
       hotspotName: form.value.hotspotName,
       extension: form.value.hotspotExtension,
+      cleanupInterval: form.value.cleanupInterval,
       ...(needsBridge.value
         ? { newBridgeName: bridge.value.name, bridgePorts: bridge.value.ports }
         : {}),

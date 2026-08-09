@@ -1,10 +1,15 @@
 export interface VoucherItem {
   name: string;
   password: string;
-  /** Pre-formatted validity string (e.g. "1 day"), empty if hidden. */
-  validity: string;
-  /** Pre-formatted price string (e.g. "500 XOF"), empty if hidden. */
+  profile: string;
+  timeLimit: string;
   price: string;
+}
+
+/** Combines profile + timeLimit into one "profile/timeLimit" label (e.g. "24H/24h"), falling back to whichever one is set alone. */
+export function voucherDurationLabel(item: Pick<VoucherItem, "profile" | "timeLimit">): string {
+  if (item.profile && item.timeLimit) return `${item.profile}/${item.timeLimit}`;
+  return item.profile || item.timeLimit;
 }
 
 export interface VoucherTemplateOptions {

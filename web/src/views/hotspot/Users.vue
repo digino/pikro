@@ -1304,6 +1304,7 @@ function openPrint() {
     name: u.name,
     password: u.password ?? "",
     profile: u.profile,
+    timeLimit: u["limit-uptime"] ?? "",
   }));
   showPrintDialog.value = true;
 }

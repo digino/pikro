@@ -1,4 +1,5 @@
 import type { VoucherTemplate } from "./types";
+import { voucherDurationLabel } from "./types";
 import { qrSvg } from "./qr";
 
 const QR_SIZE_PX = 60;
@@ -12,7 +13,9 @@ const render: VoucherTemplate["render"] = async (items, opts) => {
   const { businessName, loginUrl, loginUrlSupportsCredentials } = opts;
 
   const cards = await Promise.all(
-    items.map(async ({ name, password, validity, price }, i) => {
+    items.map(async (item, i) => {
+      const { name, password, price } = item;
+      const duration = voucherDurationLabel(item);
       let qr = "";
       if (loginUrl) {
         const target = loginUrlSupportsCredentials
@@ -27,7 +30,7 @@ const render: VoucherTemplate["render"] = async (items, opts) => {
             ${businessName ? `<div class="biz">${businessName}</div>` : ""}
             <div class="row"><span class="lbl">Username</span><span class="val">${name}</span></div>
             <div class="row"><span class="lbl">Password</span><span class="val">${password}</span></div>
-            ${validity || price ? `<div class="row sub"><span class="lbl">${validity ? "Valid" : "Price"}</span><span class="val-sm">${[validity, price].filter(Boolean).join(" · ")}</span></div>` : ""}
+            ${duration || price ? `<div class="sub"><span class="val-sm">${[duration, price].filter(Boolean).join(" · ")}</span></div>` : ""}
             <div class="num">#${i + 1}</div>
           </div>
           ${qr ? `<div class="right">${qr}</div>` : ""}
@@ -45,9 +48,9 @@ const render: VoucherTemplate["render"] = async (items, opts) => {
     .biz{font-size:6pt;font-weight:700;text-transform:uppercase;letter-spacing:.02em;border-bottom:0.75pt solid #000;padding-bottom:0.6mm;margin-bottom:0.2mm}
     .row{display:flex;justify-content:space-between;align-items:baseline;gap:1mm}
     .lbl{font-size:5pt;text-transform:uppercase;letter-spacing:.02em;color:#333}
-    .val{font-size:8.5pt;font-weight:700;font-family:ui-monospace,monospace}
+    .val{font-size:8.5pt;font-weight:700}
     .sub{border-top:0.75pt solid #000;padding-top:0.6mm;margin-top:0.2mm}
-    .val-sm{font-size:6pt;font-weight:600}
+    .val-sm{display:block;font-size:6.5pt;font-weight:600;text-align:center}
     .num{font-size:5pt;color:#666;margin-top:auto}
     @media print{body{padding:4mm}.grid{gap:2mm}}
   `;
