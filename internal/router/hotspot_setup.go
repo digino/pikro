@@ -33,10 +33,11 @@ type SetupRequest struct {
 	Subnet      string `json:"subnet"`
 	HotspotName string `json:"hotspotName"` // user-chosen label, e.g. "myspot" -> DNS: myspot + Extension
 	// Extension is the DNS TLD appended to HotspotName, e.g. ".spot". Defaults
-	// to ".spot" when empty, for backward compatibility with older clients.
-	Extension     string   `json:"extension,omitempty"`
-	NewBridgeName string   `json:"newBridgeName,omitempty"`
-	BridgePorts   []string `json:"bridgePorts,omitempty"`
+	// to ".spot" when empty.
+	Extension       string   `json:"extension,omitempty"`
+	NewBridgeName   string   `json:"newBridgeName,omitempty"`
+	BridgePorts     []string `json:"bridgePorts,omitempty"`
+	CleanupInterval string   `json:"cleanupInterval,omitempty"`
 }
 
 type SetupStepResult struct {
@@ -163,25 +164,63 @@ func (c *Client) SetupHotspot(req SetupRequest) (*SetupResult, error) {
 		steps = append(steps, s)
 	}
 
+	// A router that already has a DHCP server bound to this interface (e.g.
+	// RouterOS's own factory "defconf" server after a normal reset) must not
+	// get a second, separate pool layered on top — its range would overlap
+	// the existing pool on the same subnet, and the hotspot would end up
+	// pointed at a pool no active DHCP server is actually issuing leases
+	// from. Detect and reuse it instead. Checked before stepAssignIP so a
+	// subnet mismatch is caught before adding a second, wrong IP address to
+	// the interface.
+	existing, hasExistingDHCP := c.existingDHCPPool(req.LANIface)
+	if hasExistingDHCP && existing.subnet != networkAddr {
+		return &SetupResult{
+			Steps: []SetupStepResult{{
+				Name: "Create DHCP network",
+				Error: fmt.Sprintf(
+					"%s already has a DHCP server for %s, but you entered %s — "+
+						"use %s as the subnet, or remove the existing DHCP server first",
+					req.LANIface, existing.subnet, networkAddr, existing.subnet,
+				),
+			}},
+		}, nil
+	}
+
 	if req.NewBridgeName != "" {
 		run(c.stepCreateBridge(req.NewBridgeName, req.BridgePorts))
 	}
 	run(c.stepAssignIP(req.LANIface, ipWithPrefix))
-	run(c.stepCreateIPPool(poolName, poolStart, poolEnd))
-	run(c.stepCreateDHCPNetwork(networkAddr, gw))
-	run(c.stepCreateDHCPServer(dhcpName, req.LANIface, poolName))
+
+	if hasExistingDHCP {
+		poolName = existing.poolName
+		steps = append(steps, SetupStepResult{
+			Name: "Create IP pool", OK: true, Skipped: true,
+		}, SetupStepResult{
+			Name: "Create DHCP network", OK: true, Skipped: true,
+		}, SetupStepResult{
+			Name: "Create DHCP server", OK: true, Skipped: true,
+		})
+	} else {
+		run(c.stepCreateIPPool(poolName, poolStart, poolEnd))
+		run(c.stepCreateDHCPNetwork(networkAddr, gw))
+		run(c.stepCreateDHCPServer(dhcpName, req.LANIface, poolName))
+	}
 	run(c.stepCreateHotspotProfile(profileName, gw, dnsName))
-	run(c.stepEnableHotspot(hotspotName, req.LANIface, poolName, profileName))
-	// Walled garden immediately after hotspot activation so port 8728 is
-	// whitelisted before any further API calls — otherwise the captive portal
-	// blocks the connection for all remaining steps.
+	// Walled garden BEFORE the hotspot goes live: /ip/hotspot/walled-garden
 	run(c.stepAddWalledGarden())
-	// Upload the custom login page after the hotspot server is running —
-	// the hotspot/ directory only exists once the hotspot server is active.
-	run(c.stepUploadLoginPage(profileName))
+	run(c.stepEnableHotspot(hotspotName, req.LANIface, poolName, profileName))
 	run(c.stepAddNATMasquerade(req.WANIface))
 	run(c.stepEnableDNS())
-	run(c.stepInstallCleanupScheduler())
+	cleanupInterval := req.CleanupInterval
+	if cleanupInterval == "" {
+		cleanupInterval = "7d"
+	}
+	run(c.stepInstallCleanupScheduler(cleanupInterval))
+	// Upload the custom login page last: the hotspot/ directory only exists
+	// once the hotspot server is active, and if this fails, everything else
+	// (network, NAT, DNS, cleanup) is already correctly configured — the
+	// hotspot just falls back to RouterOS's own default login page.
+	run(c.stepUploadLoginPage(profileName))
 
 	success := true
 	for _, s := range steps {
@@ -332,6 +371,68 @@ func (c *Client) stepCreateDHCPServer(dhcpName, iface, poolName string) SetupSte
 	return SetupStepResult{Name: name, OK: true}
 }
 
+// existingDHCPServer describes a DHCP server already bound to the chosen
+// LAN interface, found by existingDHCPPool.
+type existingDHCPServer struct {
+	poolName string
+	subnet   string // e.g. "192.168.88.0/24", from the interface's own address
+}
+
+// DHCPCheckResult reports whether a DHCP server is already bound to a
+// candidate LAN interface, for the setup wizard's Subnet step.
+type DHCPCheckResult struct {
+	Exists bool   `json:"exists"`
+	Subnet string `json:"subnet,omitempty"`
+}
+
+// CheckExistingDHCP checks whether iface already has a DHCP server bound to
+// it, and if so, the subnet it serves — so the setup wizard can show this to
+// the user before they type a subnet, rather than failing after Run Setup.
+func (c *Client) CheckExistingDHCP(iface string) (*DHCPCheckResult, error) {
+	if !validIfaceName.MatchString(iface) {
+		return nil, fmt.Errorf("invalid interface name")
+	}
+	existing, ok := c.existingDHCPPool(iface)
+	if !ok {
+		return &DHCPCheckResult{Exists: false}, nil
+	}
+	return &DHCPCheckResult{Exists: true, Subnet: existing.subnet}, nil
+}
+
+// existingDHCPPool returns the address-pool name and subnet of a DHCP server
+// already bound to iface, if one exists. Connection errors are treated as
+// "not found" — the normal create-new-pool path will then surface any real
+// connectivity problem with its own clearer error.
+func (c *Client) existingDHCPPool(iface string) (*existingDHCPServer, bool) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, false
+	}
+	defer conn.Close()
+
+	reply, err := conn.RunArgs([]string{"/ip/dhcp-server/print", "?interface=" + iface})
+	if err != nil || len(reply.Re) == 0 {
+		return nil, false
+	}
+	pool := reply.Re[0].Map["address-pool"]
+	if pool == "" {
+		return nil, false
+	}
+
+	// The interface's own assigned address is the authoritative subnet the
+	// existing DHCP server actually serves.
+	addrReply, err := conn.RunArgs([]string{"/ip/address/print", "?interface=" + iface})
+	if err != nil || len(addrReply.Re) == 0 {
+		return nil, false
+	}
+	_, ipNet, err := net.ParseCIDR(addrReply.Re[0].Map["address"])
+	if err != nil {
+		return nil, false
+	}
+
+	return &existingDHCPServer{poolName: pool, subnet: ipNet.String()}, true
+}
+
 func (c *Client) stepCreateHotspotProfile(profileName, gateway, dnsName string) SetupStepResult {
 	name := "Create hotspot profile"
 	conn, err := c.connect()
@@ -340,10 +441,6 @@ func (c *Client) stepCreateHotspotProfile(profileName, gateway, dnsName string) 
 	}
 	defer conn.Close()
 
-	// http-pap is included alongside http-chap so the "Business" voucher
-	// template's QR code can encode username/password as plain URL query
-	// params — chap requires a per-session challenge hash a QR scan can't
-	// provide, so without pap a QR-based auto-login silently never works.
 	args := []string{
 		"/ip/hotspot/profile/add",
 		"=name=" + profileName,
@@ -382,12 +479,14 @@ func (c *Client) stepCreateHotspotProfile(profileName, gateway, dnsName string) 
 	return SetupStepResult{Name: name, OK: true}
 }
 
-// stepInstallCleanupScheduler installs the cleanup scheduler with a weekly interval.
-// Non-fatal if it fails (e.g. device-mode restriction).
-func (c *Client) stepInstallCleanupScheduler() SetupStepResult {
+// stepInstallCleanupScheduler installs the cleanup scheduler at the given
+// interval. Surfaces real failures (e.g. RouterOS 7.17+ device-mode blocking
+// the scheduler) instead of masking them as skipped, so the wizard result can
+// tell the user cleanup genuinely isn't protecting their vouchers yet.
+func (c *Client) stepInstallCleanupScheduler(interval string) SetupStepResult {
 	name := "Install cleanup scheduler"
-	if err := c.InstallCleanupScheduler("7d"); err != nil {
-		return SetupStepResult{Name: name, OK: true, Skipped: true}
+	if err := c.InstallCleanupScheduler(interval); err != nil {
+		return SetupStepResult{Name: name, Error: err.Error()}
 	}
 	return SetupStepResult{Name: name, OK: true}
 }

@@ -29,6 +29,22 @@ If you love this project, please consider giving it a ⭐.
 
 ---
 
+## Vouchers
+
+Pick from 3 printable templates, each with a live preview before you print:
+
+- **Classic** — dense ticket sheet, heavy borders, zero gap, ~60 vouchers per page
+- **Modern** — compact professional cards, light spacing, ~60 per page
+- **Business** — includes a scannable QR code that logs the user in directly, ~40 per page
+
+The QR code is generated entirely client-side (no external service, no network
+call — the old "generate it via Mikhmon's website" workaround isn't needed).
+When the hotspot profile's auth mode supports it (http-pap), the code carries the
+username and password pre-filled, so scanning it connects the user straight
+away with no typing.
+
+---
+
 ## Screenshots
 
 <table>
@@ -45,12 +61,9 @@ If you love this project, please consider giving it a ⭐.
     <td><img src="assets/screenshots/router-auto-discovery.png" alt="Automatic router discovery" /><br/><sub>Automatic router discovery</sub></td>
   </tr>
   <tr>
-    <td><img src="assets/screenshots/router-search.png" alt="Multi-router dashboard" /><br/><sub>Multi-router dashboard</sub></td>
     <td><img src="assets/screenshots/system-health.png" alt="System health and bandwidth" /><br/><sub>System health &amp; bandwidth</sub></td>
-  </tr>
-  <tr>
-    <td><img src="assets/screenshots/logs.png" alt="Hotspot logs" /><br/><sub>Hotspot logs</sub></td>
-    <td></td>
+        <td><img src="assets/screenshots/logs.png" alt="Hotspot logs" /><br/><sub>Hotspot logs</sub></td>
+
   </tr>
 </table>
 
@@ -78,6 +91,7 @@ your router over the local network.
 > [Releases](../../releases) — each build carries a
 > [SLSA](https://slsa.dev) provenance attestation proving it was built from
 > this repo, but isn't Apple/Microsoft-signed). On first run:
+>
 > - **macOS:** right-click the app → **Open** (instead of double-clicking) to
 >   get past the "unidentified developer" warning.
 > - **Windows:** if SmartScreen appears, click **More info** → **Run anyway**.

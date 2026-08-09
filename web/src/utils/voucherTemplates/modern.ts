@@ -1,11 +1,14 @@
 import type { VoucherTemplate } from "./types";
+import { voucherDurationLabel } from "./types";
 
 // Modern — compact professional card grid, heavy borders, small gap between
 // pieces (as opposed to Classic's zero-gap collapsed-border sheet).
 const render: VoucherTemplate["render"] = async (items, { businessName }) => {
   const cards = items
-    .map(
-      ({ name, password, validity, price }, i) => `
+    .map((item, i) => {
+      const { name, password, price } = item;
+      const duration = voucherDurationLabel(item);
+      return `
         <div class="v">
           ${businessName ? `<div class="biz">${businessName}</div>` : ""}
           <div class="creds">
@@ -13,10 +16,10 @@ const render: VoucherTemplate["render"] = async (items, { businessName }) => {
             <div class="divider"></div>
             <div class="col"><span class="lbl">Password</span><span class="val">${password}</span></div>
           </div>
-          ${validity || price ? `<div class="sub">${[validity, price].filter(Boolean).join(" · ")}</div>` : ""}
+          ${duration || price ? `<div class="sub">${[duration, price].filter(Boolean).join(" · ")}</div>` : ""}
           <div class="num">#${i + 1}</div>
-        </div>`,
-    )
+        </div>`;
+    })
     .join("");
 
   const css = `
@@ -29,7 +32,7 @@ const render: VoucherTemplate["render"] = async (items, { businessName }) => {
     .col{display:flex;flex-direction:column;align-items:center;gap:0.4mm}
     .divider{width:1px;background:#000;align-self:stretch}
     .lbl{font-size:5.5pt;text-transform:uppercase;letter-spacing:.03em;color:#333}
-    .val{font-size:9pt;font-weight:700;font-family:ui-monospace,monospace}
+    .val{font-size:9pt;font-weight:700}
     .sub{font-size:6pt;text-align:center;border-top:0.75pt solid #000;padding-top:1mm}
     .num{font-size:5.5pt;color:#666;text-align:right}
     @media print{body{padding:5mm}.grid{gap:1.5mm}}

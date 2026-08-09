@@ -1,4 +1,5 @@
 import type { VoucherTemplate } from "./types";
+import { voucherDurationLabel } from "./types";
 
 // Classic — dense ticket-sheet layout, heavy black borders, zero gap.
 // Borders are collapsed like a table: each cell overlaps its neighbor by
@@ -6,14 +7,16 @@ import type { VoucherTemplate } from "./types";
 // heavy line instead of stacking into a double-thick seam.
 const render: VoucherTemplate["render"] = async (items) => {
   const cards = items
-    .map(
-      ({ name, password, validity, price }) => `
+    .map((item) => {
+      const { name, password, price } = item;
+      const duration = voucherDurationLabel(item);
+      return `
         <div class="v">
           <div class="row name"><span class="lbl">User</span><span class="val">${name}</span></div>
           <div class="row"><span class="lbl">Pass</span><span class="val">${password}</span></div>
-          ${validity || price ? `<div class="row sub">${[validity, price].filter(Boolean).join(" · ")}</div>` : ""}
-        </div>`,
-    )
+          ${duration || price ? `<div class="row sub">${[duration, price].filter(Boolean).join(" · ")}</div>` : ""}
+        </div>`;
+    })
     .join("");
 
   const css = `
@@ -23,7 +26,7 @@ const render: VoucherTemplate["render"] = async (items) => {
     .v{border:1.5pt solid #000;margin:0 0 -1.5pt -1.5pt;padding:2mm;display:flex;flex-direction:column;gap:0.8mm;page-break-inside:avoid}
     .row{display:flex;justify-content:space-between;align-items:baseline;gap:1.5mm}
     .lbl{font-size:6pt;text-transform:uppercase;letter-spacing:.03em}
-    .val{font-size:10pt;font-weight:700}
+    .val{font-size:8pt;font-weight:700}
     .sub{font-size:6.5pt;border-top:0.75pt solid #000;padding-top:0.8mm;margin-top:0.3mm;justify-content:center}
     @media print{body{padding:5mm}}
   `;
