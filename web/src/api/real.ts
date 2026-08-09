@@ -165,6 +165,14 @@ export const deleteHotspotProfile = (id: string, profileId: string, profileName?
 export const hotspotPreflight = (id: string) =>
   api.get<PreflightResult>(`/routers/${id}/hotspot/preflight`).then(r => r.data)
 
+export interface DHCPCheckResult {
+  exists: boolean
+  subnet?: string
+}
+
+export const checkExistingDHCP = (id: string, iface: string) =>
+  api.get<DHCPCheckResult>(`/routers/${id}/hotspot/dhcp-check`, { params: { iface } }).then(r => r.data)
+
 export const setupHotspot = (id: string, body: {
   lanIface: string
   wanIface: string

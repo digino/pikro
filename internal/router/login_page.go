@@ -27,7 +27,7 @@ func renderDefaultLoginPage(p defaultLoginPageParams) (string, error) {
 		p.Subtitle = "$(hostname)"
 	}
 	if p.AccentColor == "" {
-		p.AccentColor = "#111827"
+		p.AccentColor = "#ffbf00"
 	}
 
 	tmpl, err := template.New("login").Parse(string(assets.HotspotLoginHTML))

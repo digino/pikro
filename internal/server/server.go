@@ -60,6 +60,7 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/routers/{id}/system/dhcp-leases", handlers.GetDHCPLeases)
 
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/preflight", handlers.HotspotPreflight)
+	mux.HandleFunc("GET /api/routers/{id}/hotspot/dhcp-check", handlers.CheckExistingDHCP)
 	mux.HandleFunc("POST /api/routers/{id}/hotspot/setup", handlers.SetupHotspot)
 	mux.HandleFunc("DELETE /api/routers/{id}/hotspot/setup", handlers.TeardownHotspot)
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/settings", handlers.GetHotspotSettings)
