@@ -135,10 +135,10 @@
             <p v-if="validityRaw && !validityPreview" class="text-xs text-red">
               Invalid format — use: 30m, 2h, 1d, 1w or combinations like 1d12h
             </p>
-            <p v-else-if="validityPreview" class="text-xs text-text-muted">
+            <p v-else-if="validityPreview" class="text-xs text-text-secondary">
               Sends to router:
               <span class="font-mono">{{ validityPreview }}</span>
-              <span class="text-text-muted ml-1 opacity-50"
+              <span class="ml-1 opacity-70"
                 >(ROS {{ rosVersion || "…" }})</span
               >
             </p>
@@ -152,28 +152,36 @@
             <div class="flex gap-2">
               <div class="flex flex-col gap-1 flex-1 min-w-0">
                 <span class="text-sm text-text-secondary">Upload</span>
-                <div class="flex">
+                <div class="join">
                   <input
                     v-model.number="rateUp"
                     type="number"
                     min="0"
-                    class="input rounded-r-none border-r-0 min-w-0 flex-1"
+                    class="input min-w-0 flex-1"
                     placeholder="0"
                   />
-                  <RateSelect v-model="rateUpUnit" />
+                  <AppSelect
+                    v-model="rateUpUnit"
+                    :options="rateUnitOptions"
+                    trigger-class="w-auto shrink-0"
+                  />
                 </div>
               </div>
               <div class="flex flex-col gap-1 flex-1 min-w-0">
                 <span class="text-sm text-text-secondary">Download</span>
-                <div class="flex">
+                <div class="join">
                   <input
                     v-model.number="rateDown"
                     type="number"
                     min="0"
-                    class="input rounded-r-none border-r-0 min-w-0 flex-1"
+                    class="input min-w-0 flex-1"
                     placeholder="0"
                   />
-                  <RateSelect v-model="rateDownUnit" />
+                  <AppSelect
+                    v-model="rateDownUnit"
+                    :options="rateUnitOptions"
+                    trigger-class="w-auto shrink-0"
+                  />
                 </div>
               </div>
             </div>
@@ -270,17 +278,7 @@ import {
   TooltipTrigger,
   TooltipContent,
   TooltipPortal,
-  SelectRoot,
-  SelectTrigger,
-  SelectValue,
-  SelectPortal,
-  SelectContent,
-  SelectViewport,
-  SelectItem,
-  SelectItemText,
-  SelectItemIndicator,
 } from "reka-ui";
-import { CheckIcon } from "@heroicons/vue/20/solid";
 
 import { useRoutersStore } from "@/stores/routers";
 import {
@@ -357,98 +355,10 @@ const FieldLabel = defineComponent({
   },
 });
 
-const RateSelect = defineComponent({
-  props: { modelValue: String },
-  emits: ["update:modelValue"],
-  setup(props, { emit }) {
-    const options = [
-      { value: "k", label: "kbps" },
-      { value: "M", label: "Mbps" },
-    ];
-    return () =>
-      h(
-        SelectRoot,
-        {
-          modelValue: props.modelValue,
-          "onUpdate:modelValue": (v: unknown) =>
-            emit("update:modelValue", String(v ?? "")),
-        },
-        {
-          default: () => [
-            h(
-              SelectTrigger,
-              {
-                class:
-                  "flex items-center gap-1 px-2 py-2 text-xs border border-border rounded-r-lg transition-colors min-w-[60px]",
-                style:
-                  "background: var(--color-surface); color: var(--color-text-secondary);",
-              },
-              {
-                default: () => [
-                  h(SelectValue),
-                  h("span", { class: "text-text-muted ml-auto text-xs" }, "▾"),
-                ],
-              },
-            ),
-            h(
-              SelectPortal,
-              {},
-              {
-                default: () =>
-                  h(
-                    SelectContent,
-                    {
-                      class:
-                        "z-50 border border-border rounded-lg shadow-lg overflow-hidden",
-                      style: "background: var(--color-surface);",
-                      position: "popper",
-                      sideOffset: 4,
-                    },
-                    {
-                      default: () =>
-                        h(
-                          SelectViewport,
-                          { class: "p-1" },
-                          {
-                            default: () =>
-                              options.map((o) =>
-                                h(
-                                  SelectItem,
-                                  {
-                                    value: o.value,
-                                    class:
-                                      "flex items-center gap-2 px-3 py-1.5 text-xs rounded cursor-pointer text-text-secondary data-highlighted:bg-muted data-highlighted:text-text-primary focus:outline-none",
-                                  },
-                                  {
-                                    default: () => [
-                                      h(
-                                        SelectItemText,
-                                        {},
-                                        { default: () => o.label },
-                                      ),
-                                      h(
-                                        SelectItemIndicator,
-                                        {},
-                                        {
-                                          default: () =>
-                                            h(CheckIcon, { class: "size-3" }),
-                                        },
-                                      ),
-                                    ],
-                                  },
-                                ),
-                              ),
-                          },
-                        ),
-                    },
-                  ),
-              },
-            ),
-          ],
-        },
-      );
-  },
-});
+const rateUnitOptions = [
+  { value: "k", label: "kbps" },
+  { value: "M", label: "Mbps" },
+];
 
 const profiles = ref<Record<string, string>[]>([]);
 const profileMetas = ref<Record<string, ProfileMeta>>({});
