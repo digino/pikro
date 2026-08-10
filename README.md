@@ -3,7 +3,7 @@
 </p>
 
 <h1>Pikro</h1>
-<p>A modern & fast MikroTik hotspot manager</p>
+<p>A modern, open-source MikroTik hotspot manager</p>
 
 <p>
   Manage MikroTik RouterOS hotspots and vouchers from one zero-install app.<br/>
