@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/brand/lettermark-logo-white.png" alt="Pikro" width="120" />
+  <img src="assets/brand/pikro-logo-main.png" alt="Pikro" width="120" />
 </p>
 
 <h1>Pikro</h1>
