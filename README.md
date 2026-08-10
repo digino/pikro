@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/brand/pikro-logo-main.png" alt="Pikro" width="120" />
+  <img src="assets/brand/lettermark-logo-white.png" alt="Pikro" width="120" />
 </p>
 
-<h1 align="center">Pikro</h1>
-<p align="center">A modern, open-source MikroTik hotspot manager</p>
+<h1>Pikro</h1>
+<p>A modern, open-source MikroTik hotspot manager</p>
 
-<p align="center">
+<p>
   Manage MikroTik RouterOS hotspots and vouchers from one zero-install app.<br/>
 </p>
 
@@ -14,7 +14,7 @@
 ## What it does
 
 - **Hotspot voucher management** — generate, print, enable/disable, edit, and bulk-manage users and vouchers, no CLI required
-- **Vouchers that actually expire** — installs a cleanup scheduler on the router, fixing the well-known RouterOS v7 expiry bug
+- **Vouchers that actually expire** — installs a cleanup scheduler on the router, fixing the well-known RouterOS v7 expiry bug (Mikhmonv3)
 - **Guided hotspot setup wizard** — provisions IP pool, DHCP, NAT, walled garden, DNS, login page, and cleanup in one flow
 - **Customizable login pages** — pick from several ready-made hotspot login page designs, set a title/subtitle, preview live, and upload straight to the router
 - **User & profile management** — create profiles with validity, price, bandwidth, and data-quota controls
