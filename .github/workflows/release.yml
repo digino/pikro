@@ -62,8 +62,8 @@ jobs:
             dist/Pikro-mac-arm64.zip
             dist/Pikro-mac-intel.zip
 
-  # Windows and Linux build on ubuntu-latest — faster and cheaper.
-  build-other:
+  # Windows builds on ubuntu-latest — faster and cheaper.
+  build-windows:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -96,25 +96,21 @@ jobs:
             -arch amd64 \
             -o rsrc_windows_amd64.syso
 
-      - name: Build Windows + Linux binaries
+      - name: Build Windows binary
         run: |
           VERSION="v${{ github.event.inputs.version }}"
           mkdir -p dist
           GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION} -H windowsgui" -o dist/pikro.exe .
-          GOOS=linux   GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-linux-amd64 .
-          GOOS=linux   GOARCH=arm64 go build -ldflags "-X main.Version=${VERSION}" -o dist/pikro-linux-arm64 .
 
       - uses: actions/upload-artifact@v4
         with:
-          name: other-binaries
+          name: windows-binary
           path: |
             dist/pikro.exe
-            dist/pikro-linux-amd64
-            dist/pikro-linux-arm64
 
   # Release job waits for both builds, tags, then publishes everything.
   release:
-    needs: [build-mac, build-other]
+    needs: [build-mac, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -139,7 +135,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: other-binaries
+          name: windows-binary
           path: dist/
 
       # Cryptographically attests these exact files were built by this exact
@@ -152,8 +148,6 @@ jobs:
             dist/Pikro-mac-arm64.zip
             dist/Pikro-mac-intel.zip
             dist/pikro.exe
-            dist/pikro-linux-amd64
-            dist/pikro-linux-arm64
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -165,5 +159,3 @@ jobs:
             dist/Pikro-mac-arm64.zip
             dist/Pikro-mac-intel.zip
             dist/pikro.exe
-            dist/pikro-linux-amd64
-            dist/pikro-linux-arm64
