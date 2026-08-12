@@ -43,8 +43,6 @@ release: _win_rsrc
 	@cd web && npm run build
 	GOOS=darwin  GOARCH=arm64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/.pikro-mac-arm64-bin .
 	GOOS=windows GOARCH=amd64  /usr/local/go/bin/go build $(WIN_LDFLAGS) -o dist/$(BINARY).exe .
-	GOOS=linux   GOARCH=amd64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/$(BINARY)-linux-amd64 .
-	GOOS=linux   GOARCH=arm64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/$(BINARY)-linux-arm64 .
 	@$(MAKE) _bundle_app ARCH=arm64 BIN=dist/.pikro-mac-arm64-bin OUT=dist/Pikro-mac-arm64.zip
 	@rm -f dist/.pikro-mac-arm64-bin rsrc_windows_amd64.syso
 	@echo "Done → dist/ for $(VERSION)"
