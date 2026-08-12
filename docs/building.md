@@ -54,7 +54,6 @@ web server.
 | -------- | ---------------------------------- |
 | Windows  | Windows 10 (64-bit)                |
 | macOS    | macOS 11 Big Sur or later          |
-| Linux    | Kernel 2.6.32+ (any modern distro) |
 
 > **Windows 7/8 are not supported.** Go 1.21+ dropped support for those versions.
 

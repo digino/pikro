@@ -15,12 +15,12 @@
 
 - **Hotspot voucher management** — generate, print, enable/disable, edit, and bulk-manage users and vouchers, no CLI required
 - **Vouchers that actually expire** — installs a cleanup scheduler on the router, fixing the well-known RouterOS v7 expiry bug (Mikhmonv3)
-- **Guided hotspot setup wizard** — provisions IP pool, DHCP, NAT, walled garden, DNS, login page, and cleanup in one flow
+- **Guided hotspot setup wizard** — provisions IP pool, DHCP, NAT, walled garden, DNS, login page, and cleanup in one flow (coming soon)
 - **Customizable login pages** — pick from several ready-made hotspot login page designs, set a title/subtitle, preview live, and upload straight to the router
 - **User & profile management** — create profiles with validity, price, bandwidth, and data-quota controls
 - **Live monitoring** — active sessions, bandwidth, WAN IP, and system resources, with one-click disconnect for active sessions
 - **Automatic router discovery** — finds MikroTik devices on your LAN via MNDP
-- **Multi-platform** — single binary for macOS, Windows, and Linux (incl. Raspberry Pi)
+- **Multi-platform** — single binary for macOS (Apple Silicon & Intel) and Windows
 - **Local-first** — runs on your machine, no telemetry, credentials never leave your computer
 
 > A free, open-source alternative to Mikhmon — built for ISPs, café/hotel operators, and community WiFi admins who sell or hand out WiFi vouchers and want a simple, reliable tool in markets where MikroTik is dominant.
@@ -73,11 +73,9 @@ away with no typing.
 
 Download the binary for your platform from [Releases](../../releases) and run it.
 
-On macOS and Windows, Pikro runs as a tray application. Starting it places an
-icon in the menu bar (macOS) or system tray (Windows). Click **Open Pikro** to
-open the app in your browser, or **Quit** to stop the server. On Linux, Pikro
-runs in the terminal and opens your default browser automatically — stop it
-with Ctrl+C.
+Pikro runs as a tray application. Starting it places an icon in the menu bar
+(macOS) or system tray (Windows). Click **Open Pikro** to open the app in
+your browser, or **Quit** to stop the server.
 
 A firewall prompt may appear on first run — click **Allow** so Pikro can reach
 your router over the local network.
@@ -92,8 +90,15 @@ your router over the local network.
 > [SLSA](https://slsa.dev) provenance attestation proving it was built from
 > this repo, but isn't Apple/Microsoft-signed). On first run:
 >
-> - **macOS:** right-click the app → **Open** (instead of double-clicking) to
->   get past the "unidentified developer" warning.
+> - **macOS:** Gatekeeper will say **"Pikro is damaged and can't be opened"**
+>   — this is a false positive triggered by macOS quarantining unsigned apps
+>   downloaded via a browser, not actual corruption. Clear the quarantine flag:
+>   ```bash
+>   xattr -cr /path/to/Pikro.app
+>   ```
+>   Then open it normally. (Right-click → Open does *not* work around this
+>   particular message on recent macOS — it only bypasses the milder
+>   "unidentified developer" dialog, which this isn't.)
 > - **Windows:** if SmartScreen appears, click **More info** → **Run anyway**.
 
 ---
