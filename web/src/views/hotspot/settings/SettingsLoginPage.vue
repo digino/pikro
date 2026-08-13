@@ -60,7 +60,6 @@
           <span v-if="uploading" class="size-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
           Upload to router
         </button>
-        <button type="button" class="btn btn-ghost" @click="reset">Reset to default</button>
       </div>
     </div>
 
@@ -192,11 +191,6 @@ async function toggleLive() {
   } catch (e: any) {
     liveError.value = e?.response?.data?.error ?? e?.message ?? 'Failed to fetch'
   } finally { loadingLive.value = false }
-}
-
-function reset() {
-  loginPage.value = { title: '', subtitle: '', template: 'minimal' }
-  showingLive.value = false
 }
 
 async function upload() {

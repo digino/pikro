@@ -35,32 +35,26 @@ jobs:
             exit 1
           fi
 
-      - name: Build Mac binaries + .app bundles
+      - name: Build Mac binary + .app bundle
         run: |
           VERSION="v${{ github.event.inputs.version }}"
           mkdir -p dist
-          # systray uses cgo (Objective-C) on macOS, so CGO must stay enabled
-          # even when cross-compiling for the non-native arch — Go disables
-          # cgo by default whenever GOOS/GOARCH differ from the host, which
-          # silently drops the cgo-implemented systray functions and fails
-          # with "undefined: nativeLoop" etc. macOS's system clang is a
-          # universal compiler, so passing -arch/-target for the target arch
-          # is enough for it to cross-compile the Objective-C side too.
+          # systray uses cgo (Objective-C) on macOS — CGO must stay enabled.
           CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=${VERSION}" -o dist/.pikro-mac-arm64-bin .
-          CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
-            CGO_CFLAGS="-arch x86_64" \
-            CGO_LDFLAGS="-arch x86_64" \
-            go build -ldflags "-X main.Version=${VERSION}" -o dist/.pikro-mac-intel-bin .
-          make _bundle_app BIN=dist/.pikro-mac-arm64-bin  OUT=dist/Pikro-mac-arm64.zip  VERSION=${VERSION}
-          make _bundle_app BIN=dist/.pikro-mac-intel-bin  OUT=dist/Pikro-mac-intel.zip  VERSION=${VERSION}
-          rm -f dist/.pikro-mac-arm64-bin dist/.pikro-mac-intel-bin
+          # _bundle_app also ad-hoc-signs the .app (no paid Apple Developer ID
+          # yet, so identity "-": locally generated, not tied to any Apple
+          # account). Satisfies Apple Silicon's requirement that binaries be
+          # signed at all, but does NOT notarize the app or clear the
+          # Gatekeeper quarantine flag — first run still needs `xattr -cr`
+          # (see README).
+          make _bundle_app BIN=dist/.pikro-mac-arm64-bin  OUT=dist/Pikro-mac-arm64.dmg  VERSION=${VERSION}
+          rm -f dist/.pikro-mac-arm64-bin
 
       - uses: actions/upload-artifact@v4
         with:
-          name: mac-zips
+          name: mac-dmg
           path: |
-            dist/Pikro-mac-arm64.zip
-            dist/Pikro-mac-intel.zip
+            dist/Pikro-mac-arm64.dmg
 
   # Windows builds on ubuntu-latest — faster and cheaper.
   build-windows:
@@ -130,7 +124,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: mac-zips
+          name: mac-dmg
           path: dist/
 
       - uses: actions/download-artifact@v4
@@ -145,8 +139,7 @@ jobs:
         uses: actions/attest-build-provenance@v1
         with:
           subject-path: |
-            dist/Pikro-mac-arm64.zip
-            dist/Pikro-mac-intel.zip
+            dist/Pikro-mac-arm64.dmg
             dist/pikro.exe
 
       - name: Create GitHub Release
@@ -156,6 +149,5 @@ jobs:
           name: v${{ github.event.inputs.version }}
           generate_release_notes: true
           files: |
-            dist/Pikro-mac-arm64.zip
-            dist/Pikro-mac-intel.zip
+            dist/Pikro-mac-arm64.dmg
             dist/pikro.exe
