@@ -9,7 +9,6 @@
     <NoRouterSelected v-if="!store.activeId" />
 
     <div v-else class="grid gap-4">
-      <!-- ── Row 1: hotspot ── -->
       <DashboardCard title="Hotspot">
         <HotspotSummaryCard
           :loading="hotspotLoading"
@@ -28,7 +27,6 @@
         />
       </DashboardCard>
 
-      <!-- ── Row 2: sales + active sessions ── -->
       <div class="grid grid-cols-2 gap-4">
         <!-- Sales report -->
         <DashboardCard title="Sales this month">
@@ -117,7 +115,6 @@
         </DashboardCard>
       </div>
 
-      <!-- ── Row 3: system + bandwidth ── -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
         <!-- System card -->
         <DashboardCard title="System">
@@ -161,6 +158,35 @@
         </DashboardCard>
       </div>
     </div>
+
+    <AppDialog
+      :open="showDisableCleanupConfirm"
+      title="Turn off auto-cleanup?"
+      @update:open="showDisableCleanupConfirm = $event"
+    >
+      <div class="space-y-4">
+        <p class="text-sm text-text-secondary">
+          Expired and quota-exhausted vouchers will no longer be removed
+          automatically — they'll accumulate until you delete them manually.
+        </p>
+        <div class="flex justify-end gap-2 pt-1">
+          <button
+            type="button"
+            class="btn btn-ghost"
+            @click="showDisableCleanupConfirm = false"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            @click="confirmDisableCleanup"
+          >
+            Turn off
+          </button>
+        </div>
+      </div>
+    </AppDialog>
   </PageLayout>
 </template>
 
@@ -189,6 +215,7 @@ import {
 import { friendlyError } from "@/utils/errors";
 import { formatCompactAmount } from "@/utils/currencies";
 import PageLayout from "@/components/PageLayout.vue";
+import AppDialog from "@/components/AppDialog.vue";
 import SalesBarChart from "@/components/SalesBarChart.vue";
 import BandwidthChart from "@/components/BandwidthChart.vue";
 import DashboardCard from "@/components/DashboardCard.vue";
@@ -214,6 +241,7 @@ const cleanupInterval = ref("7d");
 const cleanupToggling = ref(false);
 const cleanupSaving = ref(false);
 const cleanupError = ref("");
+const showDisableCleanupConfirm = ref(false);
 const hotspotLoading = ref(false);
 const hotspotError = ref("");
 
@@ -239,15 +267,17 @@ const disabledUsers = computed(
   () => allUsers.value.filter((u) => u.disabled === "true").length,
 );
 
-async function toggleCleanup(enabled: boolean) {
+function toggleCleanup(enabled: boolean) {
   if (!store.activeId || cleanupToggling.value) return;
-  if (
-    !enabled &&
-    !confirm(
-      "Turn off auto-cleanup? Expired and quota-exhausted vouchers will no longer be removed automatically — they'll accumulate until you delete them manually.",
-    )
-  )
+  if (!enabled) {
+    showDisableCleanupConfirm.value = true;
     return;
+  }
+  applyCleanupToggle(true);
+}
+
+async function applyCleanupToggle(enabled: boolean) {
+  if (!store.activeId) return;
   cleanupToggling.value = true;
   cleanupError.value = "";
   try {
@@ -267,6 +297,11 @@ async function toggleCleanup(enabled: boolean) {
   } finally {
     cleanupToggling.value = false;
   }
+}
+
+function confirmDisableCleanup() {
+  showDisableCleanupConfirm.value = false;
+  applyCleanupToggle(false);
 }
 
 async function saveCleanupInterval(interval: string) {

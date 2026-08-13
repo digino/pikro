@@ -46,7 +46,7 @@
                 </p>
               </div>
               <div>
-                <button class="btn btn-sm">
+                <button class="btn">
                   Generate
                   <TicketIcon class="size-4" />
                 </button>

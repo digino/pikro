@@ -20,7 +20,7 @@
 - **User & profile management** — create profiles with validity, price, bandwidth, and data-quota controls
 - **Live monitoring** — active sessions, bandwidth, WAN IP, and system resources, with one-click disconnect for active sessions
 - **Automatic router discovery** — finds MikroTik devices on your LAN via MNDP
-- **Multi-platform** — single binary for macOS (Apple Silicon & Intel) and Windows
+- **Multi-platform** — single binary for Windows and macOS (Apple Silicon)
 - **Local-first** — runs on your machine, no telemetry, credentials never leave your computer
 
 > A free, open-source alternative to Mikhmon — built for ISPs, café/hotel operators, and community WiFi admins who sell or hand out WiFi vouchers and want a simple, reliable tool in markets where MikroTik is dominant.
@@ -71,7 +71,8 @@ away with no typing.
 
 ## Quick start
 
-Download the binary for your platform from [Releases](../../releases) and run it.
+Download the build for your platform from [Releases](../../releases) and run it.
+On macOS, open the `.dmg` and drag Pikro into Applications; on Windows, run the `.exe` directly.
 
 Pikro runs as a tray application. Starting it places an icon in the menu bar
 (macOS) or system tray (Windows). Click **Open Pikro** to open the app in
