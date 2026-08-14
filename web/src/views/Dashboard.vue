@@ -47,7 +47,7 @@
             :message="t('dashboard.noSalesRecorded')"
           />
           <template v-else>
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 gap-3">
               <div class="rounded-lg border border-border p-3 bg-base">
                 <div class="text-sm font-medium text-text-secondary">
                   {{ t('dashboard.vouchersGenerated') }}
@@ -64,33 +64,6 @@
                 </div>
                 <div class="font-mono text-2xl font-bold mt-1">
                   {{ fmtAmount(monthSales.revenue) }}
-                </div>
-              </div>
-              <div
-                class="rounded-lg border border-border p-3 bg-base"
-                :title="t('dashboard.performanceTooltip')"
-              >
-                <div class="text-sm font-medium text-text-secondary">
-                  {{ t('dashboard.performance') }}
-                </div>
-                <div
-                  v-if="salesPerformance === null"
-                  class="text-sm font-medium mt-1.5 text-text-muted"
-                >
-                  {{ t('dashboard.noPriorMonth') }}
-                </div>
-                <div
-                  v-else
-                  class="font-mono text-2xl font-bold mt-1 flex items-center gap-1"
-                  :class="salesPerformance >= 0 ? 'text-green' : 'text-red'"
-                >
-                  <ArrowTrendingUpIcon
-                    v-if="salesPerformance >= 0"
-                    class="size-4"
-                  />
-                  <ArrowTrendingDownIcon v-else class="size-4" />
-                  {{ salesPerformance >= 0 ? "+" : ""
-                  }}{{ salesPerformance.toFixed(0) }}%
                 </div>
               </div>
             </div>
@@ -193,10 +166,6 @@
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { RouterLink } from "vue-router";
 import { useI18n } from "vue-i18n";
-import {
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-} from "@heroicons/vue/24/outline";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { useRoutersStore } from "@/stores/routers";
@@ -247,7 +216,6 @@ const hotspotLoading = ref(false);
 const hotspotError = ref("");
 
 const salesLedger = ref<SaleEntry[]>([]);
-const prevYearSalesLedger = ref<SaleEntry[]>([]);
 const salesLoading = ref(false);
 
 const N = 46;
@@ -375,16 +343,6 @@ async function loadSales() {
   try {
     const now = new Date();
     salesLedger.value = await getSalesLedger(store.activeId, now.getFullYear());
-    // Comparing this month to last month dips into the previous year's
-    // December only in January — only fetch it then.
-    if (now.getMonth() === 0) {
-      prevYearSalesLedger.value = await getSalesLedger(
-        store.activeId,
-        now.getFullYear() - 1,
-      ).catch(() => []);
-    } else {
-      prevYearSalesLedger.value = [];
-    }
   } catch {
     // non-critical
   } finally {
@@ -452,7 +410,6 @@ watch(
     allUsers.value = [];
     activeList.value = [];
     salesLedger.value = [];
-    prevYearSalesLedger.value = [];
     bwHistory.value = Array.from({ length: N }, () => ({ down: 0, up: 0 }));
     if (!id) return;
     await Promise.all([loadStatic(), loadHotspot(), loadSales()]);
@@ -499,34 +456,6 @@ const monthSales = computed(() => {
 const salesCurrency = computed(
   () => salesLedger.value.find((e) => e.currency)?.currency ?? "",
 );
-
-// Previous calendar month's revenue, for a month-over-month comparison.
-const prevMonthRevenue = computed(() => {
-  const now = new Date();
-  const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-  const prevYear =
-    now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-  let revenue = 0;
-  for (const e of [...salesLedger.value, ...prevYearSalesLedger.value]) {
-    const d = new Date(e.at);
-    if (d.getFullYear() !== prevYear || d.getMonth() !== prevMonth) continue;
-    revenue += (parseFloat(e.price) || 0) * e.count;
-  }
-  return revenue;
-});
-
-// Sales performance: this month's revenue vs. last month's, as a % change —
-// a trend signal, not an absolute figure easily mistaken for revenue itself.
-// null means "no valid baseline" (last month had zero revenue) — the template
-// falls back to showing the plain revenue figure in that case.
-const salesPerformance = computed(() => {
-  if (prevMonthRevenue.value === 0) return null;
-  return (
-    ((monthSales.value.revenue - prevMonthRevenue.value) /
-      prevMonthRevenue.value) *
-    100
-  );
-});
 
 // By-day breakdown for the current month, for the bar chart.
 const dailySalesPoints = computed(() => {
