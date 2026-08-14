@@ -1,5 +1,5 @@
 <template>
-  <PageLayout title="Dashboard" subtitle="Router Overview">
+  <PageLayout :title="t('dashboard.title')" :subtitle="t('dashboard.subtitle')">
     <template v-if="store.activeId" #actions>
       <span class="text-xs font-mono text-text-secondary">
         {{ routerDate || "—" }} {{ routerTime || "" }}
@@ -9,7 +9,7 @@
     <NoRouterSelected v-if="!store.activeId" />
 
     <div v-else class="grid gap-4">
-      <DashboardCard title="Hotspot">
+      <DashboardCard :title="t('dashboard.hotspot')">
         <HotspotSummaryCard
           :loading="hotspotLoading"
           :total-users="totalUsers"
@@ -29,10 +29,10 @@
 
       <div class="grid grid-cols-2 gap-4">
         <!-- Sales report -->
-        <DashboardCard title="Sales this month">
+        <DashboardCard :title="t('dashboard.salesThisMonth')">
           <template #actions>
             <RouterLink to="/hotspot/reports" class="btn btn-ghost">
-              View reports
+              {{ t('dashboard.viewReports') }}
             </RouterLink>
           </template>
 
@@ -44,13 +44,13 @@
           </div>
           <EmptyState
             v-else-if="salesLedger.length === 0"
-            message="No sales recorded yet"
+            :message="t('dashboard.noSalesRecorded')"
           />
           <template v-else>
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 gap-3">
               <div class="rounded-lg border border-border p-3 bg-base">
                 <div class="text-sm font-medium text-text-secondary">
-                  Vouchers generated
+                  {{ t('dashboard.vouchersGenerated') }}
                 </div>
                 <div
                   class="font-mono text-2xl font-bold mt-1 text-text-primary"
@@ -60,37 +60,10 @@
               </div>
               <div class="rounded-lg border border-border p-3 bg-base">
                 <div class="text-sm font-medium text-text-secondary">
-                  Revenue
+                  {{ t('dashboard.revenue') }}
                 </div>
                 <div class="font-mono text-2xl font-bold mt-1">
                   {{ fmtAmount(monthSales.revenue) }}
-                </div>
-              </div>
-              <div
-                class="rounded-lg border border-border p-3 bg-base"
-                title="This month's revenue vs. last month."
-              >
-                <div class="text-sm font-medium text-text-secondary">
-                  Performance
-                </div>
-                <div
-                  v-if="salesPerformance === null"
-                  class="text-sm font-medium mt-1.5 text-text-muted"
-                >
-                  No prior month to compare
-                </div>
-                <div
-                  v-else
-                  class="font-mono text-2xl font-bold mt-1 flex items-center gap-1"
-                  :class="salesPerformance >= 0 ? 'text-green' : 'text-red'"
-                >
-                  <ArrowTrendingUpIcon
-                    v-if="salesPerformance >= 0"
-                    class="size-4"
-                  />
-                  <ArrowTrendingDownIcon v-else class="size-4" />
-                  {{ salesPerformance >= 0 ? "+" : ""
-                  }}{{ salesPerformance.toFixed(0) }}%
                 </div>
               </div>
             </div>
@@ -104,10 +77,10 @@
         </DashboardCard>
 
         <!-- Active sessions -->
-        <DashboardCard title="Active sessions">
+        <DashboardCard :title="t('dashboard.activeSessions')">
           <template #actions>
             <RouterLink to="/hotspot/users?tab=active" class="btn btn-ghost">
-              View all
+              {{ t('dashboard.viewAll') }}
             </RouterLink>
           </template>
 
@@ -117,7 +90,7 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
         <!-- System card -->
-        <DashboardCard title="System">
+        <DashboardCard :title="t('dashboard.system')">
           <SystemHealthCard
             :loading="loading"
             :error="error"
@@ -129,14 +102,14 @@
         </DashboardCard>
 
         <!-- Bandwidth monitor -->
-        <DashboardCard title="Bandwidth" class="lg:col-span-2">
+        <DashboardCard :title="t('dashboard.bandwidth')" class="lg:col-span-2">
           <template #actions>
             <div class="flex items-center gap-1.5">
               <span
                 class="size-2 rounded-sm shrink-0"
                 style="background: #22d3ee"
               />
-              <span class="text-xs text-text-secondary">Download</span>
+              <span class="text-xs text-text-secondary">{{ t('dashboard.download') }}</span>
               <span class="font-mono text-xs font-semibold text-text-primary"
                 >{{ curDown }} Mbps</span
               >
@@ -146,7 +119,7 @@
                 class="size-2 rounded-sm shrink-0"
                 style="background: #f59e0b"
               />
-              <span class="text-xs text-text-secondary">Upload</span>
+              <span class="text-xs text-text-secondary">{{ t('dashboard.upload') }}</span>
               <span class="font-mono text-xs font-semibold text-text-primary"
                 >{{ curUp }} Mbps</span
               >
@@ -161,13 +134,12 @@
 
     <AppDialog
       :open="showDisableCleanupConfirm"
-      title="Turn off auto-cleanup?"
+      :title="t('dashboard.turnOffAutoCleanupTitle')"
       @update:open="showDisableCleanupConfirm = $event"
     >
       <div class="space-y-4">
         <p class="text-sm text-text-secondary">
-          Expired and quota-exhausted vouchers will no longer be removed
-          automatically — they'll accumulate until you delete them manually.
+          {{ t('dashboard.turnOffAutoCleanupBody') }}
         </p>
         <div class="flex justify-end gap-2 pt-1">
           <button
@@ -175,14 +147,14 @@
             class="btn btn-ghost"
             @click="showDisableCleanupConfirm = false"
           >
-            Cancel
+            {{ t('dashboard.cancel') }}
           </button>
           <button
             type="button"
             class="btn btn-danger"
             @click="confirmDisableCleanup"
           >
-            Turn off
+            {{ t('dashboard.turnOff') }}
           </button>
         </div>
       </div>
@@ -193,10 +165,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { RouterLink } from "vue-router";
-import {
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-} from "@heroicons/vue/24/outline";
+import { useI18n } from "vue-i18n";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { useRoutersStore } from "@/stores/routers";
@@ -226,6 +195,7 @@ import SystemHealthCard from "@/components/SystemHealthCard.vue";
 
 const store = useRoutersStore();
 const toast = useToastStore();
+const { t } = useI18n();
 
 // ── State ─────────────────────────────────────────────────────
 const resource = ref<Record<string, string>>({});
@@ -246,7 +216,6 @@ const hotspotLoading = ref(false);
 const hotspotError = ref("");
 
 const salesLedger = ref<SaleEntry[]>([]);
-const prevYearSalesLedger = ref<SaleEntry[]>([]);
 const salesLoading = ref(false);
 
 const N = 46;
@@ -289,11 +258,11 @@ async function applyCleanupToggle(enabled: boolean) {
     cleanupInstalled.value = result.installed;
     if (result.interval) cleanupInterval.value = result.interval;
     toast.success(
-      enabled ? "Auto-cleanup enabled" : "Auto-cleanup disabled",
+      enabled ? t("dashboard.autoCleanupEnabled") : t("dashboard.autoCleanupDisabled"),
     );
   } catch (e: any) {
-    cleanupError.value = friendlyError(e, "Failed to update scheduler");
-    toast.error("Failed to update auto-cleanup", cleanupError.value);
+    cleanupError.value = friendlyError(e, t("dashboard.failedToUpdateScheduler"));
+    toast.error(t("dashboard.failedToUpdateAutoCleanup"), cleanupError.value);
   } finally {
     cleanupToggling.value = false;
   }
@@ -314,12 +283,12 @@ async function saveCleanupInterval(interval: string) {
     cleanupInstalled.value = result.installed;
     if (result.interval) cleanupInterval.value = result.interval;
     toast.success(
-      "Cleanup schedule updated",
-      `Now running every ${result.interval || interval}.`,
+      t("dashboard.cleanupScheduleUpdated"),
+      t("dashboard.cleanupScheduleUpdatedBody", { interval: result.interval || interval }),
     );
   } catch (e: any) {
-    cleanupError.value = friendlyError(e, "Failed to update scheduler");
-    toast.error("Failed to update schedule", cleanupError.value);
+    cleanupError.value = friendlyError(e, t("dashboard.failedToUpdateScheduler"));
+    toast.error(t("dashboard.failedToUpdateSchedule"), cleanupError.value);
   } finally {
     cleanupSaving.value = false;
   }
@@ -341,7 +310,7 @@ async function loadStatic() {
     routerTime.value = clock["time"] ?? "";
     routerDate.value = clock["date"] ?? "";
   } catch (e: any) {
-    error.value = friendlyError(e, "Could not reach router");
+    error.value = friendlyError(e, t("dashboard.couldNotReachRouter"));
   } finally {
     loading.value = false;
   }
@@ -362,7 +331,7 @@ async function loadHotspot() {
     cleanupInstalled.value = cleanup?.installed ?? null;
     cleanupInterval.value = cleanup?.interval ?? "";
   } catch (e: any) {
-    hotspotError.value = friendlyError(e, "Could not load hotspot data");
+    hotspotError.value = friendlyError(e, t("dashboard.couldNotLoadHotspotData"));
   } finally {
     hotspotLoading.value = false;
   }
@@ -374,16 +343,6 @@ async function loadSales() {
   try {
     const now = new Date();
     salesLedger.value = await getSalesLedger(store.activeId, now.getFullYear());
-    // Comparing this month to last month dips into the previous year's
-    // December only in January — only fetch it then.
-    if (now.getMonth() === 0) {
-      prevYearSalesLedger.value = await getSalesLedger(
-        store.activeId,
-        now.getFullYear() - 1,
-      ).catch(() => []);
-    } else {
-      prevYearSalesLedger.value = [];
-    }
   } catch {
     // non-critical
   } finally {
@@ -451,7 +410,6 @@ watch(
     allUsers.value = [];
     activeList.value = [];
     salesLedger.value = [];
-    prevYearSalesLedger.value = [];
     bwHistory.value = Array.from({ length: N }, () => ({ down: 0, up: 0 }));
     if (!id) return;
     await Promise.all([loadStatic(), loadHotspot(), loadSales()]);
@@ -498,34 +456,6 @@ const monthSales = computed(() => {
 const salesCurrency = computed(
   () => salesLedger.value.find((e) => e.currency)?.currency ?? "",
 );
-
-// Previous calendar month's revenue, for a month-over-month comparison.
-const prevMonthRevenue = computed(() => {
-  const now = new Date();
-  const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-  const prevYear =
-    now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-  let revenue = 0;
-  for (const e of [...salesLedger.value, ...prevYearSalesLedger.value]) {
-    const d = new Date(e.at);
-    if (d.getFullYear() !== prevYear || d.getMonth() !== prevMonth) continue;
-    revenue += (parseFloat(e.price) || 0) * e.count;
-  }
-  return revenue;
-});
-
-// Sales performance: this month's revenue vs. last month's, as a % change —
-// a trend signal, not an absolute figure easily mistaken for revenue itself.
-// null means "no valid baseline" (last month had zero revenue) — the template
-// falls back to showing the plain revenue figure in that case.
-const salesPerformance = computed(() => {
-  if (prevMonthRevenue.value === 0) return null;
-  return (
-    ((monthSales.value.revenue - prevMonthRevenue.value) /
-      prevMonthRevenue.value) *
-    100
-  );
-});
 
 // By-day breakdown for the current month, for the bar chart.
 const dailySalesPoints = computed(() => {
