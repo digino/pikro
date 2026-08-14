@@ -31,8 +31,8 @@
       </SwitchRoot>
     </div>
 
-    <div v-if="installed" class="flex items-center justify-end gap-2">
-      <span>Run every</span>
+    <div v-if="installed" class="flex items-center gap-2 pl-9">
+      <span class="text-sm font-medium shrink-0">Run every</span>
       <div class="shrink-0">
         <AppSelect
           :model-value="interval"
