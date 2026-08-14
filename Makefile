@@ -4,6 +4,10 @@ LDFLAGS := -ldflags "-X main.Version=$(VERSION)"
 # -H windowsgui builds the exe as a GUI subsystem app so Windows doesn't pop a
 # console window on double-click. Windows-only — other GOOS ignore -H.
 WIN_LDFLAGS := -ldflags "-X main.Version=$(VERSION) -H windowsgui"
+# Release builds add -s -w (strip debug symbols + DWARF tables) — ~30%
+# smaller binaries, no functional loss for a distributed build.
+RELEASE_LDFLAGS := -ldflags "-s -w -X main.Version=$(VERSION)"
+RELEASE_WIN_LDFLAGS := -ldflags "-s -w -X main.Version=$(VERSION) -H windowsgui"
 RSRC_VERSION := v0.10.2
 
 .PHONY: dev backend build release clean _win_rsrc
@@ -32,18 +36,14 @@ build:
 	@/usr/local/go/bin/go build $(LDFLAGS) -o $(BINARY) .
 	@echo "Done → ./$(BINARY) ($(shell du -sh $(BINARY) | cut -f1))"
 
-# Cross-compile for all platforms
-# NOTE: darwin/amd64 (Intel Mac) is skipped — it needs CGO (systray/Cocoa) and
-# can't be cross-compiled from an arm64 host without a C cross-toolchain
-# (e.g. osxcross) or a native Intel builder. Long-term fix: build each OS/arch
-# natively via a GitHub Actions matrix instead of cross-compiling locally.
+# Cross-compile for macOS (Apple Silicon only) and Windows.
 release: _win_rsrc
 	@echo "Releasing $(VERSION)..."
 	@mkdir -p dist
 	@cd web && npm run build
-	GOOS=darwin  GOARCH=arm64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/.pikro-mac-arm64-bin .
-	GOOS=windows GOARCH=amd64  /usr/local/go/bin/go build $(WIN_LDFLAGS) -o dist/$(BINARY).exe .
-	@$(MAKE) _bundle_app ARCH=arm64 BIN=dist/.pikro-mac-arm64-bin OUT=dist/Pikro-mac-arm64.zip
+	GOOS=darwin  GOARCH=arm64  /usr/local/go/bin/go build $(RELEASE_LDFLAGS) -o dist/.pikro-mac-arm64-bin .
+	GOOS=windows GOARCH=amd64  /usr/local/go/bin/go build $(RELEASE_WIN_LDFLAGS) -o dist/$(BINARY).exe .
+	@$(MAKE) _bundle_app ARCH=arm64 BIN=dist/.pikro-mac-arm64-bin OUT=dist/Pikro-mac-arm64.dmg
 	@rm -f dist/.pikro-mac-arm64-bin rsrc_windows_amd64.syso
 	@echo "Done → dist/ for $(VERSION)"
 
@@ -58,11 +58,14 @@ _win_rsrc:
 		-arch amd64 \
 		-o rsrc_windows_amd64.syso
 
-# Internal: wrap a Darwin binary in a .app bundle and zip it.
-# Usage: make _bundle_app BIN=<binary> OUT=<zip>
+# Internal: wrap a Darwin binary in a .app bundle and package it as a .dmg
+# with a symlink to /Applications, so opening the .dmg gives the standard
+# drag-to-install experience instead of a plain unzip.
+# Usage: make _bundle_app BIN=<binary> OUT=<dmg>
 _bundle_app:
 	@APP=dist/Pikro.app; \
-	 rm -rf "$$APP"; \
+	 STAGE=dist/.dmg-stage; \
+	 rm -rf "$$APP" "$$STAGE" "$(OUT)"; \
 	 mkdir -p "$$APP/Contents/MacOS" "$$APP/Contents/Resources"; \
 	 cp $(BIN) "$$APP/Contents/MacOS/pikro"; \
 	 chmod +x "$$APP/Contents/MacOS/pikro"; \
@@ -80,8 +83,12 @@ _bundle_app:
   <key>LSMinimumSystemVersion</key><string>11.0</string>\n\
   <key>LSUIElement</key><true/>\n\
 </dict></plist>\n' > "$$APP/Contents/Info.plist"; \
-	 cd dist && zip -r ../$(OUT) Pikro.app --quiet; \
-	 rm -rf "$$APP"
+	 codesign --force --deep --sign - "$$APP"; \
+	 mkdir -p "$$STAGE"; \
+	 cp -R "$$APP" "$$STAGE/"; \
+	 ln -s /Applications "$$STAGE/Applications"; \
+	 hdiutil create -volname "Pikro" -srcfolder "$$STAGE" -ov -format UDZO "$(OUT)" -quiet; \
+	 rm -rf "$$APP" "$$STAGE"
 
 clean:
 	rm -f $(BINARY)

@@ -32,8 +32,8 @@
     </div>
 
     <div v-if="installed" class="flex items-center gap-2 pl-9">
-      <span class="text-sm text-text-secondary shrink-0">Run every</span>
-      <div class="w-52 shrink-0">
+      <span class="text-sm font-medium shrink-0">Run every</span>
+      <div class="shrink-0">
         <AppSelect
           :model-value="interval"
           :options="INTERVAL_OPTIONS"
