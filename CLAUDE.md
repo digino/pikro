@@ -63,8 +63,8 @@ you touch matching files — keeping this file lean. See:
 make dev        # Go backend (:8080) + Vite dev server (:5173) together
 make backend    # Go backend only
 make build      # Vue build -> Go binary with version from git tag
-make release    # Cross-compile 3 binaries into ./dist/
+make release    # Cross-compile 2 binaries into ./dist/
 make clean      # Remove binary, dist/, web/dist/
 ```
 
-Release binaries: `pikro-mac-arm64`, `pikro-mac-intel`, `pikro.exe`.
+Release binaries: `pikro-mac-arm64`, `pikro.exe`.
