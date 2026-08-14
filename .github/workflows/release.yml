@@ -40,7 +40,9 @@ jobs:
           VERSION="v${{ github.event.inputs.version }}"
           mkdir -p dist
           # systray uses cgo (Objective-C) on macOS — CGO must stay enabled.
-          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=${VERSION}" -o dist/.pikro-mac-arm64-bin .
+          # -s -w strips debug symbols/DWARF tables — ~30% smaller binary,
+          # no functional loss for a distributed build.
+          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X main.Version=${VERSION}" -o dist/.pikro-mac-arm64-bin .
           # _bundle_app also ad-hoc-signs the .app (no paid Apple Developer ID
           # yet, so identity "-": locally generated, not tied to any Apple
           # account). Satisfies Apple Silicon's requirement that binaries be
@@ -94,7 +96,9 @@ jobs:
         run: |
           VERSION="v${{ github.event.inputs.version }}"
           mkdir -p dist
-          GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION} -H windowsgui" -o dist/pikro.exe .
+          # -s -w strips debug symbols/DWARF tables — ~30% smaller binary,
+          # no functional loss for a distributed build.
+          GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.Version=${VERSION} -H windowsgui" -o dist/pikro.exe .
 
       - uses: actions/upload-artifact@v4
         with:
