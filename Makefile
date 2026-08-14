@@ -4,6 +4,10 @@ LDFLAGS := -ldflags "-X main.Version=$(VERSION)"
 # -H windowsgui builds the exe as a GUI subsystem app so Windows doesn't pop a
 # console window on double-click. Windows-only — other GOOS ignore -H.
 WIN_LDFLAGS := -ldflags "-X main.Version=$(VERSION) -H windowsgui"
+# Release builds add -s -w (strip debug symbols + DWARF tables) — ~30%
+# smaller binaries, no functional loss for a distributed build.
+RELEASE_LDFLAGS := -ldflags "-s -w -X main.Version=$(VERSION)"
+RELEASE_WIN_LDFLAGS := -ldflags "-s -w -X main.Version=$(VERSION) -H windowsgui"
 RSRC_VERSION := v0.10.2
 
 .PHONY: dev backend build release clean _win_rsrc
@@ -37,8 +41,8 @@ release: _win_rsrc
 	@echo "Releasing $(VERSION)..."
 	@mkdir -p dist
 	@cd web && npm run build
-	GOOS=darwin  GOARCH=arm64  /usr/local/go/bin/go build $(LDFLAGS) -o dist/.pikro-mac-arm64-bin .
-	GOOS=windows GOARCH=amd64  /usr/local/go/bin/go build $(WIN_LDFLAGS) -o dist/$(BINARY).exe .
+	GOOS=darwin  GOARCH=arm64  /usr/local/go/bin/go build $(RELEASE_LDFLAGS) -o dist/.pikro-mac-arm64-bin .
+	GOOS=windows GOARCH=amd64  /usr/local/go/bin/go build $(RELEASE_WIN_LDFLAGS) -o dist/$(BINARY).exe .
 	@$(MAKE) _bundle_app ARCH=arm64 BIN=dist/.pikro-mac-arm64-bin OUT=dist/Pikro-mac-arm64.dmg
 	@rm -f dist/.pikro-mac-arm64-bin rsrc_windows_amd64.syso
 	@echo "Done → dist/ for $(VERSION)"
