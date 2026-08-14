@@ -1,6 +1,7 @@
 import { CLASSIC_TEMPLATE } from "./classic";
 import { MODERN_TEMPLATE } from "./modern";
 import { BUSINESS_TEMPLATE } from "./business";
+import { VOUCHER_PRINT_TEMPLATE } from "./voucher";
 import type { VoucherTemplate } from "./types";
 
 export * from "./types";
@@ -9,6 +10,7 @@ export const VOUCHER_TEMPLATES: VoucherTemplate[] = [
   CLASSIC_TEMPLATE,
   MODERN_TEMPLATE,
   BUSINESS_TEMPLATE,
+  VOUCHER_PRINT_TEMPLATE,
 ];
 
 export function getVoucherTemplate(key: VoucherTemplate["key"]): VoucherTemplate {

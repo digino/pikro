@@ -30,7 +30,7 @@ export interface VoucherTemplateOptions {
 }
 
 export interface VoucherTemplate {
-  key: "classic" | "modern" | "business";
+  key: "classic" | "modern" | "business" | "voucher";
   label: string;
   description: string;
   /** Renders the full printable HTML document for a batch of vouchers. */

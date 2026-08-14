@@ -37,6 +37,10 @@
             </div>
           </button>
         </div>
+        <p v-if="loginPage.template === 'voucher'" class="text-xs text-text-muted">
+          Requires vouchers generated with password set to "Same as username" —
+          otherwise the single code won't log customers in.
+        </p>
       </div>
 
       <div class="border-t border-border pt-4 space-y-4">
@@ -89,9 +93,9 @@ import {
   type LoginPageSettings,
 } from '@/api'
 import {
-  MINIMAL_TEMPLATE, WAVE_TEMPLATE, CARD_TEMPLATE,
+  MINIMAL_TEMPLATE, VOUCHER_TEMPLATE, CARD_TEMPLATE,
   MINIMAL_LOGOUT_TEMPLATE, MINIMAL_STATUS_TEMPLATE, MINIMAL_REDIRECT_TEMPLATE,
-  WAVE_LOGOUT_TEMPLATE, WAVE_STATUS_TEMPLATE, WAVE_REDIRECT_TEMPLATE,
+  VOUCHER_LOGOUT_TEMPLATE, VOUCHER_STATUS_TEMPLATE, VOUCHER_REDIRECT_TEMPLATE,
   CARD_LOGOUT_TEMPLATE, CARD_STATUS_TEMPLATE, CARD_REDIRECT_TEMPLATE,
 } from './loginPageTemplates'
 
@@ -116,7 +120,7 @@ const liveHTML = ref('')
 
 const TEMPLATE_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
   minimal: MINIMAL_TEMPLATE,
-  wave: WAVE_TEMPLATE,
+  voucher: VOUCHER_TEMPLATE,
   card: CARD_TEMPLATE,
 }
 
@@ -126,23 +130,23 @@ const TEMPLATE_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string
 // are never customized, handled entirely on the Go side).
 const LOGOUT_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
   minimal: MINIMAL_LOGOUT_TEMPLATE,
-  wave: WAVE_LOGOUT_TEMPLATE,
+  voucher: VOUCHER_LOGOUT_TEMPLATE,
   card: CARD_LOGOUT_TEMPLATE,
 }
 const STATUS_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
   minimal: MINIMAL_STATUS_TEMPLATE,
-  wave: WAVE_STATUS_TEMPLATE,
+  voucher: VOUCHER_STATUS_TEMPLATE,
   card: CARD_STATUS_TEMPLATE,
 }
 const REDIRECT_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
   minimal: MINIMAL_REDIRECT_TEMPLATE,
-  wave: WAVE_REDIRECT_TEMPLATE,
+  voucher: VOUCHER_REDIRECT_TEMPLATE,
   card: CARD_REDIRECT_TEMPLATE,
 }
 
 const templates: { key: LoginPageSettings['template']; icon: string; label: string; description: string }[] = [
   { key: 'minimal', icon: '◈', label: 'Minimal', description: 'Flat gray background, light card — sharp and focused' },
-  { key: 'wave',    icon: '〜', label: 'Wave',    description: 'Light rounded card with a decorative wave accent' },
+  { key: 'voucher', icon: '〜', label: 'Voucher', description: 'One code field — customers type a single voucher code to connect' },
   { key: 'card',    icon: '▭', label: 'Card',    description: 'Classic centered card — traditional login form look' },
 ]
 

@@ -62,7 +62,7 @@ export interface ProfileMeta {
 export interface LoginPageSettings {
   title?: string
   subtitle?: string
-  template?: 'minimal' | 'wave' | 'card'
+  template?: 'minimal' | 'voucher' | 'card'
 }
 
 export interface HotspotSettings {
