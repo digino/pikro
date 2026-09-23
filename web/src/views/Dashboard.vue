@@ -329,7 +329,7 @@ async function loadHotspot() {
     allUsers.value = users;
     activeList.value = active;
     cleanupInstalled.value = cleanup?.installed ?? null;
-    cleanupInterval.value = cleanup?.interval ?? "";
+    if (cleanup?.interval) cleanupInterval.value = cleanup.interval;
   } catch (e: any) {
     hotspotError.value = friendlyError(e, t("dashboard.couldNotLoadHotspotData"));
   } finally {
