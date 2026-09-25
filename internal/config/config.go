@@ -17,7 +17,7 @@ type ProfileMeta struct {
 type LoginPageSettings struct {
 	Title    string `json:"title,omitempty"`
 	Subtitle string `json:"subtitle,omitempty"`
-	Template string `json:"template,omitempty"` // "minimal" | "wave" | "card"
+	Template string `json:"template,omitempty"` // "minimal" | "voucher" | "card"
 }
 
 type HotspotSettings struct {

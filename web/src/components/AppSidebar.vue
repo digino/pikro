@@ -19,7 +19,7 @@
           class="flex items-center gap-1.5 w-full p-2 text-sm font-medium bg-surface border border-border rounded-lg text-text-primary cursor-pointer transition-colors hover:bg-muted hover:border-muted focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1"
         >
           <SelectValue
-            placeholder="No router selected"
+            :placeholder="t('sidebar.noRouterSelected')"
             class="flex-1 truncate text-left"
           />
           <ChevronDownIcon class="size-4 text-text-secondary shrink-0" />
@@ -35,7 +35,7 @@
                 v-if="store.routers.length === 0"
                 class="px-3 py-2 text-sm text-text-muted"
               >
-                No routers configured
+                {{ t('sidebar.noRoutersConfigured') }}
               </div>
               <SelectItem
                 v-for="r in store.routers"
@@ -60,7 +60,7 @@
         <div v-if="i > 0" class="h-px bg-border mx-1 my-2" />
         <div>
           <div class="px-2 pb-2 text-sm font-medium text-text-secondary">
-            {{ section.label }}
+            {{ t(section.label) }}
           </div>
           <div class="flex flex-col gap-px">
             <RouterLink
@@ -75,7 +75,7 @@
               "
             >
               <component :is="item.icon" class="size-5 shrink-0" />
-              <span>{{ item.label }}</span>
+              <span>{{ t(item.label) }}</span>
             </RouterLink>
           </div>
         </div>
@@ -89,19 +89,29 @@
       class="px-4 py-3 border-t border-border flex items-center justify-between"
     >
       <span class="text-xs text-text-muted font-mono">{{ appVersion }}</span>
-      <button
-        type="button"
-        class="size-7 flex items-center justify-center rounded-md text-text-muted hover:text-text-primary hover:bg-surface transition-colors"
-        :title="
-          themeStore.theme === 'dark'
-            ? 'Switch to light mode'
-            : 'Switch to dark mode'
-        "
-        @click="themeStore.toggle()"
-      >
-        <SunIcon v-if="themeStore.theme === 'dark'" class="size-4" />
-        <MoonIcon v-else class="size-4" />
-      </button>
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          class="h-7 px-2 flex items-center justify-center rounded-md text-xs font-semibold text-text-muted hover:text-text-primary hover:bg-surface transition-colors"
+          :title="t('sidebar.language')"
+          @click="toggleLocale"
+        >
+          {{ localeStore.locale === 'en' ? 'FR' : 'EN' }}
+        </button>
+        <button
+          type="button"
+          class="size-7 flex items-center justify-center rounded-md text-text-muted hover:text-text-primary hover:bg-surface transition-colors"
+          :title="
+            themeStore.theme === 'dark'
+              ? t('sidebar.switchToLight')
+              : t('sidebar.switchToDark')
+          "
+          @click="themeStore.toggle()"
+        >
+          <SunIcon v-if="themeStore.theme === 'dark'" class="size-4" />
+          <MoonIcon v-else class="size-4" />
+        </button>
+      </div>
     </div>
   </aside>
 </template>
@@ -138,16 +148,24 @@ import {
   SunIcon,
   MoonIcon,
 } from "@heroicons/vue/24/outline";
+import { useI18n } from "vue-i18n";
 import { useRoutersStore } from "@/stores/routers";
 import { useThemeStore } from "@/stores/theme";
+import { useLocaleStore } from "@/stores/locale";
 
+const { t } = useI18n();
 const themeStore = useThemeStore();
+const localeStore = useLocaleStore();
 
 defineProps<{ appVersion: string }>();
 
 const store = useRoutersStore();
 const route = useRoute();
 const router = useRouter();
+
+function toggleLocale() {
+  localeStore.set(localeStore.locale === "en" ? "fr" : "en");
+}
 
 function isActive(to: string) {
   return route.path === to || route.path.startsWith(to + "/");
@@ -166,34 +184,34 @@ interface NavSection {
 
 const navSections: NavSection[] = [
   {
-    label: "General",
+    label: "nav.general",
     items: [
-      { to: "/dashboard", icon: Squares2X2Icon, label: "Dashboard" },
-      { to: "/routers", icon: CircleStackIcon, label: "Routers" },
+      { to: "/dashboard", icon: Squares2X2Icon, label: "nav.dashboard" },
+      { to: "/routers", icon: CircleStackIcon, label: "nav.routers" },
     ],
   },
   {
-    label: "Hotspot",
+    label: "nav.hotspot",
     items: [
-      { to: "/hotspot/users", icon: UsersIcon, label: "Users" },
-      { to: "/hotspot/profiles", icon: RectangleGroupIcon, label: "Profiles" },
-      { to: "/hotspot/vouchers", icon: TicketIcon, label: "Vouchers" },
-      { to: "/hotspot/reports", icon: ChartBarIcon, label: "Reports" },
-      { to: "/hotspot/settings", icon: Cog6ToothIcon, label: "Settings" },
-      { to: "/hotspot/logs", icon: ClipboardDocumentListIcon, label: "Logs" },
+      { to: "/hotspot/users", icon: UsersIcon, label: "nav.users" },
+      { to: "/hotspot/profiles", icon: RectangleGroupIcon, label: "nav.profiles" },
+      { to: "/hotspot/vouchers", icon: TicketIcon, label: "nav.vouchers" },
+      { to: "/hotspot/reports", icon: ChartBarIcon, label: "nav.reports" },
+      { to: "/hotspot/settings", icon: Cog6ToothIcon, label: "nav.settings" },
+      { to: "/hotspot/logs", icon: ClipboardDocumentListIcon, label: "nav.logs" },
     ],
   },
   {
-    label: "Network",
+    label: "nav.network",
     items: [
-      { to: "/network/monitor", icon: SignalIcon, label: "Monitor" },
-      { to: "/network/hosts", icon: ComputerDesktopIcon, label: "Hosts" },
-      { to: "/network/dhcp", icon: ServerStackIcon, label: "DHCP" },
+      { to: "/network/monitor", icon: SignalIcon, label: "nav.monitor" },
+      { to: "/network/hosts", icon: ComputerDesktopIcon, label: "nav.hosts" },
+      { to: "/network/dhcp", icon: ServerStackIcon, label: "nav.dhcp" },
     ],
   },
   {
-    label: "Tools",
-    items: [{ to: "/speedtest", icon: BoltIcon, label: "Speed Test" }],
+    label: "nav.tools",
+    items: [{ to: "/speedtest", icon: BoltIcon, label: "nav.speedTest" }],
   },
 ];
 

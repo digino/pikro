@@ -95,11 +95,38 @@ export const MINIMAL_TEMPLATE = [
   '<\/html>',
 ].join('\n')
 
-// ── Template: Wave ───────────────────────────────────────────────────────────
+// ── Template: Voucher ────────────────────────────────────────────────────────
 // Light card centered on a soft background, decorative wavy accent line under
-// the heading.
+// the heading. A single "voucher code" field fills both the hidden username
+// and password fields on submit, so customers only ever type one code —
+// requires vouchers to be generated with matching name/password ("same" mode).
 
-export const WAVE_TEMPLATE = [
+const VOUCHER_LOGIN_SCRIPT = [
+  '<script>',
+  'function doVoucherLogin(){',
+  '  var code=document.login.code.value;',
+  '  document.sendin.username.value=code;',
+  '  document.sendin.password.value=$(if chap-id)hexMD5(\'$(chap-id)\'+code+\'$(chap-challenge)\')$(else)code$(endif);',
+  '  document.sendin.submit();',
+  '  return false;',
+  '}',
+  '<\/script>',
+].join('\n')
+
+const VOUCHER_HIDDEN_FORM = [
+  '<form name="sendin" action="$(link-login-only)" method="post" style="display:none">',
+  '  <input type="hidden" name="username" />',
+  '  <input type="hidden" name="password" />',
+  '  <input type="hidden" name="dst" value="$(link-orig)" />',
+  '  <input type="hidden" name="popup" value="true" />',
+  '<\/form>',
+  '$(if chap-id)',
+  CHAP_SCRIPT,
+  '$(endif)',
+  VOUCHER_LOGIN_SCRIPT,
+].join('\n')
+
+export const VOUCHER_TEMPLATE = [
   '<!DOCTYPE html>',
   '<html lang="en">',
   '<head>',
@@ -122,12 +149,13 @@ export const WAVE_TEMPLATE = [
   '.sub { font-size: .8rem; color: #9ca3af; text-align: center; margin: .75rem 0; }',
   '.field { margin-bottom: 1rem; }',
   '.field label { display: block; font-size: .7rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #9ca3af; margin-bottom: .35rem; }',
-  'input[type="text"], input[type="password"] {',
+  'input[type="text"] {',
   '  width: 100%; padding: .7rem 1rem; font-size: .9rem; font-family: inherit;',
   '  background: #f9fafb; border: 1.5px solid #eef0f2; border-radius: 12px;',
   '  color: #111827; outline: none; transition: border-color .15s, background .15s; -webkit-appearance: none;',
+  '  text-align: center; letter-spacing: .08em; text-transform: uppercase;',
   '}',
-  'input[type="text"]:focus, input[type="password"]:focus { border-color: #ffbf00; background: #fff; }',
+  'input[type="text"]:focus { border-color: #ffbf00; background: #fff; }',
   '.err { font-size: .75rem; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: .6rem .875rem; margin-bottom: 1rem; text-align: center; }',
   'button[type="submit"] {',
   '  width: 100%; margin-top: .5rem; padding: .8rem 1rem;',
@@ -140,7 +168,7 @@ export const WAVE_TEMPLATE = [
   '<\/style>',
   '<\/head>',
   '<body>',
-  CHAP_HIDDEN_FORM,
+  VOUCHER_HIDDEN_FORM,
   '<div class="card">',
   '  <h1>__TITLE__<\/h1>',
   '  <svg class="wave" width="72" height="10" viewBox="0 0 72 10" fill="none">',
@@ -148,11 +176,8 @@ export const WAVE_TEMPLATE = [
   '  <\/svg>',
   '  <p class="sub">__SUBTITLE__<\/p>',
   '  $(if error)<p class="err">$(error)<\/p>$(endif)',
-  '  <form name="login" action="$(link-login-only)" method="post" $(if chap-id)onsubmit="return doLogin()"$(endif)>',
-  '    <input type="hidden" name="dst" value="$(link-orig)" />',
-  '    <input type="hidden" name="popup" value="true" />',
-  '    <div class="field"><label for="u">Username<\/label><input id="u" type="text" name="username" value="$(username)" placeholder="Enter username" autocomplete="username" /><\/div>',
-  '    <div class="field"><label for="p">Password<\/label><input id="p" type="password" name="password" placeholder="Enter password" autocomplete="current-password" /><\/div>',
+  '  <form name="login" onsubmit="return doVoucherLogin()">',
+  '    <div class="field"><label for="c">Voucher code<\/label><input id="c" type="text" name="code" placeholder="Enter your code" autocomplete="off" autocapitalize="characters" /><\/div>',
   '    <button type="submit">Connect &rarr;<\/button>',
   '  <\/form>',
   '  <p class="footer">Powered by Pikro<\/p>',
@@ -315,10 +340,10 @@ export const MINIMAL_REDIRECT_TEMPLATE = [
   '<\/html>',
 ].join('\n')
 
-// ── Wave: logout / status / redirect ──────────────────────────────────────────
-// Reuses the Wave login template's soft violet background + rounded card.
+// ── Voucher: logout / status / redirect ───────────────────────────────────────
+// Reuses the Voucher login template's soft violet background + rounded card.
 
-export const WAVE_LOGOUT_TEMPLATE = [
+export const VOUCHER_LOGOUT_TEMPLATE = [
   '<!DOCTYPE html>',
   '<html lang="en">',
   '<head>',
@@ -364,7 +389,7 @@ export const WAVE_LOGOUT_TEMPLATE = [
   '<\/html>',
 ].join('\n')
 
-export const WAVE_STATUS_TEMPLATE = [
+export const VOUCHER_STATUS_TEMPLATE = [
   '<!DOCTYPE html>',
   '<html lang="en">',
   '<head>',
@@ -432,7 +457,7 @@ export const WAVE_STATUS_TEMPLATE = [
   '<\/html>',
 ].join('\n')
 
-export const WAVE_REDIRECT_TEMPLATE = [
+export const VOUCHER_REDIRECT_TEMPLATE = [
   '<!DOCTYPE html>',
   '<html lang="en">',
   '<head>',
