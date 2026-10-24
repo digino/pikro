@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Logs</title>
+  <defs><filter id="logs-ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter></defs>
+  <g filter="url(#logs-ink)">
+    <rect x="30" y="19" width="76" height="98" rx="6" fill="#111111"/>
+    <rect x="26" y="14" width="76" height="98" rx="6" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <rect x="39" y="8" width="6" height="16" rx="3" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <rect x="55" y="8" width="6" height="16" rx="3" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <rect x="71" y="8" width="6" height="16" rx="3" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <rect x="87" y="8" width="6" height="16" rx="3" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <rect x="34" y="59" width="52" height="11" rx="2" fill="#FFBF00"/>
+    <path d="M38 40h50M38 52h50M38 64h40M38 76h46M38 88h28" stroke="#111111" stroke-width="2.25"/>
+  </g>
+</svg>

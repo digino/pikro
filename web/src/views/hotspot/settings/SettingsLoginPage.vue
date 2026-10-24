@@ -60,7 +60,7 @@
       <p v-if="saved" class="text-xs text-green">Uploaded to router.</p>
 
       <div class="flex flex-col gap-2 pt-1">
-        <button type="button" class="btn btn-primary" :disabled="uploading" @click="upload">
+        <button type="button" class="btn btn-ink" :disabled="uploading" @click="upload">
           <span v-if="uploading" class="size-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
           Upload to router
         </button>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Dashboard</title>
+  <defs><filter id="dashboard-ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter></defs>
+  <g filter="url(#dashboard-ink)">
+    <circle cx="69" cy="70" r="46" fill="#111111"/>
+    <circle cx="64" cy="66" r="46" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <path d="M30 66h6M34.6 49l5.2 3M47 36.6l3 5.2M64 32v6M81 36.6l-3 5.2M93.4 49l-5.2 3M98 66h-6" stroke="#111111" stroke-width="3"/>
+    <path d="M64 66 83.3 43" stroke="#111111" stroke-width="4.5"/>
+    <circle cx="64" cy="66" r="5.5" fill="#111111"/>
+    <rect x="48" y="84" width="32" height="12" rx="4" fill="#FFBF00" stroke="#111111" stroke-width="2.25"/>
+    <path d="M26 48a42 42 0 0 1 10-14" stroke="#111111" stroke-width="2.25"/>
+  </g>
+</svg>

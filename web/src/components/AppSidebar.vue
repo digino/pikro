@@ -1,34 +1,71 @@
 <template>
   <aside
-    class="w-64 min-w-55 h-screen bg-sidebar border-r border-border flex flex-col sticky top-0 overflow-y-auto"
+    class="w-64 min-w-55 h-screen bg-sidebar text-sidebar-text border-r-2 border-ink flex flex-col gap-5.5 px-4 py-5.5 sticky top-0 overflow-y-auto"
   >
     <!-- Logo -->
-    <div class="flex items-center gap-2 px-4 pt-4 pb-3.5">
-      <span class="text-lg font-bold tracking-tight text-text-primary"
-        >pikro</span
+    <RouterLink to="/dashboard" class="flex items-center gap-2.5 px-1.5 no-underline text-sidebar-text">
+      <span
+        class="type-display inline-flex items-center justify-center size-10 shrink-0 rounded-control border-2 border-sidebar-text bg-primary text-primary-fg text-2xl leading-none"
+        aria-hidden="true"
+        >p</span
       >
-    </div>
+      <span class="type-display text-2xl leading-none">pikro</span>
+      <span
+        class="ml-auto max-w-20 truncate rounded-full border-[1.5px] border-sidebar-text px-2 py-0.5 text-xs font-semibold"
+        :title="appVersion"
+        >{{ appVersion }}</span
+      >
+    </RouterLink>
 
-    <!-- Router selector -->
-    <div class="px-3 pb-3">
+    <!-- Nav sections -->
+    <nav :aria-label="t('sidebar.mainNav')" class="flex flex-col gap-5.5">
+      <div v-for="section in navSections" :key="section.label" class="flex flex-col gap-0.5">
+        <div class="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-widest text-sidebar-muted">
+          {{ t(section.label) }}
+        </div>
+        <RouterLink
+          v-for="item in section.items"
+          :key="item.to"
+          :to="item.to"
+          class="flex items-center gap-3 min-h-11 px-2.5 py-1.25 rounded-control border-2 text-sm no-underline transition-colors"
+          :class="
+            isActive(item.to)
+              ? 'bg-primary text-primary-fg font-bold border-sidebar-text shadow-[3px_3px_0_var(--color-sidebar-text)]'
+              : 'font-medium text-sidebar-text border-transparent hover:bg-white/8'
+          "
+        >
+          <img :src="inkIcon(item.icon)" alt="" width="30" height="30" class="shrink-0" />
+          <span>{{ t(item.label) }}</span>
+        </RouterLink>
+      </div>
+    </nav>
+
+    <!-- Router switcher, language and theme -->
+    <div class="mt-auto flex flex-col gap-2.5">
       <SelectRoot
         :model-value="store.activeId ?? ''"
         @update:model-value="onSelectRouter"
       >
         <SelectTrigger
-          class="flex items-center gap-1.5 w-full p-2 text-sm font-medium bg-surface border border-border rounded-lg text-text-primary cursor-pointer transition-colors hover:bg-muted hover:border-muted focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1"
+          :aria-label="t('sidebar.switchRouter')"
+          class="flex items-center gap-2.5 w-full p-3 text-left rounded-2xl border-[1.5px] border-sidebar-line text-sidebar-text cursor-pointer transition-colors hover:bg-white/8 focus-visible:outline-3 focus-visible:outline-primary focus-visible:outline-offset-2"
         >
-          <SelectValue
-            :placeholder="t('sidebar.noRouterSelected')"
-            class="flex-1 truncate text-left"
-          />
-          <ChevronDownIcon class="size-4 text-text-secondary shrink-0" />
+          <span class="flex flex-col gap-0.5 min-w-0 flex-1">
+            <span class="truncate text-sm font-semibold">
+              {{ activeRouter?.name ?? t('sidebar.noRouterSelected') }}
+            </span>
+            <span v-if="activeRouter" class="truncate font-mono text-xs text-sidebar-muted">
+              {{ activeRouter.host }}
+            </span>
+          </span>
+          <ChevronUpDownIcon class="size-4 shrink-0 text-sidebar-muted" />
         </SelectTrigger>
         <SelectPortal>
           <SelectContent
-            class="z-50 min-w-48 bg-surface border border-border rounded-lg shadow-xl overflow-hidden"
+            class="z-50 min-w-56 bg-paper text-ink border-2 border-ink rounded-control shadow-btn overflow-hidden"
             position="popper"
-            :side-offset="3"
+            side="top"
+            :side-offset="6"
           >
             <SelectViewport class="p-1">
               <div
@@ -41,66 +78,38 @@
                 v-for="r in store.routers"
                 :key="r.id"
                 :value="r.id"
-                class="flex items-center justify-between p-2 text-sm rounded-md cursor-pointer text-text-secondary transition-colors hover:bg-muted hover:text-text-primary data-highlighted:bg-muted data-highlighted:text-text-primary data-[state=checked]:text-text-primary data-[state=checked]:font-medium"
+                class="flex items-center justify-between gap-3 min-h-11 px-3 text-sm rounded-lg cursor-pointer outline-none data-highlighted:bg-primary-wash data-[state=checked]:font-semibold"
               >
                 <SelectItemText>{{ r.name }}</SelectItemText>
                 <SelectItemIndicator>
-                  <CheckCircleIcon class="size-4 text-green" />
+                  <CheckIcon class="size-4" />
                 </SelectItemIndicator>
               </SelectItem>
             </SelectViewport>
           </SelectContent>
         </SelectPortal>
       </SelectRoot>
-    </div>
 
-    <!-- Nav sections -->
-    <nav class="flex flex-col px-2">
-      <template v-for="(section, i) in navSections" :key="section.label">
-        <div v-if="i > 0" class="h-px bg-border mx-1 my-2" />
-        <div>
-          <div class="px-2 pb-2 text-sm font-medium text-text-secondary">
-            {{ t(section.label) }}
-          </div>
-          <div class="flex flex-col gap-px">
-            <RouterLink
-              v-for="item in section.items"
-              :key="item.to"
-              :to="item.to"
-              class="flex items-center font-semibold gap-2 p-1.75 rounded-lg transition-colors"
-              :class="
-                isActive(item.to)
-                  ? 'bg-base text-text-primary'
-                  : 'text-text-secondary hover:bg-base hover:text-text-primary'
-              "
-            >
-              <component :is="item.icon" class="size-5 shrink-0" />
-              <span>{{ t(item.label) }}</span>
-            </RouterLink>
-          </div>
-        </div>
-      </template>
-    </nav>
-
-    <div class="flex-1" />
-
-    <!-- Footer -->
-    <div
-      class="px-4 py-3 border-t border-border flex items-center justify-between"
-    >
-      <span class="text-xs text-text-muted font-mono">{{ appVersion }}</span>
-      <div class="flex items-center gap-1">
+      <div class="flex gap-2">
         <button
           type="button"
-          class="h-7 px-2 flex items-center justify-center rounded-md text-xs font-semibold text-text-muted hover:text-text-primary hover:bg-surface transition-colors"
+          class="flex-1 h-11 rounded-control border-[1.5px] border-sidebar-line text-xs font-semibold text-sidebar-muted cursor-pointer hover:bg-white/8 transition-colors"
+          :aria-label="t('sidebar.language')"
           :title="t('sidebar.language')"
           @click="toggleLocale"
         >
-          {{ localeStore.locale === 'en' ? 'FR' : 'EN' }}
+          <span :class="{ 'text-sidebar-text': localeStore.locale === 'en' }">EN</span>
+          ·
+          <span :class="{ 'text-sidebar-text': localeStore.locale === 'fr' }">FR</span>
         </button>
         <button
           type="button"
-          class="size-7 flex items-center justify-center rounded-md text-text-muted hover:text-text-primary hover:bg-surface transition-colors"
+          class="w-11 h-11 inline-flex items-center justify-center rounded-control border-[1.5px] border-sidebar-line text-sidebar-text cursor-pointer hover:bg-white/8 transition-colors"
+          :aria-label="
+            themeStore.theme === 'dark'
+              ? t('sidebar.switchToLight')
+              : t('sidebar.switchToDark')
+          "
           :title="
             themeStore.theme === 'dark'
               ? t('sidebar.switchToLight')
@@ -108,8 +117,8 @@
           "
           @click="themeStore.toggle()"
         >
-          <SunIcon v-if="themeStore.theme === 'dark'" class="size-4" />
-          <MoonIcon v-else class="size-4" />
+          <SunIcon v-if="themeStore.theme === 'dark'" class="size-4.5" />
+          <MoonIcon v-else class="size-4.5" />
         </button>
       </div>
     </div>
@@ -118,7 +127,7 @@
 
 <script setup lang="ts">
 import { useRoute, useRouter } from "vue-router";
-import { type FunctionalComponent } from "vue";
+import { computed } from "vue";
 import {
   SelectRoot,
   SelectTrigger,
@@ -131,20 +140,8 @@ import {
   SelectItemIndicator,
 } from "reka-ui";
 import {
-  ChevronDownIcon,
-  CheckCircleIcon,
-  Squares2X2Icon,
-  CircleStackIcon,
-  SignalIcon,
-  ComputerDesktopIcon,
-  ServerStackIcon,
-  BoltIcon,
-  UsersIcon,
-  TicketIcon,
-  RectangleGroupIcon,
-  Cog6ToothIcon,
-  ClipboardDocumentListIcon,
-  ChartBarIcon,
+  ChevronUpDownIcon,
+  CheckIcon,
   SunIcon,
   MoonIcon,
 } from "@heroicons/vue/24/outline";
@@ -152,6 +149,7 @@ import { useI18n } from "vue-i18n";
 import { useRoutersStore } from "@/stores/routers";
 import { useThemeStore } from "@/stores/theme";
 import { useLocaleStore } from "@/stores/locale";
+import { inkIcon, type InkIcon } from "@/utils/inkIcons";
 
 const { t } = useI18n();
 const themeStore = useThemeStore();
@@ -163,6 +161,8 @@ const store = useRoutersStore();
 const route = useRoute();
 const router = useRouter();
 
+const activeRouter = computed(() => store.active());
+
 function toggleLocale() {
   localeStore.set(localeStore.locale === "en" ? "fr" : "en");
 }
@@ -173,7 +173,7 @@ function isActive(to: string) {
 
 interface NavItem {
   to: string;
-  icon: FunctionalComponent;
+  icon: InkIcon;
   label: string;
 }
 
@@ -186,32 +186,32 @@ const navSections: NavSection[] = [
   {
     label: "nav.general",
     items: [
-      { to: "/dashboard", icon: Squares2X2Icon, label: "nav.dashboard" },
-      { to: "/routers", icon: CircleStackIcon, label: "nav.routers" },
+      { to: "/dashboard", icon: "dashboard", label: "nav.dashboard" },
+      { to: "/routers", icon: "routers", label: "nav.routers" },
     ],
   },
   {
     label: "nav.hotspot",
     items: [
-      { to: "/hotspot/users", icon: UsersIcon, label: "nav.users" },
-      { to: "/hotspot/profiles", icon: RectangleGroupIcon, label: "nav.profiles" },
-      { to: "/hotspot/vouchers", icon: TicketIcon, label: "nav.vouchers" },
-      { to: "/hotspot/reports", icon: ChartBarIcon, label: "nav.reports" },
-      { to: "/hotspot/settings", icon: Cog6ToothIcon, label: "nav.settings" },
-      { to: "/hotspot/logs", icon: ClipboardDocumentListIcon, label: "nav.logs" },
+      { to: "/hotspot/users", icon: "users", label: "nav.users" },
+      { to: "/hotspot/vouchers", icon: "vouchers", label: "nav.vouchers" },
+      { to: "/hotspot/profiles", icon: "profiles", label: "nav.profiles" },
+      { to: "/hotspot/reports", icon: "reports", label: "nav.reports" },
+      { to: "/hotspot/logs", icon: "logs", label: "nav.logs" },
+      { to: "/hotspot/settings", icon: "settings", label: "nav.settings" },
     ],
   },
   {
     label: "nav.network",
     items: [
-      { to: "/network/monitor", icon: SignalIcon, label: "nav.monitor" },
-      { to: "/network/hosts", icon: ComputerDesktopIcon, label: "nav.hosts" },
-      { to: "/network/dhcp", icon: ServerStackIcon, label: "nav.dhcp" },
+      { to: "/network/monitor", icon: "monitor", label: "nav.monitor" },
+      { to: "/network/hosts", icon: "hosts", label: "nav.hosts" },
+      { to: "/network/dhcp", icon: "dhcp", label: "nav.dhcp" },
     ],
   },
   {
     label: "nav.tools",
-    items: [{ to: "/speedtest", icon: BoltIcon, label: "nav.speedTest" }],
+    items: [{ to: "/speedtest", icon: "speed-test", label: "nav.speedTest" }],
   },
 ];
 

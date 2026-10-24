@@ -9,7 +9,18 @@ paths:
 - API calls in `web/src/api/index.ts` — typed interfaces, axios at `/api`.
 - State in Pinia stores under `web/src/stores/`.
 - UI primitives from Reka UI + Tailwind CSS v4 utilities.
-- Icons from `@heroicons/vue/24/outline` — always the outline variant.
+- Icons: two sets with distinct jobs.
+  - Ink icons (`web/src/assets/icons/ink/`, via `inkIcon()` in `utils/inkIcons.ts`) for
+    navigation, page headers and empty states. They are multicolour, so render them as
+    `<img alt="">`, never inline (each SVG carries its own filter id). New ones: the
+    `icon-forge` skill, preset `ink`, accent `#FFBF00`.
+  - `@heroicons/vue/24/outline` for small UI glyphs (chevron, search, close) — always
+    the outline variant.
+- Ink & Amber styling lives in `style.css`: use the `card`, `chip`, `btn`, `eyebrow` and
+  `type-display` utilities and the palette tokens (`ink`, `paper`, `ground`, `hairline`,
+  `graphite`, `primary`, `primary-wash`, `online`, `danger`, ...). `btn-primary` (amber)
+  is for the ONE main action per screen; use `btn-ink` or plain `btn` for the rest.
+  Every token has a `[data-theme="dark"]` value, so never hard-code hex colours.
 - Raw RouterOS responses typed as `Record<string, string>` — no other `any`.
 - Use `<script setup lang="ts">`; leverage defineProps, defineEmits, defineModel and
   other macros for type-safe component APIs.

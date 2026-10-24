@@ -22,7 +22,9 @@
     "noRoutersConfigured": "Aucun routeur configuré",
     "switchToLight": "Passer en mode clair",
     "switchToDark": "Passer en mode sombre",
-    "language": "Langue"
+    "language": "Langue",
+    "mainNav": "Principal",
+    "switchRouter": "Changer de routeur"
   },
   "dashboard": {
     "title": "Tableau de bord",

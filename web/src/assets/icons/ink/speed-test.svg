@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Speed test</title>
+  <defs><filter id="speed-test-ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter></defs>
+  <g filter="url(#speed-test-ink)">
+    <path d="M70 10 30 70H60L52 118 98 54H68L78 10z" transform="translate(4 5)" fill="#111111" stroke="#111111" stroke-width="3"/>
+    <path d="M70 10 30 70H60L52 118 98 54H68L78 10z" fill="#FFBF00" stroke="#111111" stroke-width="3"/>
+    <path d="M66 22 46 56" stroke="#FFFFFF" stroke-width="2.25"/>
+    <path d="M22 40l-8-4M18 54h-9M106 76l8 4M110 92l8 5" stroke="#111111" stroke-width="3"/>
+  </g>
+</svg>

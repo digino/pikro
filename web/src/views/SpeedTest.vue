@@ -35,7 +35,7 @@
             Larger file = more accurate on fast connections
           </p>
         </div>
-        <button class="btn btn-primary" :disabled="running" @click="run">
+        <button class="btn btn-ink" :disabled="running" @click="run">
           <span
             v-if="running"
             class="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin"

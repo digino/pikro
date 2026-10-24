@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Reports</title>
+  <defs><filter id="reports-ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter></defs>
+  <g filter="url(#reports-ink)">
+    <rect x="26" y="21" width="72" height="96" rx="6" fill="#111111"/>
+    <rect x="22" y="16" width="72" height="96" rx="6" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <path d="M34 28h30M34 36h18" stroke="#111111" stroke-width="2.25"/>
+    <rect x="34" y="72" width="11" height="26" rx="2" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <rect x="51" y="58" width="11" height="40" rx="2" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <rect x="68" y="44" width="11" height="54" rx="2" fill="#FFBF00" stroke="#111111" stroke-width="3"/>
+    <path d="M30 100h56" stroke="#111111" stroke-width="3"/>
+    <circle cx="99" cy="97" r="19" fill="#111111"/>
+    <circle cx="95" cy="92" r="19" fill="#FFBF00" stroke="#111111" stroke-width="3"/>
+    <circle cx="95" cy="92" r="12" stroke="#111111" stroke-width="2.25"/>
+    <path d="M95 86v12" stroke="#111111" stroke-width="3"/>
+  </g>
+</svg>

@@ -37,7 +37,7 @@
         <PrinterIcon class="size-4" />
         {{ selected.size > 0 ? `Print ${selected.size} selected` : "Print" }}
       </button>
-      <button class="btn btn-primary" @click="openAdd">
+      <button class="btn btn-ink" @click="openAdd">
         <PlusIcon class="size-4" />
         New user
       </button>
@@ -336,12 +336,12 @@
                 of {{ filteredUsers.length }}</span
               >
               <PaginationPrev
-                class="btn btn-sm btn-primary disabled:opacity-30"
+                class="btn btn-sm btn-ink disabled:opacity-30"
               >
                 <ChevronLeftIcon class="size-4" />
               </PaginationPrev>
               <PaginationNext
-                class="btn btn-sm btn-primary disabled:opacity-30"
+                class="btn btn-sm btn-ink disabled:opacity-30"
               >
                 <ChevronRightIcon class="size-4" />
               </PaginationNext>
@@ -629,7 +629,7 @@
           </button>
           <button
             type="submit"
-            class="btn btn-primary"
+            class="btn btn-ink"
             :disabled="adding || (!!form.limitUptimeRaw && !formUptimePreview)"
           >
             <span
@@ -735,7 +735,7 @@
           </button>
           <button
             type="submit"
-            class="btn btn-primary"
+            class="btn btn-ink"
             :disabled="editing || (!!editForm.limitUptimeRaw && !editUptimePreview)"
           >
             <span

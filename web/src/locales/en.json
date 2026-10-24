@@ -22,7 +22,9 @@
     "noRoutersConfigured": "No routers configured",
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode",
-    "language": "Language"
+    "language": "Language",
+    "mainNav": "Main",
+    "switchRouter": "Switch router"
   },
   "dashboard": {
     "title": "Dashboard",

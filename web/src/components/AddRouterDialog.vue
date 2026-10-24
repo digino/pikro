@@ -95,13 +95,13 @@
         <button
           v-if="step === 1"
           type="button"
-          class="btn btn-primary"
+          class="btn btn-ink"
           :disabled="!form.host || !form.username || !form.name"
           @click="step = 2"
         >
           Next
         </button>
-        <button v-else type="submit" class="btn btn-primary" :disabled="loading">
+        <button v-else type="submit" class="btn btn-ink" :disabled="loading">
           <span v-if="loading" class="spinner spinner--sm" />
           Add router
         </button>

@@ -318,7 +318,7 @@
     <button
       v-if="step < 4"
       type="button"
-      class="btn btn-primary"
+      class="btn btn-ink"
       :disabled="!step1Valid"
       @click="step++"
     >
@@ -327,7 +327,7 @@
     <button
       v-else
       type="button"
-      class="btn btn-primary"
+      class="btn btn-ink"
       :disabled="!!form.limitUptimeRaw && !uptimePreview"
       @click="emit('submit', { ...form, uptimePreview })"
     >

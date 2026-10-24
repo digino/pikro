@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Hosts</title>
+  <defs><filter id="hosts-ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter></defs>
+  <g filter="url(#hosts-ink)">
+    <rect x="28" y="29" width="80" height="58" rx="6" fill="#111111"/>
+    <rect x="24" y="24" width="80" height="60" rx="6" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <rect x="32" y="32" width="64" height="44" rx="3" fill="#FFBF00" stroke="#111111" stroke-width="2.25"/>
+    <path d="M38 44l6-8M38 54l12-16" stroke="#FFFFFF" stroke-width="2.25"/>
+    <path d="M12 86H116l-6 12q-2 3-5 3H23q-3 0-5-3z" transform="translate(3 4)" fill="#111111" stroke="#111111" stroke-width="3"/>
+    <path d="M12 86H116l-6 12q-2 3-5 3H23q-3 0-5-3z" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <path d="M54 86v3h20v-3" stroke="#111111" stroke-width="2.25"/>
+  </g>
+</svg>

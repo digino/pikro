@@ -47,7 +47,7 @@
       </RouterLink>
       <RouterLink
         to="/hotspot/users"
-        class="btn btn-primary flex-1 justify-center"
+        class="btn btn-ink flex-1 justify-center"
       >
         <UserPlusIcon class="size-5" />
         Add user

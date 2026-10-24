@@ -8,7 +8,7 @@
         />
         {{ scanning ? "Scanning…" : "Scan network" }}
       </button>
-      <button class="btn btn-primary" @click="showAdd = true">
+      <button class="btn btn-ink" @click="showAdd = true">
         <PlusIcon class="size-3.5" />
         Add router
       </button>
@@ -221,7 +221,7 @@
             :class="
               store.activeId === r.id
                 ? 'border-transparent opacity-40 cursor-default bg-transparent text-text-muted'
-                : 'btn-primary'
+                : 'btn-ink'
             "
             :disabled="store.activeId === r.id"
             @click="selectRouter(r.id)"

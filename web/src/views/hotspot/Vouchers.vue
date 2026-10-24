@@ -1,7 +1,7 @@
 <template>
   <PageLayout title="Hotspot" subtitle="Vouchers">
     <template #actions>
-      <button class="btn btn-primary" @click="openBatch()">
+      <button class="btn btn-ink" @click="openBatch()">
         <TicketIcon class="size-3.5" />
         Generate vouchers
       </button>
@@ -78,7 +78,7 @@
         <p class="text-sm text-text-muted mt-1">
           Create a profile first to define pricing and validity for vouchers.
         </p>
-        <RouterLink to="/hotspot/profiles" class="btn btn-primary btn-sm mt-4">
+        <RouterLink to="/hotspot/profiles" class="btn btn-ink btn-sm mt-4">
           <PlusIcon class="size-3.5" />
           New profile
         </RouterLink>
@@ -129,7 +129,7 @@
           </button>
           <button
             type="button"
-            class="btn btn-primary"
+            class="btn btn-ink"
             @click="openPrintResults"
           >
             <PrinterIcon class="size-4" /> Print

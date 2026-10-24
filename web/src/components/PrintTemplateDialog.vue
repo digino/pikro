@@ -53,7 +53,7 @@
       <button type="button" class="btn btn-ghost" @click="emit('update:open', false)">
         Cancel
       </button>
-      <button type="button" class="btn btn-primary" :disabled="printing" @click="handlePrint">
+      <button type="button" class="btn btn-ink" :disabled="printing" @click="handlePrint">
         <span v-if="printing" class="size-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
         <PrinterIcon v-else class="size-4" /> Print
       </button>

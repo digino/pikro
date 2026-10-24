@@ -1,53 +1,106 @@
 @import "tailwindcss";
 
+/* ── Display font — Archivo (OFL, see assets/fonts/Archivo-OFL.txt) ──
+   Self-hosted variable woff2 (700–800, standard width) so Pikro works
+   fully offline. Subsets: latin + latin-ext (French). */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 700 800;
+  font-display: swap;
+  src: url('./assets/fonts/archivo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 700 800;
+  font-display: swap;
+  src: url('./assets/fonts/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @theme {
+  /* ── Type ─────────────────────────────────────────────── */
+  --font-sans:    system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  --font-display: 'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
   /* ── Brand primary — golden amber ────────────────────── */
   --color-primary:       #ffbf00;
   --color-primary-hover: #e6ac00;
   --color-primary-fg:    #1a1000;
+  --color-primary-wash:  #fff4cc;
 
-  /* ── Dark palette (default) ───────────────────────────── */
-  --color-base:      #09090b;
-  --color-sidebar:   #0c0c0e;
-  --color-surface:   #111113;
-  --color-border:    #27272a;
-  --color-muted:     #3f3f46;
+  /* ── Ink & Amber palette (light, default) ─────────────── */
+  --color-ink:           #111111;
+  --color-paper:         #ffffff;
+  --color-ground:        #f2f2ef;
+  --color-graphite:      #5c5a55;
+  --color-graphite-deep: #3b3a36;
+  --color-hairline:      #e2e0da;
+  --color-shadow:        #111111;
+  --color-online:        #157f3b;
+  --color-online-wash:   #ddf5e5;
+  --color-danger:        #b42318;
+  --color-danger-wash:   #fde8e6;
+  --color-danger-text:   #8a1c12;
+
+  /* ── Sidebar — ink in both themes ─────────────────────── */
+  --color-sidebar:       #111111;
+  --color-sidebar-text:  #f2f2ef;
+  --color-sidebar-muted: #a8a6a0;
+  --color-sidebar-line:  #3a3936;
+
+  /* ── Semantic aliases used across the existing screens ── */
+  --color-base:      var(--color-ground);
+  --color-surface:   var(--color-paper);
+  --color-border:    var(--color-hairline);
+  --color-muted:     var(--color-hairline);
 
   /* ── Text ─────────────────────────────────────────────── */
-  --color-text-primary:   #fafafa;
-  --color-text-secondary: #a1a1aa;
-  --color-text-muted:     #52525b;
+  --color-text-primary:   var(--color-ink);
+  --color-text-secondary: var(--color-graphite-deep);
+  --color-text-muted:     var(--color-graphite);
 
-  /* ── Accent — white/black (shadcn style) ─────────────── */
-  --color-accent:         #fafafa;
-  --color-accent-dim:     rgba(255,255,255,0.08);
-  --color-accent-hover:   #e4e4e7;
+  /* ── Accent — ink ─────────────────────────────────────── */
+  --color-accent:         var(--color-ink);
+  --color-accent-dim:     rgba(17,17,17,0.06);
+  --color-accent-hover:   var(--color-graphite-deep);
 
   /* ── Status ───────────────────────────────────────────── */
-  --color-green:  #4cc38a;
-  --color-red:    #e5484d;
-  --color-amber:  #f59e0b;
+  --color-green:  var(--color-online);
+  --color-red:    var(--color-danger);
+  --color-amber:  #d97706;
+
+  /* ── Shape ────────────────────────────────────────────── */
+  --radius-card:    18px;
+  --radius-control: 12px;
+  --shadow-card:    5px 5px 0 var(--color-shadow);
+  --shadow-btn:     3px 3px 0 var(--color-shadow);
 }
 
-/* ── Light theme overrides ────────────────────────────────── */
-[data-theme="light"] {
-  --color-base:      #f4f4f5;
-  --color-sidebar:   #e4e4e7;
-  --color-surface:   #ffffff;
-  --color-border:    #d4d4d8;
-  --color-muted:     #e4e4e7;
+/* ── Dark theme overrides ─────────────────────────────────── */
+[data-theme="dark"] {
+  --color-primary-wash:  #3d3100;
 
-  --color-text-primary:   #09090b;
-  --color-text-secondary: #52525b;
-  --color-text-muted:     #a1a1aa;
+  --color-ink:           #f2f2ef;
+  --color-paper:         #1c1b19;
+  --color-ground:        #111111;
+  --color-graphite:      #c9c6be;
+  --color-graphite-deep: #dedbd3;
+  --color-hairline:      #3a3936;
+  --color-shadow:        #ffbf00;
+  --color-online:        #3ddc84;
+  --color-online-wash:   #12301f;
+  --color-danger-wash:   #3a1512;
+  --color-danger-text:   #ffb4ab;
 
-  --color-accent:         #09090b;
-  --color-accent-dim:     rgba(0,0,0,0.06);
-  --color-accent-hover:   #27272a;
+  --color-accent-dim:     rgba(255,255,255,0.08);
 
-  --color-green:  #16a34a;
-  --color-red:    #dc2626;
-  --color-amber:  #d97706;
+  /* danger stays #b42318 as a button fill; red text needs a lighter shade on dark */
+  --color-red:    #ff8a80;
+  --color-amber:  #f59e0b;
 }
 
 /* ── Base resets ──────────────────────────────────────────── */
@@ -58,7 +111,7 @@ html, body, #app {
   margin: 0;
   background: var(--color-base);
   color: var(--color-text-primary);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
@@ -67,34 +120,99 @@ html, body, #app {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-graphite); }
 
 /* ── Selection ────────────────────────────────────────────── */
-::selection { background: #ffbf0040; color: var(--color-text-primary); }
-[data-theme="light"] ::selection { background: #ffbf0060; }
+::selection { background: #ffbf0060; color: var(--color-text-primary); }
+[data-theme="dark"] ::selection { background: #ffbf0040; }
+
+/* ── Type ─────────────────────────────────────────────────── */
+@utility type-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+@utility eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-graphite);
+}
+
+/* ── Cards & chips ────────────────────────────────────────── */
+@utility card {
+  background: var(--color-paper);
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+@utility chip {
+  @apply inline-flex items-center gap-1.5 whitespace-nowrap;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  border: 1.5px solid var(--color-ink);
+  border-radius: 999px;
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
 
 /* ── Buttons ──────────────────────────────────────────────── */
 @utility btn {
-  @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border
-         cursor-pointer transition-colors whitespace-nowrap no-underline
+  @apply inline-flex items-center justify-center gap-2 px-4 text-sm font-semibold border-2
+         cursor-pointer whitespace-nowrap no-underline
          disabled:opacity-40 disabled:cursor-not-allowed;
+  min-height: 44px;
+  border-color: var(--color-ink);
+  border-radius: var(--radius-control);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-btn);
+  transition: transform 0.12s, box-shadow 0.12s;
+
+  &:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--color-shadow);
+  }
+  &:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--color-shadow);
+  }
+  &:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+  }
 }
 @utility btn-sm {
-  @apply px-2.5 py-1 text-xs gap-1;
+  @apply px-3 gap-1.5;
+  min-height: 36px;
+  font-size: 13px;
+  box-shadow: 2px 2px 0 var(--color-shadow);
 }
+/* Amber — the ONE main action on a screen. */
 @utility btn-primary {
-  @apply border-transparent bg-accent hover:bg-accent-hover;
-  color: var(--color-base);
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
 }
+@utility btn-ink {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+/* The default paper button; kept as the name existing screens use. */
 @utility btn-ghost {
-  @apply border-border text-text-secondary bg-transparent
-         hover:text-text-primary hover:bg-surface;
+  background: var(--color-paper);
 }
 @utility btn-danger {
-  @apply border-transparent text-white bg-red hover:bg-[#c93d42];
+  background: var(--color-danger);
+  color: #ffffff;
 }
 @utility btn-warning {
-  @apply border-transparent text-white bg-amber hover:bg-[#d97706];
+  background: var(--color-amber);
+  color: var(--color-ink);
 }
 
 /* ── Join: fuse adjacent controls into one visual group ──────
@@ -127,27 +245,29 @@ html, body, #app {
 /* ── Shared form inputs ───────────────────────────────────── */
 .input {
   width: 100%;
+  min-height: 44px;
   padding: 8px 12px;
-  font-size: 13px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-base);
+  font-size: 14px;
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-control);
+  background: var(--color-paper);
   color: var(--color-text-primary);
   transition: outline 0.1s;
-  outline: 2px solid transparent;
+  outline: 3px solid transparent;
   outline-offset: 1px;
 }
 .input:focus { outline-color: var(--color-primary); }
 .input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .input-select {
+  min-height: 44px;
   padding: 8px 12px;
-  font-size: 13px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-base);
-  color: var(--color-text-secondary);
-  outline: 2px solid transparent;
+  font-size: 14px;
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-control);
+  background: var(--color-paper);
+  color: var(--color-text-primary);
+  outline: 3px solid transparent;
   outline-offset: 1px;
   transition: outline 0.1s;
 }
@@ -156,7 +276,7 @@ html, body, #app {
 .input-bare {
   padding: 8px 12px;
   font-size: 14px;
-  background: var(--color-base);
+  background: var(--color-paper);
   color: var(--color-text-primary);
   outline: none;
 }

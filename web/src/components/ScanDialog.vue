@@ -6,7 +6,7 @@
         <p class="text-xs text-text-muted">
           Broadcasts an MNDP request to find MikroTik devices on this subnet.
         </p>
-        <button class="btn btn-primary btn-sm shrink-0 ml-4" :disabled="scanning" @click="scan">
+        <button class="btn btn-ink btn-sm shrink-0 ml-4" :disabled="scanning" @click="scan">
           <ArrowPathIcon class="size-3.5" :class="{ 'animate-spin': scanning }" />
           {{ scanning ? 'Scanning…' : 'Scan' }}
         </button>

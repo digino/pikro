@@ -3,7 +3,7 @@
     <template #actions>
       <button
         v-if="store.activeId && !loading && !error"
-        class="btn btn-primary"
+        class="btn btn-ink"
         @click="openCreate"
       >
         <PlusIcon class="size-3.5" />
@@ -96,7 +96,7 @@
       <p class="text-sm text-text-muted mt-1">
         Create your first profile to define bandwidth and pricing tiers.
       </p>
-      <button class="btn btn-primary btn-sm mt-4" @click="openCreate">
+      <button class="btn btn-ink btn-sm mt-4" @click="openCreate">
         <PlusIcon class="size-3.5" />
         New profile
       </button>
@@ -242,7 +242,7 @@
             </button>
             <button
               type="submit"
-              class="btn btn-primary"
+              class="btn btn-ink"
               :disabled="
                 submitting ||
                 (!!validityRaw && !validityPreview) ||
