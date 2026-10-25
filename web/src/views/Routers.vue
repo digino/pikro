@@ -242,6 +242,7 @@ import {
   type DiscoveredDevice,
   type RouterProfile,
 } from "@/api";
+import { scanErrorMessage } from "@/utils/errors";
 import AddRouterDialog from "@/components/AddRouterDialog.vue";
 import EditRouterDialog from "@/components/EditRouterDialog.vue";
 import { inkIcon } from "@/utils/inkIcons";
@@ -283,8 +284,7 @@ async function scan() {
     discovered.value = await discoverRouters();
     scanned.value = true;
   } catch (e: any) {
-    scanError.value =
-      e?.response?.data?.error ?? "Scan failed — check network/firewall";
+    scanError.value = scanErrorMessage(e);
   } finally {
     scanning.value = false;
   }

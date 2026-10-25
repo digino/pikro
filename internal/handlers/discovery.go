@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -12,6 +14,16 @@ func DiscoverRouters(w http.ResponseWriter, r *http.Request) {
 	log.Println("[discovery] scan started")
 
 	devices, err := discovery.Scan(3 * time.Second)
+	if errors.Is(err, discovery.ErrLocalNetworkDenied) {
+		log.Printf("[discovery] scan error: %v", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "discovery failed: " + err.Error(),
+			"code":  "local_network_denied",
+		})
+		return
+	}
 	if err != nil {
 		log.Printf("[discovery] scan error: %v", err)
 		jsonError(w, "discovery failed: "+err.Error(), http.StatusInternalServerError)

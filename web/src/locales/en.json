@@ -292,5 +292,9 @@
       "label": "Voucher",
       "description": "One code with a QR code, for the Voucher login page."
     }
+  },
+  "scan": {
+    "failed": "Scan failed — check network/firewall",
+    "localNetworkDenied": "macOS is blocking Pikro from your local network. Open System Settings > Privacy & Security > Local Network, turn on the app that runs Pikro (Pikro, Terminal or your code editor), restart that app, then scan again."
   }
 }

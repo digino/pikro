@@ -2,11 +2,21 @@ package discovery
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"time"
 )
+
+// ErrLocalNetworkDenied means the OS refused to let Pikro talk to the local
+// network. On macOS 15+ this is the per-app Local Network privacy permission:
+// sends to LAN addresses fail with EHOSTUNREACH until the user allows the app
+// that launched Pikro (Terminal, a code editor, or Pikro itself).
+var ErrLocalNetworkDenied = errors.New("local network access denied by the operating system")
+
+// mndpProbe is an empty MNDP request; every MikroTik that hears it replies.
+var mndpProbe = []byte{0x00, 0x00, 0x00, 0x00}
 
 type Device struct {
 	IP       string `json:"ip"`
@@ -113,7 +123,7 @@ func collectResponses(conn net.PacketConn, timeout time.Duration) []Device {
 // 255.255.255.255 (limited broadcast), which fails with EHOSTUNREACH on macOS
 // and some Linux setups because the kernel finds no matching route.
 func sendBroadcast(conn net.PacketConn) error {
-	probe := []byte{0x00, 0x00, 0x00, 0x00}
+	probe := mndpProbe
 	sent := false
 	var lastErr error
 

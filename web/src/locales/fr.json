@@ -292,5 +292,9 @@
       "label": "Ticket",
       "description": "Un seul code avec QR code, pour la page de connexion Ticket."
     }
+  },
+  "scan": {
+    "failed": "Échec de la recherche — vérifiez le réseau ou le pare-feu",
+    "localNetworkDenied": "macOS empêche Pikro d'accéder à votre réseau local. Ouvrez Réglages Système > Confidentialité et sécurité > Réseau local, activez l'application qui exécute Pikro (Pikro, Terminal ou votre éditeur de code), redémarrez-la, puis relancez la recherche."
   }
 }
