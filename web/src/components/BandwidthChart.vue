@@ -16,6 +16,7 @@ import {
   type ChartData,
   type ChartOptions,
 } from 'chart.js'
+import { useThemeStore } from '@/stores/theme'
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip)
 
@@ -27,44 +28,50 @@ function cssVar(name: string) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
-// Fixed semantic colors — match the legend dots in the bandwidth card header.
-const DOWN_COLOR = '#22d3ee' // cyan-400: download
-const UP_COLOR   = '#f59e0b' // amber-400: upload
+// Download = ink line over an amber area, upload = dashed ink line — the
+// legend chips in the card header follow the same encoding.
+const AMBER_AREA = '#ffbf008c'
 
+const themeStore = useThemeStore()
 const N = computed(() => props.history.length)
 
-const chartData = computed<ChartData<'line'>>(() => ({
-  labels: Array.from({ length: N.value }, (_, i) => {
-    const secondsAgo = (N.value - 1 - i) * 3
-    if (secondsAgo === 0) return 'now'
-    if (secondsAgo % 15 === 0) return `${secondsAgo}s`
-    return ''
-  }),
-  datasets: [
-    {
-      label: 'Download',
-      data: props.history.map(p => p.down),
-      borderColor: DOWN_COLOR,
-      backgroundColor: `${DOWN_COLOR}20`,
-      borderWidth: 2,
-      pointRadius: 0,
-      fill: true,
-      tension: 0.4,
-    },
-    {
-      label: 'Upload',
-      data: props.history.map(p => p.up),
-      borderColor: UP_COLOR,
-      backgroundColor: `${UP_COLOR}15`,
-      borderWidth: 2,
-      pointRadius: 0,
-      fill: true,
-      tension: 0.4,
-    },
-  ],
-}))
+const chartData = computed<ChartData<'line'>>(() => {
+  void themeStore.theme // re-read the CSS colours when the theme flips
+  const ink = cssVar('--color-ink')
+  return {
+    labels: Array.from({ length: N.value }, (_, i) => {
+      const secondsAgo = (N.value - 1 - i) * 3
+      if (secondsAgo === 0) return 'now'
+      if (secondsAgo % 15 === 0) return `${secondsAgo}s`
+      return ''
+    }),
+    datasets: [
+      {
+        label: 'Download',
+        data: props.history.map(p => p.down),
+        borderColor: ink,
+        backgroundColor: AMBER_AREA,
+        borderWidth: 3,
+        pointRadius: 0,
+        fill: true,
+        tension: 0.4,
+      },
+      {
+        label: 'Upload',
+        data: props.history.map(p => p.up),
+        borderColor: ink,
+        borderWidth: 2,
+        borderDash: [6, 5],
+        pointRadius: 0,
+        fill: false,
+        tension: 0.4,
+      },
+    ],
+  }
+})
 
 const chartOptions = computed<ChartOptions<'line'>>(() => {
+  void themeStore.theme
   const allVals = props.history.flatMap(p => [p.down, p.up])
   const peak = Math.max(...allVals, 0.01)
   const exp  = Math.pow(10, Math.floor(Math.log10(peak)))
@@ -96,7 +103,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
     },
     scales: {
       x: {
-        grid: { color: `color-mix(in srgb, ${border} 60%, transparent)`, drawTicks: false },
+        grid: { display: false },
         border: { display: false },
         ticks: {
           color: textMuted,

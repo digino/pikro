@@ -8,12 +8,12 @@
           <div class="flex items-center gap-4 mb-4">
             <span class="font-semibold text-text-primary">Bandwidth</span>
             <div class="flex items-center gap-1.5">
-              <span class="size-2 rounded-sm shrink-0" style="background:#22d3ee"/>
+              <span class="size-2.5 rounded-sm shrink-0 bg-primary border border-ink"/>
               <span class="text-xs text-text-secondary">Download</span>
               <span class="font-mono text-xs font-semibold text-text-primary">{{ curDown }} Mbps</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="size-2 rounded-sm shrink-0" style="background:#f59e0b"/>
+              <span class="w-3 shrink-0 border-t-2 border-dashed border-ink"/>
               <span class="text-xs text-text-secondary">Upload</span>
               <span class="font-mono text-xs font-semibold text-text-primary">{{ curUp }} Mbps</span>
             </div>

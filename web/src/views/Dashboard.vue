@@ -1,136 +1,198 @@
 <template>
-  <PageLayout :title="t('dashboard.title')" :subtitle="t('dashboard.subtitle')">
-    <template v-if="store.activeId" #actions>
-      <span class="text-xs font-mono text-text-secondary">
-        {{ routerDate || "—" }} {{ routerTime || "" }}
-      </span>
-    </template>
+  <div v-if="!store.activeId" class="p-6">
+    <NoRouterSelected />
+  </div>
 
-    <NoRouterSelected v-if="!store.activeId" />
+  <main v-else class="flex flex-col gap-8 px-4 sm:px-6 lg:px-10 pt-7 pb-14">
+    <!-- Router header -->
+    <header class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-3.5">
+        <img :src="inkIcon('routers')" alt="" width="56" height="56" />
+        <div>
+          <div class="eyebrow">{{ t('dashboard.connectedRouter') }}</div>
+          <div class="flex items-center gap-2.5 mt-1.5">
+            <span class="type-display text-2xl">{{ store.active()?.name }}</span>
+            <span v-if="error" class="chip bg-danger-wash text-danger-text border-danger-text">
+              <span class="size-2 rotate-45 bg-danger" />{{ t('dashboard.unreachable') }}
+            </span>
+            <span v-else-if="isOnline" class="chip bg-online-wash">
+              <span class="size-2 rounded-full bg-online" />{{ t('dashboard.online') }}
+            </span>
+          </div>
+          <div class="font-mono text-xs text-text-muted mt-1">{{ routerMeta }}</div>
+        </div>
+        <RouterLink to="/routers" class="btn btn-sm">
+          {{ t('dashboard.switchRouter') }}
+          <ChevronDownIcon class="size-4" />
+        </RouterLink>
+      </div>
+      <RouterLink to="/hotspot/vouchers" class="btn btn-primary">
+        <img :src="inkIcon('vouchers')" alt="" width="28" height="28" class="-ml-1" />
+        {{ t('dashboard.generateVouchers') }}
+      </RouterLink>
+    </header>
 
-    <div v-else class="grid gap-4">
-      <DashboardCard :title="t('dashboard.hotspot')">
-        <HotspotSummaryCard
-          :loading="hotspotLoading"
-          :total-users="totalUsers"
-          :active-sessions="activeSessions"
-          :disabled-users="disabledUsers"
-        />
-        <AutoCleanupCard
-          :installed="cleanupInstalled"
-          :interval="cleanupInterval"
-          :toggling="cleanupToggling"
-          :saving="cleanupSaving"
-          :error="cleanupError"
-          @toggle="toggleCleanup"
-          @update:interval="saveCleanupInterval"
-        />
-      </DashboardCard>
-
-      <div class="grid grid-cols-2 gap-4">
-        <!-- Sales report -->
-        <DashboardCard :title="t('dashboard.salesThisMonth')">
-          <template #actions>
-            <RouterLink to="/hotspot/reports" class="btn btn-ghost">
-              {{ t('dashboard.viewReports') }}
-            </RouterLink>
-          </template>
-
-          <div
-            v-if="salesLoading && salesLedger.length === 0"
-            class="flex items-center justify-center py-4"
+    <!-- Hero -->
+    <section class="flex flex-wrap items-end justify-between gap-5">
+      <i18n-t
+        keypath="dashboard.heroTitle"
+        tag="h1"
+        class="type-display m-0 text-[clamp(28px,3vw,40px)] leading-tight"
+      >
+        <template #highlight>
+          <span
+            class="inline-block px-3 bg-primary text-primary-fg border-2 border-ink rounded-2xl shadow-btn -rotate-2"
+            >{{ t('dashboard.heroHighlight') }}</span
           >
-            <span class="spinner spinner--sm" />
+        </template>
+      </i18n-t>
+      <p class="m-0 max-w-85 text-[15px] leading-normal text-text-muted">
+        {{ t('dashboard.onlineNow', activeSessions) }}
+        <template v-if="cleanupInstalled">{{ t('dashboard.cleanupKeepsTidy') }}</template>
+      </p>
+    </section>
+
+    <section class="flex flex-wrap gap-6">
+      <!-- Sales this month — on amber, contents use primary-fg so they stay dark in both themes -->
+      <div class="card flex-[2_1_520px] min-w-0 p-7 flex flex-col gap-5.5 bg-primary text-primary-fg">
+        <div class="flex justify-between items-start gap-4">
+          <div>
+            <div class="eyebrow text-primary-fg">{{ t('dashboard.salesThisMonth') }}</div>
+            <div class="type-display mt-3 text-[clamp(44px,6vw,72px)] leading-none">
+              {{ fmtNumber(monthSales.revenue) }}
+              <span class="text-2xl">{{ salesCurrency }}</span>
+            </div>
           </div>
-          <EmptyState
-            v-else-if="salesLedger.length === 0"
-            :message="t('dashboard.noSalesRecorded')"
-          />
-          <template v-else>
-            <div class="grid grid-cols-2 gap-3">
-              <div class="rounded-lg border border-border p-3 bg-base">
-                <div class="text-sm font-medium text-text-secondary">
-                  {{ t('dashboard.vouchersGenerated') }}
-                </div>
-                <div
-                  class="font-mono text-2xl font-bold mt-1 text-text-primary"
-                >
-                  {{ monthSales.generated }}
-                </div>
-              </div>
-              <div class="rounded-lg border border-border p-3 bg-base">
-                <div class="text-sm font-medium text-text-secondary">
-                  {{ t('dashboard.revenue') }}
-                </div>
-                <div class="font-mono text-2xl font-bold mt-1">
-                  {{ fmtAmount(monthSales.revenue) }}
-                </div>
-              </div>
-            </div>
-            <div class="h-40">
-              <SalesBarChart
-                :points="dailySalesPoints"
-                :currency="salesCurrency"
-              />
-            </div>
-          </template>
-        </DashboardCard>
+          <img :src="inkIcon('reports')" alt="" width="104" height="104" class="shrink-0 max-sm:hidden" />
+        </div>
 
-        <!-- Active sessions -->
-        <DashboardCard :title="t('dashboard.activeSessions')">
-          <template #actions>
-            <RouterLink to="/hotspot/users?tab=active" class="btn btn-ghost">
-              {{ t('dashboard.viewAll') }}
-            </RouterLink>
-          </template>
+        <div v-if="salesLoading && salesLedger.length === 0" class="h-37.5 flex items-center justify-center">
+          <span class="spinner spinner--sm" />
+        </div>
+        <p v-else-if="salesLedger.length === 0" class="m-0 font-semibold">
+          {{ t('dashboard.noSalesRecorded') }}
+        </p>
+        <div v-else>
+          <div
+            role="img"
+            :aria-label="t('dashboard.dailySales')"
+            class="flex items-end gap-1.5 h-37.5 border-b-2 border-primary-fg"
+          >
+            <div
+              v-for="d in salesBars"
+              :key="d.day"
+              class="flex-1 rounded-t-sm"
+              :class="d.today ? 'bg-white border-2 border-b-0 border-primary-fg' : 'bg-primary-fg'"
+              :style="{ height: `${d.pct}%` }"
+              :title="d.title"
+            />
+          </div>
+          <div class="flex justify-between mt-2 font-mono text-xs">
+            <span>{{ firstDayLabel }}</span>
+            <span>{{ t('dashboard.today') }}</span>
+          </div>
+        </div>
 
-          <ActiveSessionsTable :sessions="activeList" :loading="hotspotLoading" />
-        </DashboardCard>
+        <div class="flex flex-wrap gap-3">
+          <RouterLink to="/hotspot/reports" class="btn btn-ink">
+            {{ t('dashboard.viewReports') }}
+          </RouterLink>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
-        <!-- System card -->
-        <DashboardCard :title="t('dashboard.system')">
-          <SystemHealthCard
-            :loading="loading"
-            :error="error"
-            :resource="resource"
-            :router-name="store.active()?.name ?? ''"
-            :active-sessions="activeSessions"
-            :has-active-id="!!store.activeId"
-          />
-        </DashboardCard>
-
-        <!-- Bandwidth monitor -->
-        <DashboardCard :title="t('dashboard.bandwidth')" class="lg:col-span-2">
-          <template #actions>
-            <div class="flex items-center gap-1.5">
-              <span
-                class="size-2 rounded-sm shrink-0"
-                style="background: #22d3ee"
-              />
-              <span class="text-xs text-text-secondary">{{ t('dashboard.download') }}</span>
-              <span class="font-mono text-xs font-semibold text-text-primary"
-                >{{ curDown }} Mbps</span
-              >
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span
-                class="size-2 rounded-sm shrink-0"
-                style="background: #f59e0b"
-              />
-              <span class="text-xs text-text-secondary">{{ t('dashboard.upload') }}</span>
-              <span class="font-mono text-xs font-semibold text-text-primary"
-                >{{ curUp }} Mbps</span
-              >
-            </div>
-          </template>
-          <div class="h-full">
-            <BandwidthChart :history="bwHistory" />
+      <div class="flex-[1_1_300px] min-w-0 flex flex-col gap-5">
+        <div class="card px-5 py-4.5 flex items-center gap-4">
+          <img :src="inkIcon('users')" alt="" width="64" height="64" class="shrink-0" />
+          <div class="flex-1 min-w-0">
+            <div class="eyebrow">{{ t('dashboard.activeSessions') }}</div>
+            <div class="type-display text-4xl leading-tight">{{ activeSessions }}</div>
+            <div class="text-sm text-text-muted">{{ t('dashboard.usersOnRouter', totalUsers) }}</div>
           </div>
-        </DashboardCard>
+          <RouterLink
+            to="/hotspot/users?tab=active"
+            class="inline-flex items-center min-h-11 text-sm font-semibold text-ink underline underline-offset-2"
+          >
+            {{ t('dashboard.viewAll') }}
+          </RouterLink>
+        </div>
+        <div class="card px-5 py-4.5 flex items-center gap-4">
+          <img :src="inkIcon('vouchers')" alt="" width="64" height="64" class="shrink-0" />
+          <div class="flex-1 min-w-0">
+            <div class="eyebrow">{{ t('dashboard.vouchersGenerated') }}</div>
+            <div class="type-display text-4xl leading-tight">{{ fmtNumber(monthSales.generated) }}</div>
+            <div class="text-sm text-text-muted">{{ t('dashboard.thisMonth') }}</div>
+          </div>
+        </div>
+        <SystemHealthCard
+          :loading="loading"
+          :error="error"
+          :resource="resource"
+          :has-active-id="!!store.activeId"
+        />
       </div>
-    </div>
+    </section>
+
+    <section class="flex flex-wrap gap-6">
+      <!-- Bandwidth monitor -->
+      <div class="card flex-[2_1_520px] min-w-0 p-6 flex flex-col gap-4">
+        <div class="flex flex-wrap justify-between items-center gap-3">
+          <div class="flex items-center gap-3">
+            <img :src="inkIcon('monitor')" alt="" width="48" height="48" />
+            <h2 class="type-display m-0 text-2xl">{{ t('dashboard.bandwidth') }}</h2>
+            <span v-if="isOnline" class="chip bg-ink text-paper">
+              <span class="size-1.75 rounded-full bg-primary" />{{ t('dashboard.live') }}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span class="chip bg-primary text-primary-fg">
+              {{ t('dashboard.download') }} <span class="font-mono">{{ curDown }} Mbps</span>
+            </span>
+            <span class="chip border-dashed">
+              {{ t('dashboard.upload') }} <span class="font-mono">{{ curUp }} Mbps</span>
+            </span>
+          </div>
+        </div>
+        <div class="h-55">
+          <BandwidthChart :history="bwHistory" />
+        </div>
+      </div>
+
+      <AutoCleanupCard
+        class="flex-[1_1_300px] min-w-0"
+        :installed="cleanupInstalled"
+        :interval="cleanupInterval"
+        :toggling="cleanupToggling"
+        :saving="cleanupSaving"
+        :error="cleanupError"
+        @toggle="toggleCleanup"
+        @update:interval="saveCleanupInterval"
+      />
+    </section>
+
+    <!-- Who's online -->
+    <section class="card overflow-hidden">
+      <div class="flex flex-wrap justify-between items-center gap-3 px-6 py-5">
+        <div class="flex items-center gap-3">
+          <h2 class="type-display m-0 text-2xl">{{ t('dashboard.whosOnline') }}</h2>
+          <span class="chip bg-primary text-primary-fg">{{ activeSessions }}</span>
+        </div>
+        <RouterLink
+          to="/hotspot/users?tab=active"
+          class="inline-flex items-center min-h-11 text-sm font-semibold text-ink underline underline-offset-2"
+        >
+          {{ t('dashboard.allSessions') }}
+        </RouterLink>
+      </div>
+      <div class="border-t-2 border-ink">
+        <ActiveSessionsTable
+          :sessions="activeList"
+          :users="allUsers"
+          :loading="hotspotLoading"
+          :disconnecting="disconnectingId"
+          @disconnect="disconnect"
+        />
+      </div>
+    </section>
 
     <AppDialog
       :open="showDisableCleanupConfirm"
@@ -159,15 +221,15 @@
         </div>
       </div>
     </AppDialog>
-  </PageLayout>
+  </main>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { RouterLink } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { ChevronDownIcon } from "@heroicons/vue/24/outline";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
-import EmptyState from "@/components/EmptyState.vue";
 import { useRoutersStore } from "@/stores/routers";
 import { useToastStore } from "@/stores/toast";
 import {
@@ -176,26 +238,23 @@ import {
   getPollSnapshot,
   listHotspotUsers,
   listHotspotActive,
+  disconnectHotspotActive,
   getCleanupScheduler,
   putCleanupScheduler,
   getSalesLedger,
   type SaleEntry,
 } from "@/api";
 import { friendlyError } from "@/utils/errors";
-import { formatCompactAmount } from "@/utils/currencies";
-import PageLayout from "@/components/PageLayout.vue";
+import { inkIcon } from "@/utils/inkIcons";
 import AppDialog from "@/components/AppDialog.vue";
-import SalesBarChart from "@/components/SalesBarChart.vue";
 import BandwidthChart from "@/components/BandwidthChart.vue";
-import DashboardCard from "@/components/DashboardCard.vue";
-import HotspotSummaryCard from "@/components/HotspotSummaryCard.vue";
 import AutoCleanupCard from "@/components/AutoCleanupCard.vue";
 import ActiveSessionsTable from "@/components/ActiveSessionsTable.vue";
 import SystemHealthCard from "@/components/SystemHealthCard.vue";
 
 const store = useRoutersStore();
 const toast = useToastStore();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 // ── State ─────────────────────────────────────────────────────
 const resource = ref<Record<string, string>>({});
@@ -214,6 +273,7 @@ const cleanupError = ref("");
 const showDisableCleanupConfirm = ref(false);
 const hotspotLoading = ref(false);
 const hotspotError = ref("");
+const disconnectingId = ref<string | null>(null);
 
 const salesLedger = ref<SaleEntry[]>([]);
 const salesLoading = ref(false);
@@ -232,9 +292,33 @@ const curUp = computed(() => bwHistory.value[N - 1].up.toFixed(2));
 // ── Hotspot computed counts ───────────────────────────────────
 const totalUsers = computed(() => allUsers.value.length);
 const activeSessions = computed(() => activeList.value.length);
-const disabledUsers = computed(
-  () => allUsers.value.filter((u) => u.disabled === "true").length,
+
+// ── Router header ─────────────────────────────────────────────
+const isOnline = computed(() => !error.value && Object.keys(resource.value).length > 0);
+const routerMeta = computed(() =>
+  [
+    resource.value["board-name"],
+    store.active()?.host,
+    resource.value["version"] && `RouterOS ${resource.value["version"].split(" ")[0]}`,
+    [routerDate.value, routerTime.value].filter(Boolean).join(" "),
+  ]
+    .filter(Boolean)
+    .join(" · "),
 );
+
+async function disconnect(session: Record<string, string>) {
+  if (!store.activeId) return;
+  disconnectingId.value = session[".id"];
+  try {
+    await disconnectHotspotActive(store.activeId, session[".id"]);
+    toast.success(t("dashboard.userDisconnected", { user: session.user }));
+    await loadHotspot();
+  } catch (e: any) {
+    toast.error(t("dashboard.failedToDisconnect"), friendlyError(e, t("dashboard.failedToDisconnect")));
+  } finally {
+    disconnectingId.value = null;
+  }
+}
 
 function toggleCleanup(enabled: boolean) {
   if (!store.activeId || cleanupToggling.value) return;
@@ -458,22 +542,35 @@ const salesCurrency = computed(
 );
 
 // By-day breakdown for the current month, for the bar chart.
-const dailySalesPoints = computed(() => {
-  const bucket = new Map<string, { count: number; revenue: number }>();
+const salesBars = computed(() => {
+  const now = new Date();
+  const revenueByDay = Array.from({ length: now.getDate() }, () => 0);
   for (const e of monthSalesEntries.value) {
-    const d = new Date(e.at);
-    const key = String(d.getDate());
-    const entry = bucket.get(key) ?? { count: 0, revenue: 0 };
-    entry.count += e.count;
-    entry.revenue += (parseFloat(e.price) || 0) * e.count;
-    bucket.set(key, entry);
+    const day = new Date(e.at).getDate();
+    // The router clock can run ahead of the browser's; skip days past "today".
+    if (day > revenueByDay.length) continue;
+    revenueByDay[day - 1] += (parseFloat(e.price) || 0) * e.count;
   }
-  return [...bucket.entries()]
-    .sort(([a], [b]) => parseInt(a) - parseInt(b))
-    .map(([label, v]) => ({ label, count: v.count, revenue: v.revenue }));
+  const max = Math.max(...revenueByDay, 1);
+  return revenueByDay.map((revenue, i) => ({
+    day: i + 1,
+    today: i === revenueByDay.length - 1,
+    pct: (revenue / max) * 100,
+    title: `${fmtDay(i + 1)}: ${fmtNumber(revenue)} ${salesCurrency.value}`,
+  }));
 });
 
-function fmtAmount(n: number): string {
-  return formatCompactAmount(n, salesCurrency.value);
+const firstDayLabel = computed(() => fmtDay(1));
+
+function fmtDay(day: number): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), day).toLocaleDateString(
+    locale.value,
+    { day: "numeric", month: "short" },
+  );
+}
+
+function fmtNumber(n: number): string {
+  return new Intl.NumberFormat(locale.value).format(Math.round(n));
 }
 </script>

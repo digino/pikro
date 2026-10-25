@@ -1,75 +1,80 @@
 <template>
-  <div v-if="installed !== null" class="p-3 rounded-lg border border-border bg-base space-y-3">
+  <div v-if="installed !== null" class="card p-6 flex flex-col gap-4">
     <div class="flex items-center gap-3">
-      <component
-        :is="installed ? CheckCircleIcon : ExclamationTriangleIcon"
-        class="size-6 shrink-0"
-        :class="installed ? 'text-green' : 'text-amber'"
-      />
-      <div class="flex-1 min-w-0">
-        <div class="font-semibold text-text-primary">
-          Auto-cleanup
-          {{ installed ? "active" : "not configured" }}
-        </div>
-        <div class="text-sm text-text-secondary mt-0.5">
-          {{
-            installed
-              ? `Expired vouchers are removed automatically every ${intervalLabel}.`
-              : "Expired users accumulate until removed manually."
-          }}
-        </div>
-      </div>
+      <img :src="inkIcon('settings')" alt="" width="52" height="52" class="shrink-0" />
+      <h2 class="type-display m-0 flex-1 text-2xl">{{ t('dashboard.autoCleanup.title') }}</h2>
       <SwitchRoot
         :model-value="installed === true"
         :disabled="toggling"
-        class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors data-[state=checked]:bg-green data-[state=unchecked]:bg-border disabled:opacity-50"
+        :aria-label="t('dashboard.autoCleanup.title')"
+        class="relative inline-flex items-center w-15 h-8.5 shrink-0 rounded-full border-2 border-ink shadow-[2px_2px_0_var(--color-shadow)] cursor-pointer transition-colors data-[state=checked]:bg-primary data-[state=unchecked]:bg-paper disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-3 focus-visible:outline-primary focus-visible:outline-offset-2"
         @update:model-value="$emit('toggle', $event)"
       >
         <SwitchThumb
-          class="pointer-events-none block size-4 rounded-full bg-white shadow transform transition-transform translate-x-0.5 data-[state=checked]:translate-x-4"
+          class="pointer-events-none block size-6 rounded-full bg-ink transition-transform translate-x-0.75 data-[state=checked]:translate-x-7.25"
         />
       </SwitchRoot>
     </div>
 
-    <div v-if="installed" class="flex items-center gap-2 pl-9">
-      <span class="text-sm font-medium shrink-0">Run every</span>
-      <div class="shrink-0">
-        <AppSelect
-          :model-value="interval"
-          :options="INTERVAL_OPTIONS"
+    <p class="m-0 text-sm leading-normal text-text-secondary">
+      {{ t('dashboard.autoCleanup.description') }}
+    </p>
+
+    <div v-if="installed">
+      <div :id="intervalLabelId" class="eyebrow mb-2">{{ t('dashboard.autoCleanup.runsEvery') }}</div>
+      <div
+        role="group"
+        :aria-labelledby="intervalLabelId"
+        class="flex border-2 border-ink rounded-control overflow-hidden"
+      >
+        <button
+          v-for="(value, i) in INTERVALS"
+          :key="value"
+          type="button"
+          :aria-pressed="interval === value"
           :disabled="saving"
-          @update:model-value="$emit('update:interval', String($event))"
-        />
+          class="flex-1 min-h-11 px-1 text-xs font-semibold cursor-pointer transition-colors disabled:cursor-not-allowed"
+          :class="[
+            i > 0 && 'border-l-2 border-ink',
+            interval === value ? 'bg-primary text-primary-fg' : 'bg-paper text-ink hover:bg-primary-wash',
+          ]"
+          @click="interval !== value && $emit('update:interval', value)"
+        >
+          {{ t(`dashboard.autoCleanup.every.${value}`) }}
+        </button>
       </div>
     </div>
 
-    <div v-if="deviceModeBlocked" class="p-3 border rounded-lg space-y-2 bg-amber/8 border-amber/20">
+    <div v-if="deviceModeBlocked" class="p-3 rounded-control border-2 border-ink bg-primary-wash space-y-2">
       <div class="flex items-start gap-2">
-        <ExclamationTriangleIcon class="size-4 shrink-0 mt-0.5 text-amber" />
+        <ExclamationTriangleIcon class="size-4 shrink-0 mt-0.5" />
         <div class="space-y-1">
-          <p class="font-semibold text-amber">Scheduler blocked by RouterOS device-mode</p>
-          <p class="text-sm text-text-secondary">
-            Your router runs RouterOS 7.17+ with the scheduler disabled. Run the command below in
-            Winbox Terminal or SSH, then press the physical button on your router (or cold-reboot) to
-            confirm.
-          </p>
+          <p class="m-0 font-semibold">{{ t('dashboard.autoCleanup.deviceModeTitle') }}</p>
+          <p class="m-0 text-sm text-text-secondary">{{ t('dashboard.autoCleanup.deviceModeBody') }}</p>
         </div>
       </div>
-      <div class="border border-border rounded-lg px-3 py-2 font-mono text-xs text-text-primary select-all bg-surface">
+      <div class="border-2 border-ink rounded-lg px-3 py-2 font-mono text-xs select-all bg-paper">
         /system/device-mode/update scheduler=yes
       </div>
-      <p class="text-xs text-text-muted">After confirming, re-run hotspot setup to install the scheduler.</p>
+      <p class="m-0 text-xs text-text-muted">{{ t('dashboard.autoCleanup.deviceModeAfter') }}</p>
     </div>
-    <p v-else-if="error" class="text-xs text-red pl-9">{{ error }}</p>
+    <p v-else-if="error" class="m-0 text-xs text-red">{{ error }}</p>
+
+    <div class="mt-auto flex items-center gap-2.5 p-3 rounded-control bg-ground text-sm">
+      <CheckIcon v-if="installed" class="size-4.5 shrink-0 text-green" />
+      <ExclamationTriangleIcon v-else class="size-4.5 shrink-0" />
+      <span>{{ installed ? t('dashboard.autoCleanup.statusOn') : t('dashboard.autoCleanup.statusOff') }}</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
-import { CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
-import AppSelect from '@/components/AppSelect.vue'
-import { CLEANUP_INTERVAL_OPTIONS as INTERVAL_OPTIONS } from '@/utils/cleanupIntervals'
+import { CheckIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
+import { CLEANUP_INTERVAL_OPTIONS } from '@/utils/cleanupIntervals'
+import { inkIcon } from '@/utils/inkIcons'
 
 const props = defineProps<{
   installed: boolean | null
@@ -84,16 +89,10 @@ defineEmits<{
   'update:interval': [value: string]
 }>()
 
-const deviceModeBlocked = computed(() => props.error.toLowerCase().includes('device-mode'))
+const { t } = useI18n()
+const intervalLabelId = useId()
 
-// Cleanup interval is stored as a router-shorthand duration (e.g. "7d", "12h").
-// Expand it to a human phrase for the card copy.
-const intervalLabel = computed(() => {
-  const s = props.interval
-  const m = s.match(/^(\d+)([wdhm])$/i)
-  if (!m) return s || 'a regular interval'
-  const n = parseInt(m[1])
-  const unit = { w: 'week', d: 'day', h: 'hour', m: 'minute' }[m[2].toLowerCase()]!
-  return `${n} ${unit}${n === 1 ? '' : 's'}`
-})
+const INTERVALS = CLEANUP_INTERVAL_OPTIONS.map(o => String(o.value))
+
+const deviceModeBlocked = computed(() => props.error.toLowerCase().includes('device-mode'))
 </script>

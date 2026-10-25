@@ -1,109 +1,67 @@
 <template>
-  <div v-if="loading" class="flex items-center gap-2 text-sm text-text-muted py-4 justify-center">
-    <span class="spinner spinner--sm" /> Loading…
-  </div>
-  <div v-else-if="error" class="flex items-center gap-1.5 text-xs text-red py-4 justify-center">
-    <ExclamationTriangleIcon class="size-3.5 shrink-0" />{{ error }}
-  </div>
-  <template v-else>
-    <div class="flex flex-col items-center gap-2">
-      <RouterArt
-        :board-name="resource['board-name'] ?? ''"
-        :size="88"
-        :power-led="healthColor"
-        :wifi-led="activeSessions > 0 ? 'var(--color-green)' : 'var(--color-border)'"
-        wan-led="var(--color-amber)"
-      />
-      <div class="text-center space-y-0.5">
-        <div class="text-sm font-semibold text-text-primary font-mono leading-tight">
-          {{ resource["board-name"] || routerName || "—" }}
-        </div>
-        <div class="text-xs text-text-muted font-mono leading-tight">
-          RouterOS {{ resource["version"]?.split(" ")[0] || "—" }}
-        </div>
+  <div class="card px-5 py-4.5 flex items-center gap-4">
+    <img :src="inkIcon('dashboard')" alt="" width="64" height="64" class="shrink-0" />
+    <div class="flex-1 min-w-0 flex flex-col gap-2">
+      <div class="flex justify-between items-baseline gap-2">
+        <span class="eyebrow">{{ t('dashboard.systemHealth') }}</span>
+        <span class="type-display text-3xl">
+          {{ healthScore ?? '—' }}<span v-if="healthScore !== null" class="text-sm text-text-muted">/100</span>
+        </span>
       </div>
-      <div class="relative mt-1">
-        <svg width="72" height="72" viewBox="0 0 120 120">
-          <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-border)" stroke-width="8" />
-          <circle
-            cx="60"
-            cy="60"
-            r="50"
-            fill="none"
-            :stroke="healthColor"
-            stroke-width="8"
-            stroke-linecap="round"
-            :stroke-dasharray="ringCirc"
-            :stroke-dashoffset="ringOffset"
-            transform="rotate(-90 60 60)"
-            style="transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease"
-          />
-        </svg>
-        <div class="absolute inset-0 flex flex-col items-center justify-center">
-          <span class="font-mono font-bold tracking-tight text-text-primary">{{ healthScore }}</span>
-          <span class="text-xs font-bold text-text-secondary">Health</span>
-        </div>
+      <div
+        role="meter"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        :aria-valuenow="healthScore ?? 0"
+        :aria-label="t('dashboard.systemHealth')"
+        class="h-3 rounded-full border-2 border-ink bg-paper overflow-hidden"
+      >
+        <div
+          class="h-full bg-ink transition-[width] duration-500"
+          :style="{ width: `${healthScore ?? 0}%` }"
+        />
+      </div>
+      <div v-if="error" class="flex items-center gap-1.5 text-xs text-red">
+        <ExclamationTriangleIcon class="size-3.5 shrink-0" />{{ error }}
+      </div>
+      <div v-else class="font-mono text-xs text-text-muted truncate">
+        <span v-if="loading && !resource['uptime']" class="spinner spinner--sm" />
+        <template v-else>
+          {{ t('dashboard.healthDetail', {
+            cpu: cpuLoad,
+            ram: formatBytes(freeMemory),
+            uptime: resource['uptime'] ?? '—',
+          }) }}
+        </template>
       </div>
     </div>
-
-    <div class="grid grid-cols-1 text-xs">
-      <div class="flex justify-between items-center py-1.5 border-b border-border/60">
-        <span class="text-text-secondary">Uptime</span>
-        <span class="font-mono font-semibold text-text-primary">{{ resource["uptime"] ?? "—" }}</span>
-      </div>
-      <div class="flex justify-between items-center py-1.5 border-b border-border/60">
-        <span class="text-text-secondary">CPU</span>
-        <span class="font-mono font-semibold text-text-primary">{{ resource["cpu-load"] ?? "—" }}%</span>
-      </div>
-      <div class="flex justify-between items-center py-1.5 border-b border-border/60">
-        <span class="text-text-secondary">Free RAM</span>
-        <span class="font-mono font-semibold text-text-primary">{{ formatBytes(freeMemory) }}</span>
-      </div>
-      <div class="flex justify-between items-center py-1.5">
-        <span class="text-text-secondary">Free disk</span>
-        <span class="font-mono font-semibold text-text-primary">{{
-          formatBytes(parseInt(resource["free-hdd-space"] ?? "0") || 0)
-        }}</span>
-      </div>
-    </div>
-  </template>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
-import RouterArt from '@/components/router-art/RouterArt.vue'
+import { inkIcon } from '@/utils/inkIcons'
 
 const props = defineProps<{
   loading: boolean
   error: string
   resource: Record<string, string>
-  routerName: string
-  activeSessions: number
   hasActiveId: boolean
 }>()
+
+const { t } = useI18n()
 
 const cpuLoad = computed(() => parseInt(props.resource['cpu-load'] ?? '0') || 0)
 const freeMemory = computed(() => parseInt(props.resource['free-memory'] ?? '0') || 0)
 const totalMemory = computed(() => parseInt(props.resource['total-memory'] ?? '1') || 1)
 
 const healthScore = computed(() => {
-  if (!props.hasActiveId || props.error) return '—'
+  if (!props.hasActiveId || props.error || !props.resource['cpu-load']) return null
   const cpuScore = Math.round((1 - cpuLoad.value / 100) * 40)
   const ramScore = Math.round(Math.min(freeMemory.value / totalMemory.value / 0.5, 1) * 30)
-  return String(Math.min(100, cpuScore + ramScore + 30))
-})
-const healthColor = computed(() => {
-  if (props.error) return 'var(--color-red)'
-  const s = parseInt(healthScore.value) || 0
-  if (s >= 75) return 'var(--color-green)'
-  if (s >= 50) return 'var(--color-amber)'
-  return 'var(--color-red)'
-})
-const ringCirc = (2 * Math.PI * 50).toFixed(1)
-const ringOffset = computed(() => {
-  const s = parseInt(healthScore.value) || 0
-  return (2 * Math.PI * 50 * (1 - s / 100)).toFixed(1)
+  return Math.min(100, cpuScore + ramScore + 30)
 })
 
 function formatBytes(n: number): string {
