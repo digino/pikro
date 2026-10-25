@@ -31,6 +31,8 @@ function cssVar(name: string) {
 // Download = ink line over an amber area, upload = dashed ink line — the
 // legend chips in the card header follow the same encoding.
 const AMBER_AREA = '#ffbf008c'
+// Seconds between history points — Dashboard and Monitor both poll every 5 s.
+const STEP_SECONDS = 5
 
 const themeStore = useThemeStore()
 const N = computed(() => props.history.length)
@@ -40,9 +42,9 @@ const chartData = computed<ChartData<'line'>>(() => {
   const ink = cssVar('--color-ink')
   return {
     labels: Array.from({ length: N.value }, (_, i) => {
-      const secondsAgo = (N.value - 1 - i) * 3
+      const secondsAgo = (N.value - 1 - i) * STEP_SECONDS
       if (secondsAgo === 0) return 'now'
-      if (secondsAgo % 15 === 0) return `${secondsAgo}s`
+      if (secondsAgo % 30 === 0) return `${secondsAgo}s`
       return ''
     }),
     datasets: [

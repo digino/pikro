@@ -34,7 +34,7 @@ build:
 	@cd web && npm run build
 	@echo "Building binary ($(VERSION))..."
 	@/usr/local/go/bin/go build $(LDFLAGS) -o $(BINARY) .
-	@echo "Done → ./$(BINARY) ($(shell du -sh $(BINARY) | cut -f1))"
+	@echo "Done → ./$(BINARY) ($$(du -sh $(BINARY) | cut -f1))"
 
 # Cross-compile for macOS (Apple Silicon only) and Windows.
 release: _win_rsrc
