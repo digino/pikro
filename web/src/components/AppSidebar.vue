@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="w-64 min-w-55 h-screen bg-sidebar text-sidebar-text border-r-2 border-ink flex flex-col gap-5.5 px-4 py-5.5 sticky top-0 overflow-y-auto"
+    class="w-72 min-w-64 h-screen bg-sidebar text-sidebar-text border-r-2 border-ink flex flex-col gap-5.5 px-4 py-5.5 sticky top-0 overflow-y-auto"
   >
     <!-- Logo -->
     <RouterLink to="/dashboard" class="flex items-center gap-2.5 px-1.5 no-underline text-sidebar-text">

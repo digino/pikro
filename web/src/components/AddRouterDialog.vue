@@ -65,8 +65,8 @@
               ? 'background: var(--color-accent); border-color: var(--color-accent)'
               : 'background: transparent; border-color: var(--color-border)'"
           >
-            <svg v-if="form.useTls" viewBox="0 0 10 8" fill="none" class="size-2.5">
-              <path d="M1 4l2.5 2.5L9 1" stroke="#09090b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            <svg v-if="form.useTls" viewBox="0 0 10 8" fill="none" class="size-2.5 text-paper">
+              <path d="M1 4l2.5 2.5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </span>
           <input v-model="form.useTls" type="checkbox" class="sr-only" />
@@ -101,7 +101,7 @@
         >
           Next
         </button>
-        <button v-else type="submit" class="btn btn-ink" :disabled="loading">
+        <button v-else type="submit" class="btn btn-primary" :disabled="loading">
           <span v-if="loading" class="spinner spinner--sm" />
           Add router
         </button>

@@ -1,292 +1,242 @@
 <template>
-  <PageLayout title="Routers" subtitle="Manage your MikroTik connections">
-    <template #actions>
-      <button class="btn btn-ghost" :disabled="scanning" @click="scan">
-        <MagnifyingGlassIcon
-          class="size-3.5"
-          :class="{ 'animate-pulse': scanning }"
+  <main class="flex flex-col gap-7 px-4 sm:px-6 lg:px-10 pt-7 pb-14">
+    <!-- Discovery hero — on amber, contents use primary-fg so they stay dark in both themes -->
+    <section
+      class="card bg-primary text-primary-fg p-[clamp(24px,4vw,44px)] flex flex-wrap items-center gap-7 overflow-hidden"
+    >
+      <div class="flex-[1_1_380px] flex flex-col gap-4">
+        <span
+          v-if="scanning"
+          class="chip self-start bg-primary-fg text-primary border-primary-fg"
+        >
+          <span class="size-2 rounded-full bg-primary motion-safe:animate-pulse" />
+          {{ t('routers.scanning') }}
+        </span>
+        <h1 class="type-display m-0 text-[clamp(30px,3.5vw,48px)] leading-none">
+          {{ t('routers.heroTitle') }}
+        </h1>
+        <p class="m-0 max-w-120 text-[16px] leading-normal">{{ t('routers.heroBody') }}</p>
+        <div class="flex flex-wrap gap-3">
+          <button type="button" class="btn btn-ink" @click="openAdd({})">
+            <PlusIcon class="size-4" />
+            {{ t('routers.addByIp') }}
+          </button>
+          <button type="button" class="btn" :disabled="scanning" @click="scan">
+            <MagnifyingGlassIcon class="size-4" />
+            {{ scanned ? t('routers.scanAgain') : t('routers.scan') }}
+          </button>
+        </div>
+      </div>
+      <div
+        aria-hidden="true"
+        class="relative flex-[0_1_320px] h-70 mx-auto flex items-center justify-center"
+      >
+        <div
+          class="absolute size-70 rounded-full border-2 border-dashed border-primary-fg opacity-35"
+          :class="{ 'motion-safe:animate-pulse': scanning }"
         />
-        {{ scanning ? "Scanning…" : "Scan network" }}
-      </button>
-      <button class="btn btn-ink" @click="showAdd = true">
-        <PlusIcon class="size-3.5" />
-        Add router
-      </button>
-    </template>
+        <div
+          class="absolute size-50 rounded-full border-2 border-dashed border-primary-fg opacity-60"
+          :class="{ 'motion-safe:animate-pulse': scanning }"
+        />
+        <div class="absolute size-32.5 rounded-full bg-white border-2 border-primary-fg" />
+        <img :src="inkIcon('routers')" alt="" width="190" height="190" class="relative -rotate-6" />
+      </div>
+    </section>
 
     <!-- Scan error -->
     <div
       v-if="scanError"
-      class="flex items-center gap-2 p-3 rounded-lg text-xs border text-red bg-red/8 border-red/20"
+      role="alert"
+      class="flex items-start gap-2.5 p-4 rounded-control border-2 border-danger-text bg-danger-wash text-danger-text text-sm"
     >
-      <ExclamationTriangleIcon class="size-4 shrink-0" />
+      <ExclamationTriangleIcon class="size-5 shrink-0" />
       {{ scanError }}
     </div>
 
-    <!-- Scanning spinner -->
-    <div
-      v-if="scanning"
-      class="border border-dashed border-border rounded-xl py-16 text-center"
-    >
-      <span
-        class="inline-block size-5 border-2 border-border border-t-text-secondary rounded-full animate-spin mb-3"
-      />
-      <p class="text-xs text-text-muted">Scanning network… (3 s)</p>
-    </div>
-
     <!-- Discovered devices -->
-    <div v-else-if="discovered.length > 0" class="mb-6">
-      <p class="text-sm font-medium text-text-secondary mb-3">
-        {{ discovered.length }} device{{ discovered.length > 1 ? "s" : "" }}
-        found on network
-      </p>
-      <div class="grid grid-cols-3 gap-3">
-        <div
+    <section v-if="scanning || scanned" class="flex flex-col gap-3.5">
+      <div class="flex flex-wrap items-baseline gap-3">
+        <h2 class="type-display m-0 text-2xl">{{ t('routers.foundTitle') }}</h2>
+        <span v-if="!scanning" class="font-mono text-sm text-text-muted">
+          {{ t('routers.foundCount', discovered.length) }}
+        </span>
+      </div>
+
+      <div v-if="scanning" class="card border-dashed shadow-none py-12 text-center">
+        <span class="spinner" />
+        <p class="m-0 mt-3 text-sm text-text-muted">{{ t('routers.scanningHint') }}</p>
+      </div>
+
+      <div v-else-if="discovered.length === 0" class="card border-dashed shadow-none p-8 text-center">
+        <img :src="inkIcon('routers')" alt="" width="64" height="64" class="mx-auto" />
+        <p class="m-0 mt-3 font-semibold">{{ t('routers.noneTitle') }}</p>
+        <p class="m-0 mt-1 mx-auto max-w-120 text-sm text-text-muted">{{ t('routers.noneBody') }}</p>
+      </div>
+
+      <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
+        <article
           v-for="d in discovered"
           :key="d.mac || d.ip"
-          class="flex flex-col gap-3 p-4 border border-dashed border-border rounded-xl bg-surface"
+          class="card p-5 flex flex-col gap-3.5"
         >
-          <div class="flex items-center gap-2">
-            <ServerIcon class="size-4 text-text-secondary shrink-0" />
-            <span class="text-sm font-semibold text-text-primary truncate">{{
-              d.identity || d.board || "MikroTik"
-            }}</span>
+          <div class="flex items-center gap-3">
+            <img :src="inkIcon('routers')" alt="" width="60" height="60" class="shrink-0" />
+            <div class="flex-1 min-w-0">
+              <h3 class="type-display m-0 text-xl truncate">{{ deviceName(d) }}</h3>
+              <div v-if="d.board || d.version" class="text-sm text-text-secondary">
+                {{ [d.board, d.version && `RouterOS ${d.version}`].filter(Boolean).join(' · ') }}
+              </div>
+            </div>
           </div>
-          <p class="text-xs font-mono text-text-secondary">
-            {{ d.ip && d.ip !== "0.0.0.0" ? d.ip : "No IP yet" }}
-            <span v-if="d.mac" class="text-text-muted"> · {{ d.mac }}</span>
-          </p>
-          <p v-if="d.board || d.version" class="text-xs text-text-muted">
-            {{ [d.board, d.version].filter(Boolean).join(" · ") }}
-          </p>
-          <p v-if="!d.ip || d.ip === '0.0.0.0'" class="text-xs text-amber">
-            Factory reset — assign an IP via WinBox first
-          </p>
-          <button
-            class="btn btn-ghost self-start mt-auto"
-            :class="
-              isAlreadySaved(d.ip)
-                ? 'cursor-default'
-                : !d.ip || d.ip === '0.0.0.0'
-                  ? 'opacity-40 cursor-not-allowed'
-                  : ''
-            "
-            :style="
-              isAlreadySaved(d.ip)
-                ? 'color: var(--color-green); border-color: rgba(76,195,138,0.3)'
-                : ''
-            "
-            :disabled="isAlreadySaved(d.ip) || !d.ip || d.ip === '0.0.0.0'"
-            @click="openAdd(d)"
-          >
-            <CheckIcon v-if="isAlreadySaved(d.ip)" class="size-3.5" />
-            <PlusIcon v-else class="size-3.5" />
-            {{ isAlreadySaved(d.ip) ? "Saved" : "Add" }}
-          </button>
-        </div>
-      </div>
-    </div>
+          <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-1.5 text-sm">
+            <dt class="eyebrow self-center">{{ t('routers.ip') }}</dt>
+            <dd class="m-0 font-mono">{{ hasIp(d) ? d.ip : '—' }}</dd>
+            <dt class="eyebrow self-center">{{ t('routers.mac') }}</dt>
+            <dd class="m-0 font-mono">{{ d.mac || '—' }}</dd>
+          </dl>
+          <p v-if="!hasIp(d)" class="m-0 text-sm text-text-secondary">{{ t('routers.noIpHint') }}</p>
+          <div class="mt-auto flex items-center justify-between gap-2.5">
+            <span v-if="savedRouter(d)" class="chip bg-ink text-paper">{{ t('routers.connected') }}</span>
+            <span v-else-if="hasIp(d)" class="chip bg-online-wash">
+              <span class="size-2 rounded-full bg-online" />{{ t('routers.ready') }}
+            </span>
+            <span v-else class="chip border-dashed">{{ t('routers.noIp') }}</span>
 
-    <!-- No devices after scan -->
-    <div
-      v-else-if="scanned && discovered.length === 0"
-      class="border border-dashed border-border rounded-xl py-12 text-center mb-6"
-    >
-      <ServerIcon class="size-6 text-text-muted mx-auto mb-2" />
-      <p class="text-xs font-medium text-text-secondary">
-        No MikroTik devices found
-      </p>
-      <p class="text-xs text-text-muted mt-0.5">
-        Make sure the router is on the same subnet
-      </p>
-    </div>
-
-    <div
-      v-if="store.routers.length > 0"
-      class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5"
-    >
-      <div
-        v-for="r in store.routers"
-        :key="r.id"
-        class="flex flex-col rounded-xl border transition-all"
-        :class="
-          store.activeId === r.id
-            ? 'border-primary bg-surface shadow-[0_0_0_2px_var(--color-primary)]'
-            : 'border-border bg-surface hover:border-muted'
-        "
-      >
-        <div class="flex items-center justify-between pt-3.5 px-3.5">
-          <div>
-            <span
-              v-if="testResults[r.id] === 'ok'"
-              class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full text-green bg-green/10"
+            <button
+              v-if="savedRouter(d)"
+              type="button"
+              class="btn btn-sm"
+              @click="selectRouter(savedRouter(d)!.id)"
             >
-              <CheckCircleIcon class="size-3" /> Reachable
+              {{ t('routers.open') }}
+            </button>
+            <button
+              v-else
+              type="button"
+              class="btn btn-sm"
+              :disabled="!hasIp(d)"
+              :aria-label="t('routers.connectDevice', { name: deviceName(d) })"
+              @click="openAdd(d)"
+            >
+              {{ t('routers.connect') }}
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Saved routers -->
+    <section class="flex flex-col gap-3.5">
+      <h2 class="type-display m-0 text-2xl">{{ t('routers.yoursTitle') }}</h2>
+
+      <div v-if="store.routers.length === 0" class="card border-dashed shadow-none p-8 text-center">
+        <p class="m-0 font-semibold">{{ t('routers.noneYetTitle') }}</p>
+        <p class="m-0 mt-1 text-sm text-text-muted">{{ t('routers.noneYetBody') }}</p>
+      </div>
+
+      <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
+        <article
+          v-for="r in store.routers"
+          :key="r.id"
+          class="card p-5 flex flex-col gap-3.5"
+          :class="{ 'bg-primary-wash': store.activeId === r.id }"
+        >
+          <div class="flex items-center gap-3">
+            <img :src="inkIcon('routers')" alt="" width="56" height="56" class="shrink-0" />
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="type-display m-0 text-xl truncate">{{ r.name }}</h3>
+                <span v-if="store.activeId === r.id" class="chip bg-primary text-primary-fg">
+                  {{ t('routers.active') }}
+                </span>
+              </div>
+              <div class="font-mono text-sm text-text-secondary">
+                {{ r.host }}:{{ r.port }}<template v-if="r.useTls"> · {{ t('routers.apiSsl') }}</template>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="hotspotLine(r)" class="flex items-center gap-1.5 text-sm text-text-secondary">
+            <WifiIcon class="size-4 shrink-0" />
+            <span class="truncate">{{ hotspotLine(r) }}</span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <span v-if="testResults[r.id] === 'ok'" class="chip bg-online-wash">
+              <span class="size-2 rounded-full bg-online" />{{ t('routers.reachable') }}
             </span>
             <span
               v-else-if="testResults[r.id] === 'error'"
-              class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full text-red bg-red/10"
+              class="chip bg-danger-wash text-danger-text border-danger-text"
             >
-              <XCircleIcon class="size-3" /> Unreachable
+              <span class="size-2 rotate-45 bg-danger" />{{ t('routers.unreachable') }}
             </span>
-          </div>
-          <button
-            class="btn btn-sm btn-ghost"
-            :title="testing[r.id] ? 'Testing…' : 'Test connection'"
-            :disabled="testing[r.id]"
-            @click.stop="test(r.id)"
-          >
-            <ArrowPathIcon
-              class="size-3.5"
-              :class="{ 'animate-spin': testing[r.id] }"
-            />
-            {{ testing[r.id] ? "Pinging router..." : "Ping" }}
-          </button>
-        </div>
-
-        <!-- Card body -->
-        <div class="flex flex-col items-center gap-2 py-1.5">
-          <!-- Router illustration -->
-          <RouterArt
-            :board-name="r.name"
-            :size="96"
-            :power-led="
-              testResults[r.id] === 'ok'
-                ? 'var(--color-green)'
-                : testResults[r.id] === 'error'
-                  ? 'var(--color-red)'
-                  : 'var(--color-border)'
-            "
-            wifi-led="var(--color-border)"
-            wan-led="var(--color-border)"
-          />
-
-          <!-- Name + active badge -->
-          <div class="flex flex-wrap items-center justify-center gap-1.5 mt-1">
-            <span class="font-semibold text-text-primary">{{ r.name }}</span>
-            <span
-              v-if="store.activeId === r.id"
-              class="text-xs px-1.5 py-0.5 rounded font-medium"
-              style="
-                color: var(--color-primary-fg);
-                background: var(--color-primary);
-              "
-              >Active</span
+            <button
+              type="button"
+              class="btn btn-sm ml-auto"
+              :disabled="testing[r.id]"
+              :aria-label="t('routers.pingRouter', { name: r.name })"
+              @click="test(r.id)"
             >
+              <ArrowPathIcon class="size-4" :class="{ 'animate-spin': testing[r.id] }" />
+              {{ testing[r.id] ? t('routers.pinging') : t('routers.ping') }}
+            </button>
           </div>
 
-          <!-- Connection info -->
-          <p
-            class="text-xs font-mono text-text-secondary text-center leading-relaxed"
-          >
-            {{ r.host }}:{{ r.port }}<br />
-            <span v-if="r.useTls"> · TLS</span>
-          </p>
-
-          <!-- Hotspot info -->
-          <div
-            v-if="
-              r.hotspotSettings?.hotspotName ||
-              r.hotspotSettings?.dnsName ||
-              r.hotspotSettings?.currency
-            "
-            class="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-xs text-text-secondary font-medium px-2"
-          >
-            <span
-              v-if="r.hotspotSettings?.hotspotName"
-              class="inline-flex items-center gap-1"
+          <div class="mt-auto pt-3.5 border-t border-hairline flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn btn-ink flex-1"
+              :disabled="store.activeId === r.id"
+              @click="selectRouter(r.id)"
             >
-              <WifiIcon class="size-4" />{{ r.hotspotSettings.hotspotName }}
-              -
-            </span>
-            <span v-if="r.hotspotSettings?.dnsName">{{
-              r.hotspotSettings.dnsName
-            }} -</span>
-            <span
-              v-if="r.hotspotSettings?.currency"
-              class="inline-flex items-center gap-1"
+              {{ store.activeId === r.id ? t('routers.inUse') : t('routers.use') }}
+            </button>
+            <button
+              type="button"
+              class="btn flex-1"
+              :aria-label="t('routers.editRouter', { name: r.name })"
+              @click="openEdit(r)"
             >
-              <BanknotesIcon class="size-4" />{{ r.hotspotSettings.currency }}
-            </span>
+              <PencilSquareIcon class="size-4" />
+              {{ t('routers.edit') }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              :aria-label="t('routers.deleteRouter', { name: r.name })"
+              :title="t('routers.delete')"
+              @click="remove(r.id)"
+            >
+              <TrashIcon class="size-4" />
+            </button>
           </div>
-        </div>
-
-        <!-- Divider -->
-        <div class="h-px bg-border" />
-
-        <!-- Action row -->
-        <div class="flex flex-wrap gap-2 py-3 px-3.5">
-          <button
-            class="btn flex-1 min-w-0 justify-center whitespace-normal text-center"
-            :class="
-              store.activeId === r.id
-                ? 'border-transparent opacity-40 cursor-default bg-transparent text-text-muted'
-                : 'btn-ink'
-            "
-            :disabled="store.activeId === r.id"
-            @click="selectRouter(r.id)"
-          >
-            <BoltIcon class="size-3.5 shrink-0" />
-            {{ store.activeId === r.id ? "In use" : "Use" }}
-          </button>
-
-          <button
-            class="btn btn-ghost flex-1 min-w-0 justify-center whitespace-normal text-center"
-            @click="openEdit(r)"
-          >
-            <PencilSquareIcon class="size-3.5 shrink-0" />
-
-            Edit
-          </button>
-
-          <button
-            class="btn border-transparent bg-red-10 text-red hover:bg-red/50 hover:text-white flex-1 min-w-0 justify-center whitespace-normal text-center"
-            @click="remove(r.id)"
-          >
-            <TrashIcon class="size-4 shrink-0" />
-            Delete
-          </button>
-        </div>
+        </article>
       </div>
-    </div>
+    </section>
 
-    <EmptyState
-      v-else-if="!scanning && !scanned"
-      bordered
-      title="No routers configured"
-      message="Click Scan to find devices on your network, or add one manually"
-    />
-
-    <AddRouterDialog
-      v-model:open="showAdd"
-      :prefill="prefill"
-      @added="onAdded"
-    />
+    <AddRouterDialog v-model:open="showAdd" :prefill="prefill" />
     <EditRouterDialog
       v-model:open="showEdit"
       :router="editTarget"
       @saved="store.load()"
     />
-  </PageLayout>
+  </main>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import {
   PlusIcon,
-  ServerIcon,
   ArrowPathIcon,
-  BoltIcon,
   TrashIcon,
-  CheckCircleIcon,
-  XCircleIcon,
   MagnifyingGlassIcon,
-  CheckIcon,
   ExclamationTriangleIcon,
   PencilSquareIcon,
   WifiIcon,
-  BanknotesIcon,
 } from "@heroicons/vue/24/outline";
 import { useRoutersStore } from "@/stores/routers";
 import {
@@ -297,10 +247,9 @@ import {
 } from "@/api";
 import AddRouterDialog from "@/components/AddRouterDialog.vue";
 import EditRouterDialog from "@/components/EditRouterDialog.vue";
-import PageLayout from "@/components/PageLayout.vue";
-import RouterArt from "@/components/router-art/RouterArt.vue";
-import EmptyState from "@/components/EmptyState.vue";
+import { inkIcon } from "@/utils/inkIcons";
 
+const { t } = useI18n();
 const store = useRoutersStore();
 const router = useRouter();
 const route = useRoute();
@@ -316,7 +265,6 @@ const scanning = ref(false);
 const scanned = ref(false);
 const scanError = ref("");
 const discovered = ref<DiscoveredDevice[]>([]);
-const addedIps = ref(new Set<string>());
 
 const showAdd = ref(false);
 const prefill = ref<Partial<DiscoveredDevice>>({});
@@ -345,17 +293,27 @@ async function scan() {
   }
 }
 
-function isAlreadySaved(ip: string): boolean {
-  return store.routers.some((r) => r.host === ip) || addedIps.value.has(ip);
+// A factory-reset router announces itself before it has an IP address.
+function hasIp(d: DiscoveredDevice): boolean {
+  return !!d.ip && d.ip !== "0.0.0.0";
 }
 
-function openAdd(d: DiscoveredDevice) {
+function deviceName(d: DiscoveredDevice): string {
+  return d.identity || d.board || "MikroTik";
+}
+
+function savedRouter(d: DiscoveredDevice): RouterProfile | undefined {
+  return store.routers.find((r) => r.host === d.ip);
+}
+
+function hotspotLine(r: RouterProfile): string {
+  const h = r.hotspotSettings;
+  return [h?.hotspotName, h?.dnsName, h?.currency].filter(Boolean).join(" · ");
+}
+
+function openAdd(d: Partial<DiscoveredDevice>) {
   prefill.value = d;
   showAdd.value = true;
-}
-
-function onAdded(ip: string) {
-  addedIps.value = new Set([...addedIps.value, ip]);
 }
 
 async function test(id: string) {
@@ -376,7 +334,7 @@ function selectRouter(id: string) {
 }
 
 async function remove(id: string) {
-  if (!confirm("Remove this router?")) return;
+  if (!confirm(t("routers.confirmDelete"))) return;
   await store.remove(id);
 }
 </script>

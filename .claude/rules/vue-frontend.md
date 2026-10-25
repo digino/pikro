@@ -37,6 +37,8 @@ paths:
   — those only work as classes in the template. In `<style scoped>`, use plain CSS
   `var(--color-*)` for custom token references; `@apply` is safe for structural
   utilities only (`flex`, `items-center`, `gap-2`).
+- `text-base` is a COLOUR here (the `--color-base` token wins over the font size).
+  For 16px text use `text-[16px]`.
 - Avoid arbitrary values like `text-[13px]` or `rounded-[7px]` — prefer a named scale
   value (`text-sm`, `rounded-lg`). Only use `[value]` when no standard token is close
   enough (e.g. `w-[220px]` for a fixed sidebar width, or sub-pixel sizes like
