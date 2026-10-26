@@ -1,67 +1,61 @@
 <template>
-  <PageLayout title="Hotspot" subtitle="Users">
-    <template #actions>
-      <template v-if="tab === 'users' && selected.size > 0">
-        <span class="text-sm text-text-secondary font-semibold"
-          >{{ selected.size }} selected</span
-        >
+  <main class="flex flex-col gap-6 px-4 sm:px-6 lg:px-10 pt-7 pb-14">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <img :src="inkIcon('users')" alt="" width="50" height="50" />
+        <div>
+          <nav :aria-label="t('users.breadcrumb')" class="eyebrow">
+            {{ t('users.breadcrumb') }} / {{ t('users.title') }}
+          </nav>
+          <h1 class="type-display m-0 mt-1.5 flex items-center gap-3 text-3xl leading-none">
+            {{ t('users.title') }}
+            <span class="chip h-8 px-3 text-sm bg-primary text-primary-fg">{{ users.length }}</span>
+          </h1>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-3">
         <button
-          class="text-sm text-text-secondary hover:text-text-primary transition-colors cursor-pointer underline"
-          @click="selected = new Set()"
+          v-if="tab === 'users'"
+          type="button"
+          class="btn"
+          :disabled="filteredUsers.length === 0"
+          @click="openPrint()"
         >
-          Clear
+          <PrinterIcon class="size-4" />
+          {{ t('users.print') }}
         </button>
-        <button
-          class="btn btn-danger"
-          :disabled="bulkDeleting"
-          @click="removeSelected"
-        >
-          <span
-            v-if="bulkDeleting"
-            class="size-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"
-          />
-          <TrashIcon v-else class="size-3.5" />
-          Delete {{ selected.size }}
+        <RouterLink to="/hotspot/vouchers" class="btn btn-primary">
+          <img :src="inkIcon('vouchers')" alt="" width="28" height="28" class="-ml-1" />
+          {{ t('users.generateVouchers') }}
+        </RouterLink>
+        <button type="button" class="btn btn-ink" @click="openAdd">
+          <PlusIcon class="size-4" />
+          {{ t('users.newUser') }}
         </button>
-      </template>
-      <RouterLink to="/hotspot/vouchers" class="btn btn-ghost">
-        <TicketIcon class="size-4" />
-        Generate vouchers
-      </RouterLink>
-      <button
-        v-if="tab === 'users'"
-        class="btn btn-ghost"
-        :disabled="filteredUsers.length === 0"
-        @click="openPrint"
-      >
-        <PrinterIcon class="size-4" />
-        {{ selected.size > 0 ? `Print ${selected.size} selected` : "Print" }}
-      </button>
-      <button class="btn btn-ink" @click="openAdd">
-        <PlusIcon class="size-4" />
-        New user
-      </button>
-    </template>
+      </div>
+    </header>
 
-    <!-- Tabs -->
-    <div class="flex items-center gap-1 border-b border-border -mt-2">
+    <!-- All users / Online now -->
+    <div
+      role="group"
+      :aria-label="t('users.viewLabel')"
+      class="self-start flex border-2 border-ink rounded-control overflow-hidden"
+    >
       <button
-        v-for="t in tabs"
-        :key="t.key"
-        class="px-3 py-2 text-sm font-semibold border-b-2 transition-colors"
-        :class="
-          tab === t.key
-            ? 'border-text-primary text-text-primary'
-            : 'border-transparent text-text-muted hover:text-text-secondary'
-        "
-        @click="switchTab(t.key)"
+        v-for="(tb, i) in tabs"
+        :key="tb.key"
+        type="button"
+        :aria-pressed="tab === tb.key"
+        class="min-h-11 px-4 text-sm font-semibold cursor-pointer transition-colors"
+        :class="[
+          i > 0 && 'border-l-2 border-ink',
+          tab === tb.key ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-primary-wash',
+        ]"
+        @click="switchTab(tb.key)"
       >
-        {{ t.label }}
-        <span
-          v-if="t.key === 'users' || active.length > 0"
-          class="ml-1 text-text-secondary"
-        >
-          ({{ t.key === "users" ? filteredUsers.length : active.length }})
+        {{ t(tb.label) }}
+        <span class="ml-1 font-mono text-xs opacity-75">
+          {{ tb.key === 'users' ? users.length : active.length }}
         </span>
       </button>
     </div>
@@ -72,454 +66,401 @@
 
     <div
       v-else-if="error"
-      class="flex items-center gap-2 p-4 border rounded-xl text-sm bg-red/8 border-red/20 text-red"
+      role="alert"
+      class="flex items-center gap-2.5 p-4 rounded-control border-2 border-danger-text bg-danger-wash text-danger-text text-sm"
     >
-      <ExclamationTriangleIcon class="size-4 shrink-0" />
+      <ExclamationTriangleIcon class="size-5 shrink-0" />
       {{ error }}
       <button
-        class="ml-auto text-xs underline"
+        type="button"
+        class="btn btn-sm ml-auto"
         @click="tab === 'users' ? loadUsers() : loadActive()"
       >
-        Retry
+        {{ t('users.retry') }}
       </button>
     </div>
 
     <!-- Users tab -->
-    <div v-else-if="tab === 'users'" class="space-y-2">
-      <!-- Search & filters -->
-      <div class="flex items-center gap-2.5 flex-wrap">
-        <div class="relative flex-1 max-w-xs bg-wh">
-          <input
-            v-model="searchQuery"
-            class="input"
-            placeholder="Search username or comment…"
-          />
+    <template v-else-if="tab === 'users'">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div role="group" :aria-label="t('users.filterLabel')" class="flex flex-wrap gap-2">
+          <button
+            v-for="f in statusFilters"
+            :key="f.value"
+            type="button"
+            :aria-pressed="filterStatus === f.value"
+            class="inline-flex items-center gap-2 min-h-11 px-4 rounded-full border-2 border-ink text-sm font-semibold cursor-pointer transition-colors"
+            :class="
+              filterStatus === f.value
+                ? 'bg-ink text-paper shadow-[3px_3px_0_var(--color-primary)]'
+                : 'bg-paper text-ink hover:bg-primary-wash'
+            "
+            @click="filterStatus = f.value"
+          >
+            {{ f.label }}
+            <span class="font-mono text-xs opacity-75">{{ f.count }}</span>
+          </button>
         </div>
-        <SelectRoot
-          :model-value="filterProfile || undefined"
-          @update:model-value="filterProfile = $event ?? ''"
-        >
-          <SelectTrigger
-            class="input-select flex items-center gap-1.5 cursor-pointer"
-          >
-            <SelectValue placeholder="All profiles" class="flex-1 text-left" />
-            <ChevronDownIcon class="size-3.5 text-text-secondary shrink-0" />
-          </SelectTrigger>
-          <SelectPortal>
-            <SelectContent
-              class="z-50 min-w-(--reka-select-trigger-width) bg-surface border border-border rounded-lg shadow-xl overflow-hidden"
-              position="popper"
-              :side-offset="3"
-            >
-              <SelectViewport class="p-1">
-                <SelectItem
-                  v-for="p in profiles"
-                  :key="p['.id']"
-                  :value="p.name"
-                  class="flex items-center justify-between p-2 text-sm rounded-md cursor-pointer text-text-secondary transition-colors hover:bg-muted hover:text-text-primary data-highlighted:bg-muted data-highlighted:text-text-primary data-[state=checked]:text-text-primary data-[state=checked]:font-medium"
-                >
-                  <SelectItemText>{{ p.name }}</SelectItemText>
-                  <SelectItemIndicator
-                    ><CheckCircleIcon class="size-4 text-green"
-                  /></SelectItemIndicator>
-                </SelectItem>
-              </SelectViewport>
-            </SelectContent>
-          </SelectPortal>
-        </SelectRoot>
-        <SelectRoot
-          :model-value="filterStatus || undefined"
-          @update:model-value="filterStatus = $event ?? ''"
-        >
-          <SelectTrigger
-            class="input-select flex items-center gap-1.5 cursor-pointer"
-          >
-            <SelectValue placeholder="All statuses" class="flex-1 text-left" />
-            <ChevronDownIcon class="size-3.5 text-text-secondary shrink-0" />
-          </SelectTrigger>
-          <SelectPortal>
-            <SelectContent
-              class="z-50 min-w-(--reka-select-trigger-width) bg-surface border border-border rounded-lg shadow-xl overflow-hidden"
-              position="popper"
-              :side-offset="3"
-            >
-              <SelectViewport class="p-1">
-                <SelectItem
-                  v-for="opt in STATUS_OPTS"
-                  :key="opt.value"
-                  :value="opt.value"
-                  class="flex items-center justify-between p-2 text-sm rounded-md cursor-pointer text-text-secondary transition-colors hover:bg-muted hover:text-text-primary data-highlighted:bg-muted data-highlighted:text-text-primary data-[state=checked]:text-text-primary data-[state=checked]:font-medium"
-                >
-                  <SelectItemText>{{ opt.label }}</SelectItemText>
-                  <SelectItemIndicator
-                    ><CheckCircleIcon class="size-4 text-green"
-                  /></SelectItemIndicator>
-                </SelectItem>
-              </SelectViewport>
-            </SelectContent>
-          </SelectPortal>
-        </SelectRoot>
 
-        <button
-          v-if="searchQuery || filterProfile || filterStatus"
-          class="btn"
-          @click="
-            searchQuery = '';
-            filterProfile = '';
-            filterStatus = '';
-          "
-        >
-          Clear
-        </button>
+        <div class="flex flex-wrap gap-2.5">
+          <label
+            class="flex items-center gap-2 min-h-11 min-w-60 px-3.5 rounded-control border-2 border-ink bg-paper focus-within:outline-3 focus-within:outline-primary focus-within:outline-offset-1"
+          >
+            <MagnifyingGlassIcon class="size-4.5 shrink-0" />
+            <span class="sr-only">{{ t('users.search') }}</span>
+            <input
+              v-model="searchQuery"
+              type="search"
+              :placeholder="t('users.searchPlaceholder')"
+              class="flex-1 min-w-0 border-0 bg-transparent text-sm outline-none"
+            />
+          </label>
+          <SelectRoot
+            :model-value="filterProfile || ALL_PLANS"
+            @update:model-value="filterProfile = $event === ALL_PLANS ? '' : String($event ?? '')"
+          >
+            <SelectTrigger
+              :aria-label="t('users.plan')"
+              class="flex items-center gap-2 min-h-11 px-3 rounded-control border-2 border-ink bg-paper cursor-pointer focus-visible:outline-3 focus-visible:outline-primary focus-visible:outline-offset-1"
+            >
+              <span class="eyebrow">{{ t('users.plan') }}</span>
+              <SelectValue class="text-sm font-semibold" />
+              <ChevronDownIcon class="size-4 shrink-0" />
+            </SelectTrigger>
+            <SelectPortal>
+              <SelectContent
+                class="z-50 min-w-(--reka-select-trigger-width) bg-paper text-ink border-2 border-ink rounded-control shadow-btn overflow-hidden"
+                position="popper"
+                :side-offset="4"
+              >
+                <SelectViewport class="p-1">
+                  <SelectItem
+                    v-for="opt in planOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                    class="flex items-center justify-between gap-3 min-h-10 px-3 text-sm rounded-lg cursor-pointer outline-none data-highlighted:bg-primary-wash data-[state=checked]:font-semibold"
+                  >
+                    <SelectItemText>{{ opt.label }}</SelectItemText>
+                    <SelectItemIndicator><CheckIcon class="size-4" /></SelectItemIndicator>
+                  </SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </SelectPortal>
+          </SelectRoot>
+        </div>
       </div>
 
-      <div class="border border-border rounded-xl overflow-hidden">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-border bg-surface">
-              <th class="px-4 py-3 w-8">
-                <CheckboxRoot
-                  :model-value="someSelected ? 'indeterminate' : allSelected"
-                  class="size-4 rounded border border-border bg-base flex items-center justify-center transition-colors data-[state=checked]:bg-text-primary data-[state=checked]:border-text-primary data-[state=indeterminate]:bg-text-primary data-[state=indeterminate]:border-text-primary hover:border-muted"
-                  @update:model-value="toggleSelectAll"
-                >
-                  <CheckboxIndicator>
-                    <CheckIcon class="size-3 text-base" />
-                  </CheckboxIndicator>
-                </CheckboxRoot>
-              </th>
-              <th
-                class="text-left px-4 py-3 text-sm font-semibold text-text-primary"
+      <section class="card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-215 text-sm">
+            <thead>
+              <tr class="border-b-2 border-ink">
+                <th class="w-5 px-4 py-3.5">
+                  <CheckboxRoot
+                    :model-value="someSelected ? 'indeterminate' : allSelected"
+                    :aria-label="t('users.selectAll')"
+                    class="size-5 rounded-md border-2 border-ink bg-paper flex items-center justify-center cursor-pointer data-[state=checked]:bg-ink data-[state=indeterminate]:bg-ink"
+                    @update:model-value="toggleSelectAll"
+                  >
+                    <CheckboxIndicator>
+                      <MinusIcon v-if="someSelected" class="size-3.5 text-paper" />
+                      <CheckIcon v-else class="size-3.5 text-paper" />
+                    </CheckboxIndicator>
+                  </CheckboxRoot>
+                </th>
+                <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colUsername') }}</th>
+                <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colPlan') }}</th>
+                <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colTimeLeft') }}</th>
+                <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colData') }}</th>
+                <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colExpires') }}</th>
+                <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colStatus') }}</th>
+                <th class="px-4 py-3.5"><span class="sr-only">{{ t('users.colActions') }}</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="filteredUsers.length === 0">
+                <td colspan="8" class="px-4 py-10 text-center text-text-muted">
+                  {{ searchQuery || filterProfile || filterStatus ? t('users.noMatch') : t('users.noUsers') }}
+                  <button
+                    v-if="searchQuery || filterProfile || filterStatus"
+                    type="button"
+                    class="btn btn-sm ml-3"
+                    @click="clearFilters"
+                  >
+                    {{ t('users.clearFilters') }}
+                  </button>
+                </td>
+              </tr>
+              <tr
+                v-for="u in pagedUsers"
+                :key="u['.id']"
+                class="border-b border-hairline last:border-0"
+                :class="{ 'bg-primary-wash': selected.has(u['.id']) }"
               >
-                Username
-              </th>
-              <th class="text-left px-4 py-3 font-semibold text-text-primary">
-                Profile
-              </th>
-              <th class="text-left px-4 py-3 font-semibold text-text-primary">
-                Time limit
-              </th>
-              <th class="text-left px-4 py-3 font-semibold text-text-primary">
-                Data limit
-              </th>
-              <th class="text-left px-4 py-3 font-semibold text-text-primary">
-                Comment
-              </th>
-              <th class="text-left px-4 py-3 font-semibold text-text-primary">
-                Expires
-              </th>
-              <th class="text-left px-4 py-3 font-semibold text-text-primary">
-                Status
-              </th>
-              <th class="px-4 py-3"></th>
+                <td class="px-4 py-3">
+                  <CheckboxRoot
+                    :model-value="selected.has(u['.id'])"
+                    :aria-label="t('users.selectUser', { user: u.name })"
+                    class="size-5 rounded-md border-2 border-ink bg-paper flex items-center justify-center cursor-pointer data-[state=checked]:bg-ink"
+                    @update:model-value="toggleSelect(u['.id'])"
+                  >
+                    <CheckboxIndicator>
+                      <CheckIcon class="size-3.5 text-paper" />
+                    </CheckboxIndicator>
+                  </CheckboxRoot>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="font-mono font-semibold text-[15px]">{{ u.name }}</div>
+                  <div v-if="displayComment(u.comment) !== '—'" class="mt-0.5 text-xs text-text-muted">
+                    {{ displayComment(u.comment) }}
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="chip">{{ u.profile || 'default' }}</span>
+                </td>
+                <td class="px-4 py-3">
+                  <div v-if="timeLeft(u)" class="flex items-center gap-2.5">
+                    <div class="w-18 h-2 shrink-0 rounded-full border-[1.5px] border-ink bg-paper overflow-hidden">
+                      <div
+                        class="h-full"
+                        :class="timeLeft(u)!.pct < 40 ? 'bg-primary' : 'bg-ink'"
+                        :style="{ width: `${timeLeft(u)!.pct}%` }"
+                      />
+                    </div>
+                    <span class="text-[13px]">{{ timeLeft(u)!.label }}</span>
+                  </div>
+                  <span v-else class="text-text-muted">—</span>
+                </td>
+                <td class="px-4 py-3 font-mono text-[13px]">{{ dataUsage(u) }}</td>
+                <td class="px-4 py-3 text-[13px] text-text-secondary">{{ expiresAt(u) }}</td>
+                <td class="px-4 py-3">
+                  <span class="chip" :class="STATUS_CHIP[userStatus(u)].chip">
+                    <span class="size-2 shrink-0 rounded-full" :class="STATUS_CHIP[userStatus(u)].dot" />
+                    {{ t(`users.status.${userStatus(u)}`) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <DropdownMenuRoot>
+                    <DropdownMenuTrigger
+                      :aria-label="t('users.actionsFor', { user: u.name })"
+                      class="inline-flex items-center justify-center size-10 rounded-[10px] border-2 border-ink bg-paper cursor-pointer hover:bg-primary-wash data-[state=open]:bg-primary-wash focus-visible:outline-3 focus-visible:outline-primary"
+                    >
+                      <EllipsisHorizontalIcon class="size-5" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuContent
+                        align="end"
+                        :side-offset="6"
+                        class="z-50 w-52 p-1.5 bg-paper text-ink border-2 border-ink rounded-[14px] shadow-[4px_4px_0_var(--color-shadow)]"
+                      >
+                        <DropdownMenuItem :class="MENU_ITEM" @select="openEdit(u)">
+                          <PencilIcon class="size-4" />{{ t('users.edit') }}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem :class="MENU_ITEM" @select="openPrint([u])">
+                          <PrinterIcon class="size-4" />{{ t('users.printVoucher') }}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem :class="MENU_ITEM" @select="toggleDisabled(u)">
+                          <component :is="u.disabled === 'true' ? CheckCircleIcon : NoSymbolIcon" class="size-4" />
+                          {{ u.disabled === 'true' ? t('users.enableUser') : t('users.disableUser') }}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator class="h-px my-1 mx-1.5 bg-hairline" />
+                        <DropdownMenuItem
+                          :class="[MENU_ITEM, 'text-red font-semibold']"
+                          @select="removeUser(u['.id'])"
+                        >
+                          <TrashIcon class="size-4" />{{ t('users.delete') }}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuRoot>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination footer -->
+        <div
+          v-if="filteredUsers.length > 0"
+          class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-t-2 border-ink text-[13px]"
+        >
+          <span>
+            {{ t('users.showing', {
+              from: (usersPage - 1) * usersPageSize + 1,
+              to: Math.min(usersPage * usersPageSize, filteredUsers.length),
+              total: filteredUsers.length,
+            }) }}
+          </span>
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-1.5">
+              <span class="eyebrow mr-1">{{ t('users.perPage') }}</span>
+              <button
+                v-for="n in PAGE_SIZES"
+                :key="n"
+                type="button"
+                class="btn btn-sm px-2.5"
+                :class="{ 'btn-ink': usersPageSize === n }"
+                :aria-pressed="usersPageSize === n"
+                @click="setUsersPageSize(n)"
+              >
+                {{ n }}
+              </button>
+            </div>
+            <PaginationRoot
+              :page="usersPage"
+              :items-per-page="usersPageSize"
+              :total="filteredUsers.length"
+              class="flex gap-2"
+              @update:page="usersPage = $event"
+            >
+              <PaginationPrev class="btn btn-sm" :aria-label="t('users.previous')">
+                <ChevronLeftIcon class="size-4" />
+              </PaginationPrev>
+              <PaginationNext class="btn btn-sm" :aria-label="t('users.next')">
+                <ChevronRightIcon class="size-4" />
+              </PaginationNext>
+            </PaginationRoot>
+          </div>
+        </div>
+      </section>
+
+      <!-- Floating bulk bar -->
+      <div
+        v-if="selected.size > 0"
+        role="region"
+        :aria-label="t('users.bulkActions')"
+        class="sticky bottom-5 z-10 self-center flex flex-wrap items-center gap-2 py-2.5 pr-2.5 pl-4.5 rounded-2xl bg-sidebar text-sidebar-text shadow-[5px_5px_0_var(--color-primary)]"
+      >
+        <span class="mr-2 font-bold">
+          <span class="font-mono px-1.75 py-0.5 rounded-md bg-primary text-primary-fg">{{ selected.size }}</span>
+          {{ t('users.selected') }}
+        </span>
+        <button type="button" :class="[BULK_BTN, 'bg-paper text-ink']" :disabled="bulkBusy" @click="setSelectedDisabled(false)">
+          {{ t('users.enable') }}
+        </button>
+        <button type="button" :class="[BULK_BTN, 'bg-paper text-ink']" :disabled="bulkBusy" @click="setSelectedDisabled(true)">
+          {{ t('users.disable') }}
+        </button>
+        <button type="button" :class="[BULK_BTN, 'bg-paper text-ink']" @click="openPrint(selectedUsers)">
+          <PrinterIcon class="size-4" />{{ t('users.printSelected') }}
+        </button>
+        <button
+          type="button"
+          :class="[BULK_BTN, 'bg-danger text-white']"
+          :disabled="bulkBusy"
+          @click="removeSelected"
+        >
+          <span v-if="bulkBusy" class="spinner spinner--sm" />
+          <TrashIcon v-else class="size-4" />
+          {{ t('users.delete') }}
+        </button>
+        <button
+          type="button"
+          :aria-label="t('users.clearSelection')"
+          class="inline-flex items-center justify-center size-10 rounded-[10px] cursor-pointer hover:bg-white/10"
+          @click="selected = new Set()"
+        >
+          <XMarkIcon class="size-5" />
+        </button>
+      </div>
+    </template>
+
+    <!-- Online now tab -->
+    <section v-else class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-180 text-sm">
+          <thead>
+            <tr class="border-b-2 border-ink">
+              <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colUser') }}</th>
+              <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colIp') }}</th>
+              <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colMac') }}</th>
+              <th class="eyebrow text-right px-4 py-3.5">{{ t('users.colUptime') }}</th>
+              <th class="eyebrow text-right px-4 py-3.5">{{ t('users.colDown') }}</th>
+              <th class="eyebrow text-right px-4 py-3.5">{{ t('users.colUp') }}</th>
+              <th class="eyebrow text-right px-4 py-3.5">{{ t('users.colLeft') }}</th>
+              <th class="px-4 py-3.5"><span class="sr-only">{{ t('users.colActions') }}</span></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="filteredUsers.length === 0">
-              <td colspan="9" class="text-center text-text-muted text-sm py-10">
-                {{
-                  searchQuery || filterProfile
-                    ? "No users match your search"
-                    : "No users found"
-                }}
-              </td>
+            <tr v-if="active.length === 0">
+              <td colspan="8" class="px-4 py-10 text-center text-text-muted">{{ t('users.noSessions') }}</td>
             </tr>
             <tr
-              v-for="u in pagedUsers"
-              :key="u['.id']"
-              class="border-b border-border last:border-0 transition-colors"
-              :class="selected.has(u['.id']) ? 'bg-surface' : ''"
+              v-for="s in pagedActive"
+              :key="s['.id']"
+              class="border-b border-hairline last:border-0"
             >
+              <td class="px-4 py-3 font-mono font-semibold">{{ s.user }}</td>
+              <td class="px-4 py-3 font-mono">{{ s.address }}</td>
+              <td class="px-4 py-3 font-mono text-text-muted">{{ s['mac-address'] || '—' }}</td>
+              <td class="px-4 py-3 text-right font-mono">{{ s.uptime || '—' }}</td>
+              <td class="px-4 py-3 text-right font-mono">{{ formatBytes(s['bytes-in']) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-text-secondary">{{ formatBytes(s['bytes-out']) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-text-secondary">{{ s['session-time-left'] || '—' }}</td>
               <td class="px-4 py-3">
-                <CheckboxRoot
-                  :model-value="selected.has(u['.id'])"
-                  class="size-4 rounded border border-border bg-base flex items-center justify-center transition-colors data-[state=checked]:bg-text-primary data-[state=checked]:border-text-primary hover:border-muted"
-                  @update:model-value="toggleSelect(u['.id'])"
-                >
-                  <CheckboxIndicator>
-                    <CheckIcon class="size-3 text-base" />
-                  </CheckboxIndicator>
-                </CheckboxRoot>
-              </td>
-              <td
-                class="px-4 py-3 font-mono font-semibold text-text-primary text-sm"
-              >
-                {{ u.name }}
-              </td>
-              <td class="px-4 py-3">
-                <span
-                  class="text-xs text-text-secondary font-medium border border-border px-2 py-0.5 rounded bg-white"
-                >
-                  {{ u.profile || "default" }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-sm text-text-secondary">
-                {{ u["limit-uptime"] || "—" }}
-              </td>
-              <td class="px-4 py-3 text-sm text-text-secondary">
-                {{ formatBytes(u["limit-bytes-total"]) }}
-              </td>
-              <td class="px-4 py-3 text-sm text-text-muted font-mono">
-                {{ u.comment || "—" }}
-              </td>
-              <td class="px-4 py-3 text-sm" :class="expiryClass(u)">
-                {{ expiryLabel(u) }}
-              </td>
-              <td class="px-4 py-3">
-                <StatusBadge
-                  variant="pill"
-                  :color="statusColor(u)"
-                  :label="statusLabel(u)"
-                />
-              </td>
-              <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-2">
-                  <button class="btn btn-ghost" @click="openEdit(u)">
-                    <PencilIcon class="size-3.5" />
-                    Edit
-                  </button>
-                  <button
-                    class="btn"
-                    :class="u.disabled === 'true' ? 'btn-ghost' : 'btn-warning'"
-                    @click="toggleDisabled(u)"
-                  >
-                    <component
-                      :is="
-                        u.disabled === 'true' ? CheckCircleIcon : NoSymbolIcon
-                      "
-                      class="size-4"
-                    />
-                    {{ u.disabled === "true" ? "Enable" : "Disable" }}
-                  </button>
-                  <button class="btn btn-danger" @click="removeUser(u['.id'])">
-                    <TrashIcon class="size-4" />
-                    Delete
+                  <template v-if="userIdByName(s.user)">
+                    <button type="button" class="btn btn-sm" @click="disableSessionUser(s.user)">
+                      <NoSymbolIcon class="size-4" />{{ t('users.disable') }}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" @click="removeSessionUser(s.user)">
+                      <TrashIcon class="size-4" />{{ t('users.delete') }}
+                    </button>
+                  </template>
+                  <button v-else type="button" class="btn btn-sm btn-danger" @click="disconnectSession(s['.id'])">
+                    {{ t('users.disconnect') }}
                   </button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
-        <!-- Pagination footer -->
-        <div
-          v-if="filteredUsers.length > 0"
-          class="flex items-center justify-between px-4 py-2.5 border-t border-border bg-surface"
-        >
-          <div class="flex items-center gap-1">
-            <span class="text-sm mr-2">Per page</span>
+      </div>
+
+      <!-- Online now pagination footer -->
+      <div
+        v-if="active.length > 0"
+        class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-t-2 border-ink text-[13px]"
+      >
+        <span>
+          {{ t('users.showing', {
+            from: (activePage - 1) * activePageSize + 1,
+            to: Math.min(activePage * activePageSize, active.length),
+            total: active.length,
+          }) }}
+        </span>
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="eyebrow mr-1">{{ t('users.perPage') }}</span>
             <button
               v-for="n in PAGE_SIZES"
               :key="n"
-              class="btn btn-sm btn-ghost"
-              :class="
-                usersPageSize === n
-                  ? 'bg-muted text-text-primary'
-                  : 'text-text-muted hover:text-text-secondary'
-              "
-              @click="setUsersPageSize(n)"
+              type="button"
+              class="btn btn-sm px-2.5"
+              :class="{ 'btn-ink': activePageSize === n }"
+              :aria-pressed="activePageSize === n"
+              @click="setActivePageSize(n)"
             >
               {{ n }}
             </button>
           </div>
           <PaginationRoot
-            v-slot="{ page }"
-            :page="usersPage"
-            :items-per-page="usersPageSize"
-            :total="filteredUsers.length"
-            @update:page="usersPage = $event"
+            :page="activePage"
+            :items-per-page="activePageSize"
+            :total="active.length"
+            class="flex gap-2"
+            @update:page="activePage = $event"
           >
-            <div class="flex items-center gap-1 text-sm text-text-muted">
-              <span
-                >{{ (page - 1) * usersPageSize + 1 }}–{{
-                  Math.min(page * usersPageSize, filteredUsers.length)
-                }}
-                of {{ filteredUsers.length }}</span
-              >
-              <PaginationPrev
-                class="btn btn-sm btn-ink disabled:opacity-30"
-              >
-                <ChevronLeftIcon class="size-4" />
-              </PaginationPrev>
-              <PaginationNext
-                class="btn btn-sm btn-ink disabled:opacity-30"
-              >
-                <ChevronRightIcon class="size-4" />
-              </PaginationNext>
-            </div>
+            <PaginationPrev class="btn btn-sm" :aria-label="t('users.previous')">
+              <ChevronLeftIcon class="size-4" />
+            </PaginationPrev>
+            <PaginationNext class="btn btn-sm" :aria-label="t('users.next')">
+              <ChevronRightIcon class="size-4" />
+            </PaginationNext>
           </PaginationRoot>
         </div>
       </div>
-    </div>
-
-    <!-- Active sessions tab -->
-    <div v-else class="border border-border rounded-xl overflow-hidden">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-border bg-surface">
-            <th
-              class="text-left px-4 py-3 text-sm font-semibold text-text-primary"
-            >
-              User
-            </th>
-            <th
-              class="text-left px-4 py-3 text-sm font-semibold text-text-primary"
-            >
-              IP
-            </th>
-            <th
-              class="text-left px-4 py-3 text-sm font-semibold text-text-primary"
-            >
-              MAC
-            </th>
-            <th
-              class="text-right px-4 py-3 text-sm font-semibold text-text-primary"
-            >
-              Uptime
-            </th>
-            <th
-              class="text-right px-4 py-3 text-sm font-semibold text-text-primary"
-            >
-              Down
-            </th>
-            <th
-              class="text-right px-4 py-3 text-sm font-semibold text-text-primary"
-            >
-              Up
-            </th>
-            <th
-              class="text-right px-4 py-3 text-sm font-semibold text-text-primary"
-            >
-              Left
-            </th>
-            <th
-              class="text-right px-4 py-3 text-sm font-semibold text-text-primary"
-            >
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="active.length === 0">
-            <td colspan="8" class="text-center text-text-muted text-sm py-10">
-              No active sessions
-            </td>
-          </tr>
-          <tr
-            v-for="s in pagedActive"
-            :key="s['.id']"
-            class="border-b border-border last:border-0 transition-colors hover:bg-surface"
-          >
-            <td
-              class="px-4 py-3 font-mono font-semibold text-text-primary text-xs"
-            >
-              {{ s.user }}
-            </td>
-            <td class="px-4 py-3 font-mono text-xs text-text-secondary">
-              {{ s.address }}
-            </td>
-            <td class="px-4 py-3 font-mono text-xs text-text-muted">
-              {{ s["mac-address"] || "—" }}
-            </td>
-            <td
-              class="px-4 py-3 text-right font-mono text-xs text-text-secondary"
-            >
-              {{ s.uptime || "—" }}
-            </td>
-            <td
-              class="px-4 py-3 text-right font-mono text-xs text-text-primary"
-            >
-              {{ formatBytes(s["bytes-in"]) }}
-            </td>
-            <td
-              class="px-4 py-3 text-right font-mono text-xs text-text-secondary"
-            >
-              {{ formatBytes(s["bytes-out"]) }}
-            </td>
-            <td
-              class="px-4 py-3 text-right font-mono text-xs text-text-secondary"
-            >
-              {{ s["session-time-left"] || "—" }}
-            </td>
-            <td class="px-4 py-3 text-right">
-              <div class="flex items-center justify-end gap-1">
-                <button
-                  v-if="userIdByName(s.user)"
-                  class="btn btn-warning"
-                  @click="disableSessionUser(s.user)"
-                >
-                  <NoSymbolIcon class="size-3.5" />
-                  Disable
-                </button>
-                <button
-                  v-if="userIdByName(s.user)"
-                  class="btn btn-danger"
-                  @click="removeSessionUser(s.user)"
-                >
-                  <TrashIcon class="size-3.5" />
-                  Delete
-                </button>
-                <button
-                  v-else
-                  class="btn btn-danger"
-                  @click="disconnectSession(s['.id'])"
-                >
-                  <TrashIcon class="size-3.5" />
-                  Disconnect
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <!-- Active sessions pagination footer -->
-      <div
-        v-if="active.length > 0"
-        class="flex items-center justify-between px-4 py-2.5 border-t border-border bg-surface"
-      >
-        <div class="flex items-center gap-1">
-          <span class="text-xs text-text-muted mr-1">Per page</span>
-          <button
-            v-for="n in PAGE_SIZES"
-            :key="n"
-            class="px-2 py-0.5 text-xs rounded transition-colors"
-            :class="
-              activePageSize === n
-                ? 'bg-muted text-text-primary'
-                : 'text-text-muted hover:text-text-secondary'
-            "
-            @click="setActivePageSize(n)"
-          >
-            {{ n }}
-          </button>
-        </div>
-        <PaginationRoot
-          v-slot="{ page }"
-          :page="activePage"
-          :items-per-page="activePageSize"
-          :total="active.length"
-          @update:page="activePage = $event"
-        >
-          <div class="flex items-center gap-1 text-sm text-text-secondary">
-            <span
-              >{{ (page - 1) * activePageSize + 1 }}–{{
-                Math.min(page * activePageSize, active.length)
-              }}
-              of {{ active.length }}</span
-            >
-            <PaginationPrev
-              class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
-            >
-              <ChevronLeftIcon class="size-3.5" />
-            </PaginationPrev>
-            <PaginationNext
-              class="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors"
-            >
-              <ChevronRightIcon class="size-3.5" />
-            </PaginationNext>
-          </div>
-        </PaginationRoot>
-      </div>
-    </div>
+    </section>
 
     <!-- Add single user dialog -->
     <AppDialog
@@ -758,7 +699,7 @@
       :login-url-supports-credentials="true"
       @update:open="showPrintDialog = $event"
     />
-  </PageLayout>
+  </main>
 </template>
 
 <script setup lang="ts">
@@ -778,22 +719,32 @@ import {
   PaginationRoot,
   PaginationPrev,
   PaginationNext,
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+  DropdownMenuPortal,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "reka-ui";
 import {
   PlusIcon,
   TrashIcon,
   ExclamationTriangleIcon,
-  TicketIcon,
   PrinterIcon,
   CheckIcon,
+  MinusIcon,
   NoSymbolIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronDownIcon,
   CheckCircleIcon,
   PencilIcon,
+  MagnifyingGlassIcon,
+  EllipsisHorizontalIcon,
+  XMarkIcon,
 } from "@heroicons/vue/24/outline";
 import { RouterLink, useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { useRoutersStore } from "@/stores/routers";
 import {
   listHotspotUsers,
@@ -811,30 +762,49 @@ import {
 } from "@/api";
 import { friendlyError } from "@/utils/errors";
 import AppDialog from "@/components/AppDialog.vue";
-import PageLayout from "@/components/PageLayout.vue";
-import StatusBadge from "@/components/StatusBadge.vue";
 import PrintTemplateDialog from "@/components/PrintTemplateDialog.vue";
 import { type VoucherEntry } from "@/utils/vouchers";
 import { normalizeDnsName } from "@/utils/dnsName";
+import { inkIcon } from "@/utils/inkIcons";
 
 const store = useRoutersStore();
 const route = useRoute();
+const { t, locale } = useI18n();
 
-const STATUS_OPTS = [
-  { value: "active", label: "Active" },
-  { value: "expires-soon", label: "Expires soon" },
-  { value: "waiting", label: "Waiting" },
-  { value: "limit-reached", label: "Limit reached" },
-  { value: "expired", label: "Expired" },
-  { value: "disabled", label: "Disabled" },
-] as const;
+type UserStatus = ReturnType<typeof userStatus>;
+
+const STATUS_ORDER: UserStatus[] = [
+  "active",
+  "expires-soon",
+  "waiting",
+  "limit-reached",
+  "expired",
+  "disabled",
+];
+
+// Statuses differ by fill and dot shape, not colour alone (see the design system).
+const STATUS_CHIP: Record<UserStatus, { chip: string; dot: string }> = {
+  active: { chip: "bg-primary text-primary-fg", dot: "bg-primary-fg" },
+  "expires-soon": { chip: "bg-primary text-primary-fg", dot: "bg-primary-fg" },
+  waiting: { chip: "", dot: "border-2 border-ink" },
+  "limit-reached": { chip: "bg-ink text-paper", dot: "bg-paper" },
+  expired: { chip: "bg-ink text-paper", dot: "bg-paper" },
+  disabled: { chip: "bg-hairline text-text-secondary border-dashed", dot: "bg-graphite" },
+};
+
+const MENU_ITEM =
+  "flex items-center gap-2.5 w-full min-h-10 px-3 rounded-lg text-sm font-medium cursor-pointer outline-none data-highlighted:bg-ground";
+const BULK_BTN =
+  "inline-flex items-center gap-2 min-h-10 px-3.5 rounded-control border-2 border-sidebar-text text-sm font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed";
+
+const ALL_PLANS = "__all__";
 
 const tab = ref<"users" | "active">(
   route.query.tab === "active" ? "active" : "users",
 );
 const tabs = [
-  { key: "users" as const, label: "All Users" },
-  { key: "active" as const, label: "Active Sessions" },
+  { key: "users" as const, label: "users.tabAll" },
+  { key: "active" as const, label: "users.tabActive" },
 ];
 const users = ref<Record<string, string>[]>([]);
 const active = ref<Record<string, string>[]>([]);
@@ -855,7 +825,8 @@ const searchQuery = ref("");
 const filterProfile = ref("");
 const filterStatus = ref("");
 
-const filteredUsers = computed(() => {
+// Search + plan filter; the status pills count within this set.
+const searchedUsers = computed(() => {
   let list = users.value;
   const q = searchQuery.value.trim().toLowerCase();
   if (q)
@@ -866,15 +837,47 @@ const filteredUsers = computed(() => {
     );
   if (filterProfile.value)
     list = list.filter((u) => (u.profile || "default") === filterProfile.value);
-  if (filterStatus.value)
-    list = list.filter((u) => userStatus(u) === filterStatus.value);
   return list;
 });
+
+const filteredUsers = computed(() =>
+  filterStatus.value
+    ? searchedUsers.value.filter((u) => userStatus(u) === filterStatus.value)
+    : searchedUsers.value,
+);
+
+// "All" plus every status that has users (or is the current filter).
+const statusFilters = computed(() => {
+  const counts = new Map<string, number>();
+  for (const u of searchedUsers.value) {
+    const s = userStatus(u);
+    counts.set(s, (counts.get(s) ?? 0) + 1);
+  }
+  return [
+    { value: "", label: t("users.all"), count: searchedUsers.value.length },
+    ...STATUS_ORDER.filter((s) => counts.has(s) || filterStatus.value === s).map((s) => ({
+      value: s,
+      label: t(`users.status.${s}`),
+      count: counts.get(s) ?? 0,
+    })),
+  ];
+});
+
+const planOptions = computed(() => [
+  { value: ALL_PLANS, label: t("users.allPlans") },
+  ...profiles.value.map((p) => ({ value: p.name, label: p.name })),
+]);
+
+function clearFilters() {
+  searchQuery.value = "";
+  filterProfile.value = "";
+  filterStatus.value = "";
+}
 
 const PAGE_SIZES = [20, 50, 100] as const;
 const usersPageSize = ref<20 | 50 | 100>(20);
 const usersPage = ref(1);
-const activePageSize = ref<20 | 50 | 100>(20);
+const activePageSize = ref<20 | 50 | 100>(100);
 const activePage = ref(1);
 
 const pagedUsers = computed(() => {
@@ -927,7 +930,11 @@ const loading = ref(false);
 const error = ref("");
 
 const selected = ref<Set<string>>(new Set());
-const bulkDeleting = ref(false);
+const bulkBusy = ref(false);
+
+const selectedUsers = computed(() =>
+  users.value.filter((u) => selected.value.has(u[".id"])),
+);
 
 const allSelected = computed(
   () =>
@@ -955,19 +962,25 @@ function toggleSelectAll() {
 
 async function removeSelected() {
   if (!store.activeId || !selected.value.size) return;
-  if (
-    !confirm(
-      `Delete ${selected.value.size} selected user${selected.value.size > 1 ? "s" : ""}?`,
-    )
-  )
-    return;
-  bulkDeleting.value = true;
+  if (!confirm(t("users.confirmDeleteMany", selected.value.size))) return;
+  bulkBusy.value = true;
   const ids = [...selected.value];
   await Promise.allSettled(
     ids.map((id) => deleteHotspotUser(store.activeId!, id)),
   );
   selected.value = new Set();
-  bulkDeleting.value = false;
+  bulkBusy.value = false;
+  await loadUsers();
+}
+
+// Keeps the selection so the operator can follow up (e.g. print after enabling).
+async function setSelectedDisabled(disabled: boolean) {
+  if (!store.activeId || !selected.value.size) return;
+  bulkBusy.value = true;
+  await Promise.allSettled(
+    [...selected.value].map((id) => toggleHotspotUser(store.activeId!, id, disabled)),
+  );
+  bulkBusy.value = false;
   await loadUsers();
 }
 
@@ -1194,13 +1207,7 @@ function openAdd() {
 }
 
 async function removeUser(userId: string) {
-  if (
-    !store.activeId ||
-    !confirm(
-      "Delete this user? This also disconnects them if currently active.",
-    )
-  )
-    return;
+  if (!store.activeId || !confirm(t("users.confirmDelete"))) return;
   await deleteHotspotUser(store.activeId, userId);
   await loadUsers();
 }
@@ -1295,11 +1302,7 @@ const printEntries = ref<VoucherEntry[]>([]);
 
 // With no selection, prints every currently filtered/visible user instead —
 // so the header Print button always does something useful.
-function openPrint() {
-  const source =
-    selected.value.size > 0
-      ? users.value.filter((u) => selected.value.has(u[".id"]))
-      : filteredUsers.value;
+function openPrint(source: Record<string, string>[] = filteredUsers.value) {
   printEntries.value = source.map((u) => ({
     name: u.name,
     password: u.password ?? "",
@@ -1346,65 +1349,58 @@ function userStatus(
   return "active";
 }
 
-const STATUS_META: Record<
-  ReturnType<typeof userStatus>,
-  { label: string; color: "green" | "amber" | "red" | "blue" | "muted" }
-> = {
-  active: { label: "Active", color: "green" },
-  waiting: { label: "Waiting", color: "blue" },
-  disabled: { label: "Disabled", color: "red" },
-  expired: { label: "Expired", color: "red" },
-  "expires-soon": { label: "Expires soon", color: "amber" },
-  "limit-reached": { label: "Limit reached", color: "amber" },
-};
-
-function statusLabel(u: Record<string, string>): string {
-  return STATUS_META[userStatus(u)].label;
+// Remaining time and how much of the allowance it is: from the uptime quota
+// when the user has one, otherwise from the voucher's calendar expiry.
+function timeLeft(u: Record<string, string>): { label: string; pct: number } | null {
+  let left: number, total: number;
+  const limit = parseUptimeSeconds(u["limit-uptime"]);
+  const epoch = extractExpEpoch(u.comment);
+  const validity = selectedProfileValiditySeconds(u.profile);
+  if (limit) {
+    left = limit - parseUptimeSeconds(u.uptime);
+    total = limit;
+  } else if (epoch !== null && validity) {
+    left = epoch - Math.floor(Date.now() / 1000);
+    total = validity;
+  } else {
+    return null;
+  }
+  left = Math.max(0, left);
+  return {
+    label: left > 0 ? formatSeconds(left) : "0m",
+    pct: Math.min(100, (left / total) * 100),
+  };
 }
 
-function statusColor(
-  u: Record<string, string>,
-): "green" | "amber" | "red" | "blue" | "muted" {
-  return STATUS_META[userStatus(u)].color;
+function dataUsage(u: Record<string, string>): string {
+  const used = (parseInt(u["bytes-in"] ?? "0") || 0) + (parseInt(u["bytes-out"] ?? "0") || 0);
+  const usedLabel = used ? formatBytes(String(used)) : "0";
+  return u["limit-bytes-total"] && u["limit-bytes-total"] !== "0"
+    ? `${usedLabel} / ${formatBytes(u["limit-bytes-total"])}`
+    : usedLabel;
 }
 
-function expiryLabel(u: Record<string, string>): string {
-  // Uptime quota exhaustion takes precedence over the exp: comment — see
-  // userStatus() for why: RouterOS enforces it in real time, so it's the
-  // reason that actually applies even if the calendar exp: hasn't hit yet.
-  if (isUptimeExhausted(u)) return "Limit reached";
+function expiresAt(u: Record<string, string>): string {
   const epoch = extractExpEpoch(u.comment);
   if (epoch === null) return "—";
-  const now = Math.floor(Date.now() / 1000);
-  const diff = epoch - now;
-  if (diff <= 0) return "Expired";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m left`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h left`;
-  return `${Math.floor(diff / 86400)}d left`;
+  return new Date(epoch * 1000).toLocaleString(locale.value, {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-function expiryClass(u: Record<string, string>): string {
-  if (isUptimeExhausted(u)) return "text-amber font-medium";
-  const epoch = extractExpEpoch(u.comment);
-  if (epoch === null) return "text-text-muted";
-  const diff = epoch - Math.floor(Date.now() / 1000);
-  if (diff <= 0) return "text-red font-medium";
-  if (diff < 3600) return "text-amber";
-  return "text-text-secondary";
-}
-
+// RouterOS durations come as "1w2d3h4m5s" or, depending on version and field,
+// clock style ("00:22:10", "1d 03:04:05").
 function parseUptimeSeconds(uptime: string | undefined): number {
   if (!uptime) return 0;
-  const m = uptime.match(
-    /(?:(\d+)d\s*)?(?:(\d+)h\s*)?(?:(\d+)m\s*)?(?:(\d+)s)?/,
-  );
-  if (!m) return 0;
-  return (
-    parseInt(m[1] || "0") * 86400 +
-    parseInt(m[2] || "0") * 3600 +
-    parseInt(m[3] || "0") * 60 +
-    parseInt(m[4] || "0")
-  );
+  const UNIT: Record<string, number> = { w: 604800, d: 86400, h: 3600, m: 60, s: 1 };
+  let secs = 0;
+  const clock = uptime.match(/(\d+):(\d+):(\d+)/);
+  if (clock) secs += +clock[1] * 3600 + +clock[2] * 60 + +clock[3];
+  for (const [, n, unit] of uptime.matchAll(/(\d+)([wdhms])/g)) secs += +n * UNIT[unit];
+  return secs;
 }
 
 function formatSeconds(secs: number): string {
