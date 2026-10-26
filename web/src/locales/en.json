@@ -226,5 +226,71 @@
     "noMatch": "No log entries match your filters",
     "retry": "Retry",
     "failedToLoad": "Failed to load logs"
+  },
+  "vouchers": {
+    "breadcrumb": "Hotspot",
+    "title": "Generate vouchers",
+    "settings": "Voucher settings",
+    "step1": "Pick a plan",
+    "managePlans": "Manage plans",
+    "noValidity": "No time limit",
+    "noPrice": "No price set",
+    "noPlansTitle": "No plans yet",
+    "noPlansBody": "Create a plan first to set the price and validity of your vouchers.",
+    "newPlan": "New plan",
+    "step2": "How many?",
+    "fewer": "Fewer vouchers",
+    "more": "More vouchers",
+    "quantity": "Number of vouchers",
+    "maxHint": "Up to 500 per batch",
+    "step3": "Code style",
+    "prefix": "Prefix",
+    "length": "Length",
+    "login": "Login",
+    "codeOnly": "Code only",
+    "codeAndPassword": "Code + password",
+    "step4": "Template",
+    "step5": "Options",
+    "characters": "Characters",
+    "charsMixed": "Letters + digits",
+    "charsLetters": "Letters",
+    "charsDigits": "Digits",
+    "samePassword": "One password for all",
+    "samePasswordPlaceholder": "Shared password",
+    "timeLimit": "Time limit",
+    "timeLimitPlaceholder": "e.g. 1h, 1d — blank uses the plan",
+    "timeLimitInvalid": "Use 30m, 2h, 1d, 1w or 1d12h",
+    "timeLimitWarning": "Longer than the plan's validity — the voucher expires first.",
+    "dataLimit": "Data limit",
+    "dataLimitPlaceholder": "0 = use the plan",
+    "comment": "Comment",
+    "commentPlaceholder": "e.g. July batch",
+    "summary": "{n} voucher · {plan} | {n} vouchers · {plan}",
+    "generatePrint": "Generate & print",
+    "saveOnly": "Save only",
+    "preview": "Print preview",
+    "previewNote": "Sample codes. The real codes are created when you generate.",
+    "creating": "Creating vouchers…",
+    "resultTitle": "Vouchers",
+    "created": "{n} created",
+    "failed": "{n} failed",
+    "close": "Close",
+    "print": "Print",
+    "failedToLoad": "Failed to load plans",
+    "retry": "Retry"
+  },
+  "templates": {
+    "modern": {
+      "label": "Modern",
+      "description": "Username and password side by side, no QR code."
+    },
+    "business": {
+      "label": "Business",
+      "description": "Username, password and a QR code to log in."
+    },
+    "voucher": {
+      "label": "Voucher",
+      "description": "One code with a QR code, for the Voucher login page."
+    }
   }
 }

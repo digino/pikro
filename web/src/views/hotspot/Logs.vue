@@ -123,7 +123,7 @@
                   colspan="5"
                   class="px-4 py-2 bg-ink text-paper text-[11px] font-bold uppercase tracking-widest"
                 >
-                  {{ row.day || t('logs.today') }}
+                  {{ dayLabel(row.day) }}
                 </td>
               </tr>
               <tr v-else class="border-b border-hairline last:border-0 hover:bg-primary-wash">
@@ -204,7 +204,7 @@ const EVENT_STYLE: Record<LogEvent, { chip: string; marker: string; message: str
 };
 
 const PAGE = 100;
-const LIVE_INTERVAL_MS = 10_000;
+const LIVE_INTERVAL_MS = 30_000;
 
 const logs = ref<HotspotLogEntry[]>([]);
 const loading = ref(false);
@@ -219,8 +219,15 @@ const live = ref(true);
 const USER_MESSAGE_RE = /^(\S+)\s+\(([^)]+)\):\s*(.*)$/;
 // Pikro's own scripts: "pikro-cleanup: removing <user> (<reason>)", "pikro-on-login: stamping <user> (...)".
 const PIKRO_SCRIPT_RE = /^pikro-(cleanup|on-login):\s*(?:removing|stamping)\s+(\S+)\s*(.*)$/;
-// RouterOS prefixes the clock with a date for entries not from today ("oct/24 21:48:12", "2026-10-24 21:48:12").
+// RouterOS prefixes the clock with a date: v6 only for older entries ("oct/24 21:48:12"),
+// recent v7 for every entry ("2026-10-24 21:48:12").
 const TIME_RE = /^(.*?)\s*(\d{1,2}:\d{2}:\d{2})$/;
+
+function dayLabel(day: string): string {
+  const now = new Date();
+  const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return !day || day === iso ? t("logs.today") : day;
+}
 
 function classify(action: string): LogEvent {
   if (action.startsWith("logged in")) return "login";

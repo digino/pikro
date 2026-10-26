@@ -21,18 +21,12 @@ export interface PrintVouchersOptions {
   loginUrlSupportsCredentials?: boolean;
 }
 
-export async function printVouchers(entries: VoucherEntry[], opts: PrintVouchersOptions) {
-  const {
-    template,
-    businessName,
-    showPrice,
-    currency,
-    profileMetas,
-    loginUrl = "",
-    loginUrlSupportsCredentials = false,
-  } = opts;
-
-  const items: VoucherItem[] = entries.map((r) => {
+export function toVoucherItems(
+  entries: VoucherEntry[],
+  opts: Pick<PrintVouchersOptions, "showPrice" | "currency" | "profileMetas">,
+): VoucherItem[] {
+  const { showPrice, currency, profileMetas } = opts;
+  return entries.map((r) => {
     const meta = profileMetas[r.profile || "default"];
     const price = showPrice && meta?.price ? `${meta.price}${currency ? " " + currency : ""}` : "";
     return {
@@ -43,6 +37,17 @@ export async function printVouchers(entries: VoucherEntry[], opts: PrintVouchers
       price,
     };
   });
+}
+
+export async function printVouchers(entries: VoucherEntry[], opts: PrintVouchersOptions) {
+  const {
+    template,
+    businessName,
+    loginUrl = "",
+    loginUrlSupportsCredentials = false,
+  } = opts;
+
+  const items = toVoucherItems(entries, opts);
 
   const html = await getVoucherTemplate(template).render(items, {
     businessName,

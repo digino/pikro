@@ -10,20 +10,20 @@
           <p class="text-sm font-medium text-text-secondary">Choose a template</p>
           <div class="grid gap-2">
             <button
-              v-for="t in VOUCHER_TEMPLATES"
-              :key="t.key"
+              v-for="tpl in VOUCHER_TEMPLATES"
+              :key="tpl.key"
               type="button"
               class="flex items-start gap-3 border rounded-lg p-3 text-left transition-colors"
               :class="
-                template === t.key
+                template === tpl.key
                   ? 'border-accent bg-accent/10'
                   : 'border-border hover:border-muted'
               "
-              @click="template = t.key"
+              @click="template = tpl.key"
             >
               <div>
-                <p class="text-sm font-semibold text-text-primary">{{ t.label }}</p>
-                <p class="text-xs text-text-secondary">{{ t.description }}</p>
+                <p class="text-sm font-semibold text-text-primary">{{ t(`templates.${tpl.key}.label`) }}</p>
+                <p class="text-xs text-text-secondary">{{ t(`templates.${tpl.key}.description`) }}</p>
               </div>
             </button>
           </div>
@@ -63,6 +63,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrinterIcon } from "@heroicons/vue/24/outline";
 import AppDialog from "@/components/AppDialog.vue";
 import { VOUCHER_TEMPLATES, getVoucherTemplate, type VoucherTemplate } from "@/utils/voucherTemplates";
@@ -82,8 +83,9 @@ const emit = defineEmits<{
   "update:open": [open: boolean];
 }>();
 
+const { t } = useI18n();
 const count = ref(0);
-const template = ref<VoucherTemplate["key"]>("classic");
+const template = ref<VoucherTemplate["key"]>("modern");
 const printing = ref(false);
 const printError = ref("");
 const previewHtml = ref("");

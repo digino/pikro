@@ -226,5 +226,71 @@
     "noMatch": "Aucune entrée ne correspond à vos filtres",
     "retry": "Réessayer",
     "failedToLoad": "Échec du chargement des journaux"
+  },
+  "vouchers": {
+    "breadcrumb": "Hotspot",
+    "title": "Générer des tickets",
+    "settings": "Réglages des tickets",
+    "step1": "Choisissez un forfait",
+    "managePlans": "Gérer les forfaits",
+    "noValidity": "Sans limite de durée",
+    "noPrice": "Aucun prix défini",
+    "noPlansTitle": "Aucun forfait pour l'instant",
+    "noPlansBody": "Créez d'abord un forfait pour fixer le prix et la validité de vos tickets.",
+    "newPlan": "Nouveau forfait",
+    "step2": "Combien ?",
+    "fewer": "Moins de tickets",
+    "more": "Plus de tickets",
+    "quantity": "Nombre de tickets",
+    "maxHint": "Jusqu'à 500 par lot",
+    "step3": "Style du code",
+    "prefix": "Préfixe",
+    "length": "Longueur",
+    "login": "Connexion",
+    "codeOnly": "Code seul",
+    "codeAndPassword": "Code + mot de passe",
+    "step4": "Modèle",
+    "step5": "Options",
+    "characters": "Caractères",
+    "charsMixed": "Lettres + chiffres",
+    "charsLetters": "Lettres",
+    "charsDigits": "Chiffres",
+    "samePassword": "Un mot de passe pour tous",
+    "samePasswordPlaceholder": "Mot de passe partagé",
+    "timeLimit": "Limite de temps",
+    "timeLimitPlaceholder": "ex. 1h, 1d — vide = celle du forfait",
+    "timeLimitInvalid": "Utilisez 30m, 2h, 1d, 1w ou 1d12h",
+    "timeLimitWarning": "Plus long que la validité du forfait — le ticket expirera avant.",
+    "dataLimit": "Limite de données",
+    "dataLimitPlaceholder": "0 = celle du forfait",
+    "comment": "Commentaire",
+    "commentPlaceholder": "ex. lot de juillet",
+    "summary": "{n} ticket · {plan} | {n} tickets · {plan}",
+    "generatePrint": "Générer et imprimer",
+    "saveOnly": "Enregistrer seulement",
+    "preview": "Aperçu d'impression",
+    "previewNote": "Codes d'exemple. Les vrais codes sont créés à la génération.",
+    "creating": "Création des tickets…",
+    "resultTitle": "Tickets",
+    "created": "{n} créé(s)",
+    "failed": "{n} en échec",
+    "close": "Fermer",
+    "print": "Imprimer",
+    "failedToLoad": "Échec du chargement des forfaits",
+    "retry": "Réessayer"
+  },
+  "templates": {
+    "modern": {
+      "label": "Moderne",
+      "description": "Identifiant et mot de passe côte à côte, sans QR code."
+    },
+    "business": {
+      "label": "Business",
+      "description": "Identifiant, mot de passe et QR code de connexion."
+    },
+    "voucher": {
+      "label": "Ticket",
+      "description": "Un seul code avec QR code, pour la page de connexion Ticket."
+    }
   }
 }

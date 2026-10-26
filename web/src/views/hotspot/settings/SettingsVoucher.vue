@@ -14,18 +14,18 @@
         <span class="text-sm font-medium text-text-secondary">Preview a template</span>
         <div class="flex flex-col gap-2">
           <button
-            v-for="t in VOUCHER_TEMPLATES"
-            :key="t.key"
+            v-for="tpl in VOUCHER_TEMPLATES"
+            :key="tpl.key"
             type="button"
             class="flex items-start gap-3 p-3 rounded-lg border text-left transition-colors"
-            :class="preview === t.key
+            :class="preview === tpl.key
               ? 'border-text-primary bg-muted'
               : 'border-border hover:border-text-muted'"
-            @click="preview = t.key"
+            @click="preview = tpl.key"
           >
             <div>
-              <div class="text-xs font-semibold text-text-primary">{{ t.label }}</div>
-              <div class="text-xs text-text-muted mt-0.5">{{ t.description }}</div>
+              <div class="text-xs font-semibold text-text-primary">{{ t(`templates.${tpl.key}.label`) }}</div>
+              <div class="text-xs text-text-muted mt-0.5">{{ t(`templates.${tpl.key}.description`) }}</div>
             </div>
           </button>
         </div>
@@ -36,23 +36,8 @@
     <div class="flex-1 min-w-0">
       <p class="text-xs font-medium text-text-muted mb-2">Preview</p>
 
-      <!-- Classic: dense, heavy borders, zero gap -->
-      <div v-if="preview === 'classic'" class="border border-border rounded-xl p-5 bg-surface overflow-hidden">
-        <div class="grid grid-cols-4 font-mono text-xs">
-          <div
-            v-for="sample in voucherSamples"
-            :key="sample.name"
-            class="border-2 border-text-primary p-2 flex flex-col gap-1 -mt-px -ml-px"
-          >
-            <div class="flex justify-between"><span class="text-[8px] uppercase text-text-muted">User</span><span class="font-bold">{{ sample.name }}</span></div>
-            <div class="flex justify-between"><span class="text-[8px] uppercase text-text-muted">Pass</span><span class="font-bold">{{ sample.password }}</span></div>
-            <div class="text-[8px] border-t border-text-primary pt-1 text-center">1 day · 500 {{ effectiveCurrency }}</div>
-          </div>
-        </div>
-      </div>
-
       <!-- Modern: compact cards, heavy border, small gap -->
-      <div v-else-if="preview === 'modern'" class="border border-border rounded-xl p-5 bg-surface grid grid-cols-4 gap-2">
+      <div v-if="preview === 'modern'" class="border border-border rounded-xl p-5 bg-surface grid grid-cols-4 gap-2">
         <div
           v-for="sample in voucherSamples"
           :key="sample.name"
@@ -100,12 +85,15 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { QrCodeIcon } from '@heroicons/vue/24/outline'
 import { VOUCHER_TEMPLATES, type VoucherTemplate } from '@/utils/voucherTemplates'
 
 defineProps<{ hotspotName: string; effectiveCurrency: string }>()
 
-const preview = ref<VoucherTemplate['key']>('classic')
+const { t } = useI18n()
+
+const preview = ref<VoucherTemplate['key']>('modern')
 
 const voucherSamples = [
   { name: 'ab3f', password: 'ab3f' },

@@ -30,9 +30,16 @@ export interface VoucherTemplateOptions {
 }
 
 export interface VoucherTemplate {
-  key: "classic" | "modern" | "business" | "voucher";
-  label: string;
-  description: string;
+  /** Name and description are UI strings: locales `templates.<key>.label|description`. */
+  key: "modern" | "business" | "voucher";
   /** Renders the full printable HTML document for a batch of vouchers. */
   render(items: VoucherItem[], opts: VoucherTemplateOptions): Promise<string>;
+}
+
+/**
+ * Longest username or password in the batch. Templates size their tickets
+ * from it, so a page fills with as many tickets as fit whatever the code length.
+ */
+export function longestCode(items: VoucherItem[]): number {
+  return Math.max(4, ...items.map((i) => Math.max(i.name.length, i.password.length)));
 }

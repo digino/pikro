@@ -1,6 +1,6 @@
 import type { VoucherTemplate } from "./types";
-import { voucherDurationLabel } from "./types";
-import { qrSvg } from "./qr";
+import { voucherDurationLabel, longestCode } from "./types";
+import { loginQrSvg } from "./qr";
 
 const QR_SIZE_PX = 60;
 
@@ -10,19 +10,13 @@ const QR_SIZE_PX = 60;
 // username/password so scanning logs the user straight in; otherwise it
 // just opens the login page and the user types the credentials themselves.
 const render: VoucherTemplate["render"] = async (items, opts) => {
-  const { businessName, loginUrl, loginUrlSupportsCredentials } = opts;
+  const { businessName } = opts;
 
   const cards = await Promise.all(
     items.map(async (item, i) => {
       const { name, password, price } = item;
       const duration = voucherDurationLabel(item);
-      let qr = "";
-      if (loginUrl) {
-        const target = loginUrlSupportsCredentials
-          ? `${loginUrl}${loginUrl.includes("?") ? "&" : "?"}username=${encodeURIComponent(name)}&password=${encodeURIComponent(password)}`
-          : loginUrl;
-        qr = await qrSvg(target, QR_SIZE_PX);
-      }
+      const qr = await loginQrSvg(name, password, opts, QR_SIZE_PX);
 
       return `
         <div class="v">
@@ -38,10 +32,13 @@ const render: VoucherTemplate["render"] = async (items, opts) => {
     }),
   );
 
+  // Label + value (~1.9mm per bold 8.5pt character) beside a 16mm QR.
+  const minWidth = Math.max(40, longestCode(items) * 1.9 + 32);
+
   const css = `
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:ui-sans-serif,system-ui,sans-serif;background:#fff;color:#000;padding:6mm}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(40mm,1fr));gap:2.5mm}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(${minWidth}mm,1fr));gap:2.5mm}
     .v{border:1.25pt solid #000;border-radius:2px;padding:2mm;display:flex;align-items:center;gap:1.5mm;page-break-inside:avoid}
     .left{flex:1;min-width:0;display:flex;flex-direction:column;gap:0.6mm}
     .right{shrink:0;display:flex;align-items:center;justify-content:center}
@@ -60,7 +57,5 @@ const render: VoucherTemplate["render"] = async (items, opts) => {
 
 export const BUSINESS_TEMPLATE: VoucherTemplate = {
   key: "business",
-  label: "Business",
-  description: "Cards with a scannable QR login code, ~40 per page",
   render,
 };

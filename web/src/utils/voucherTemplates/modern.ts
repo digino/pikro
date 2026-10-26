@@ -1,5 +1,5 @@
 import type { VoucherTemplate } from "./types";
-import { voucherDurationLabel } from "./types";
+import { voucherDurationLabel, longestCode } from "./types";
 
 // Modern — compact professional card grid, heavy borders, small gap between
 // pieces (as opposed to Classic's zero-gap collapsed-border sheet).
@@ -22,10 +22,13 @@ const render: VoucherTemplate["render"] = async (items, { businessName }) => {
     })
     .join("");
 
+  // Username and password sit side by side at ~2.1mm per bold 9pt character.
+  const minWidth = Math.max(34, longestCode(items) * 4.2 + 9);
+
   const css = `
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:ui-sans-serif,system-ui,sans-serif;background:#fff;color:#000;padding:8mm}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(34mm,1fr));gap:2mm}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(${minWidth}mm,1fr));gap:2mm}
     .v{border:1.25pt solid #000;border-radius:2px;padding:2.5mm;display:flex;flex-direction:column;gap:1.5mm;page-break-inside:avoid}
     .biz{font-size:6.5pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.02em;border-bottom:0.75pt solid #000;padding-bottom:1mm}
     .creds{display:grid;grid-template-columns:1fr 1px 1fr;gap:1.5mm;align-items:center}
@@ -43,7 +46,5 @@ const render: VoucherTemplate["render"] = async (items, { businessName }) => {
 
 export const MODERN_TEMPLATE: VoucherTemplate = {
   key: "modern",
-  label: "Modern",
-  description: "Compact professional cards — heavy borders, light spacing, ~60 per page",
   render,
 };

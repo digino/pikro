@@ -1,42 +1,55 @@
 import type { VoucherTemplate } from "./types";
-import { voucherDurationLabel } from "./types";
+import { voucherDurationLabel, longestCode } from "./types";
+import { loginQrSvg } from "./qr";
+
+const QR_SIZE_PX = 52;
 
 // Voucher — single-code ticket, matching the "Voucher" hotspot login template
 // (one field, no separate username/password). Requires vouchers generated
 // with password set to "Same as username" — prints item.name only.
-const render: VoucherTemplate["render"] = async (items, { businessName }) => {
-  const cards = items
-    .map((item) => {
-      const { name, price } = item;
+// Ticket layout from the v1 design: details and code on the left, the login QR
+// on a stub behind a dashed tear line. Black and white only, to print cheaply.
+const render: VoucherTemplate["render"] = async (items, opts) => {
+  const { businessName } = opts;
+
+  const cards = await Promise.all(
+    items.map(async (item) => {
+      const { name, password, price } = item;
       const duration = voucherDurationLabel(item);
+      const qr = await loginQrSvg(name, password, opts, QR_SIZE_PX);
       return `
         <div class="v">
-          ${businessName ? `<div class="biz">${businessName}</div>` : ""}
-          <div class="lbl">Voucher code</div>
-          <div class="code">${name}</div>
-          ${duration || price ? `<div class="sub">${[duration, price].filter(Boolean).join(" · ")}</div>` : ""}
+          <div class="info">
+            <div class="head"><span>${businessName}</span><span>${duration}</span></div>
+            <div class="code">${name}</div>
+            <div class="foot">Connect to the Wi-Fi, then enter this code.${price ? ` <b>${price}</b>` : ""}</div>
+          </div>
+          ${qr ? `<div class="stub"><div class="qr">${qr}</div></div>` : ""}
         </div>`;
-    })
-    .join("");
+    }),
+  );
+
+  // Code at ~3mm per 14pt mono character, plus padding and the ~19mm QR stub.
+  const minWidth = Math.max(60, longestCode(items) * 3 + 30);
 
   const css = `
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:ui-sans-serif,system-ui,sans-serif;background:#fff;color:#000;padding:8mm}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(36mm,1fr));gap:2mm}
-    .v{border:1.25pt solid #000;border-radius:3px;padding:3mm;display:flex;flex-direction:column;align-items:center;gap:1mm;page-break-inside:avoid;text-align:center}
-    .biz{font-size:6.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.02em;border-bottom:0.75pt solid #000;padding-bottom:1mm;width:100%}
-    .lbl{font-size:5.5pt;text-transform:uppercase;letter-spacing:.05em;color:#333}
-    .code{font-size:12pt;font-weight:800;letter-spacing:.06em}
-    .sub{font-size:6pt;border-top:0.75pt solid #000;padding-top:1mm;width:100%}
-    @media print{body{padding:5mm}.grid{gap:1.5mm}}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(${minWidth}mm,1fr));gap:2.5mm}
+    .v{display:flex;min-height:22mm;border:1.5pt solid #000;border-radius:2.5mm;overflow:hidden;page-break-inside:avoid}
+    .info{flex:1;min-width:0;padding:2.5mm 3mm;display:flex;flex-direction:column;justify-content:center;gap:1mm}
+    .head{display:flex;justify-content:space-between;gap:1.5mm;font-size:6.5pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+    .code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14pt;font-weight:600;letter-spacing:.02em}
+    .foot{font-size:6.5pt;color:#333}
+    .stub{flex:none;display:flex;align-items:center;justify-content:center;padding:0 2.5mm;border-left:1.5pt dashed #000}
+    .qr{display:flex;padding:1mm;border:1pt solid #000;background:#fff}
+    @media print{body{padding:5mm}.grid{gap:2mm}}
   `;
 
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Vouchers — Voucher</title><style>${css}</style></head><body><div class="grid">${cards}</div></body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Vouchers — Voucher</title><style>${css}</style></head><body><div class="grid">${cards.join("")}</div></body></html>`;
 };
 
 export const VOUCHER_PRINT_TEMPLATE: VoucherTemplate = {
   key: "voucher",
-  label: "Voucher",
-  description: "Single-code ticket — pairs with the Voucher login page, ~50 per page",
   render,
 };
