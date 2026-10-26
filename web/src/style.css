@@ -133,11 +133,9 @@ html, body, #app {
   letter-spacing: -0.03em;
 }
 @utility eyebrow {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
   color: var(--color-graphite);
 }
 

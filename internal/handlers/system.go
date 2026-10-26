@@ -1,6 +1,10 @@
 package handlers
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/digino/pikro/internal/router"
+)
 
 // AppVersion is set by main via handlers.AppVersion = Version at startup.
 var AppVersion = "dev"
@@ -85,7 +89,7 @@ func GetSystemLogs(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	logs, err := client.SystemLogs("hotspot")
+	logs, err := client.SystemLogs(router.IsHotspotLog)
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return

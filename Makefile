@@ -10,7 +10,7 @@ RELEASE_LDFLAGS := -ldflags "-s -w -X main.Version=$(VERSION)"
 RELEASE_WIN_LDFLAGS := -ldflags "-s -w -X main.Version=$(VERSION) -H windowsgui"
 RSRC_VERSION := v0.10.2
 
-.PHONY: dev backend build release clean _win_rsrc
+.PHONY: dev backend build release clean _win_rsrc chr7 chr6
 
 # Run Go backend + Vite dev server side by side.
 # Ctrl+C kills both via the trap.
@@ -89,6 +89,13 @@ _bundle_app:
 	 ln -s /Applications "$$STAGE/Applications"; \
 	 hdiutil create -volname "Pikro" -srcfolder "$$STAGE" -ov -format UDZO "$(OUT)" -quiet; \
 	 rm -rf "$$APP" "$$STAGE"
+
+# Local RouterOS test VMs — see dev/chr/README.md
+chr7:
+	@dev/chr/run.sh v7
+
+chr6:
+	@dev/chr/run.sh v6
 
 clean:
 	rm -f $(BINARY)

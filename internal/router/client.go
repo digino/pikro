@@ -618,9 +618,19 @@ func (c *Client) SystemClock() (map[string]string, error) {
 	return reply.Re[0].Map, nil
 }
 
-// SystemLogs returns log entries, newest first. If topic is non-empty, only
-// entries whose topics field contains it are returned.
-func (c *Client) SystemLogs(topic string) ([]map[string]any, error) {
+// IsHotspotLog reports whether a log entry belongs on the hotspot Logs screen:
+// RouterOS hotspot events, plus the lines Pikro's own scripts write (the
+// cleanup scheduler and on-login stamping), which RouterOS files under "script".
+func IsHotspotLog(e map[string]any) bool {
+	topics, _ := e["topics"].(string)
+	message, _ := e["message"].(string)
+	return strings.Contains(topics, "hotspot") ||
+		(strings.Contains(topics, "script") && strings.HasPrefix(message, "pikro-"))
+}
+
+// SystemLogs returns log entries, newest first. If keep is non-nil, only
+// entries it accepts are returned.
+func (c *Client) SystemLogs(keep func(map[string]any) bool) ([]map[string]any, error) {
 	conn, err := c.connect()
 	if err != nil {
 		return nil, err
@@ -632,10 +642,10 @@ func (c *Client) SystemLogs(topic string) ([]map[string]any, error) {
 		return nil, err
 	}
 	entries := replyToList(reply)
-	if topic != "" {
+	if keep != nil {
 		filtered := entries[:0]
 		for _, e := range entries {
-			if topics, _ := e["topics"].(string); strings.Contains(topics, topic) {
+			if keep(e) {
 				filtered = append(filtered, e)
 			}
 		}

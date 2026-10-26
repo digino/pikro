@@ -29,7 +29,7 @@
     "unreachable": "Unreachable",
     "switchRouter": "Switch",
     "generateVouchers": "Generate vouchers",
-    "heroTitle": "Here's how your {highlight} is doing.",
+    "heroTitle": "Here's how your {highlight} is doing",
     "heroHighlight": "hotspot",
     "onlineNow": "No one is online right now. | {n} person is online right now. | {n} people are online right now.",
     "cleanupKeepsTidy": "Auto-cleanup removes expired vouchers from the router for you.",
@@ -185,5 +185,46 @@
     "colLeft": "Left",
     "noSessions": "No one is online",
     "disconnect": "Disconnect"
+  },
+  "logs": {
+    "breadcrumb": "Hotspot",
+    "title": "Logs",
+    "live": "Following live",
+    "paused": "Paused",
+    "exportCsv": "Export CSV",
+    "statsCaption": "In the router's log",
+    "statLogins": "Logins",
+    "statLogouts": "Logouts",
+    "statFailed": "Failed logins",
+    "statCleanup": "Removed by cleanup",
+    "filterLabel": "Filter by event",
+    "all": "All",
+    "event": {
+      "login": "Login",
+      "logout": "Logout",
+      "failed": "Failed",
+      "cleanup": "Cleanup",
+      "system": "System"
+    },
+    "filter": {
+      "login": "Logins",
+      "logout": "Logouts",
+      "failed": "Failed",
+      "cleanup": "Cleanup",
+      "system": "System"
+    },
+    "search": "Search logs",
+    "searchPlaceholder": "User, IP or message",
+    "colTime": "Time",
+    "colEvent": "Event",
+    "colUser": "User",
+    "colAddress": "Address",
+    "colMessage": "Message",
+    "today": "Today",
+    "loadOlder": "Load older events",
+    "empty": "No hotspot log entries yet",
+    "noMatch": "No log entries match your filters",
+    "retry": "Retry",
+    "failedToLoad": "Failed to load logs"
   }
 }

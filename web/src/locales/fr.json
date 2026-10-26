@@ -29,7 +29,7 @@
     "unreachable": "Injoignable",
     "switchRouter": "Changer",
     "generateVouchers": "Générer des tickets",
-    "heroTitle": "Voici comment se porte votre {highlight}.",
+    "heroTitle": "Voici comment se porte votre {highlight}",
     "heroHighlight": "hotspot",
     "onlineNow": "Personne n'est en ligne pour le moment. | {n} personne est en ligne en ce moment. | {n} personnes sont en ligne en ce moment.",
     "cleanupKeepsTidy": "Le nettoyage automatique retire pour vous les tickets expirés du routeur.",
@@ -185,5 +185,46 @@
     "colLeft": "Restant",
     "noSessions": "Personne n'est en ligne",
     "disconnect": "Déconnecter"
+  },
+  "logs": {
+    "breadcrumb": "Hotspot",
+    "title": "Journaux",
+    "live": "Suivi en direct",
+    "paused": "En pause",
+    "exportCsv": "Exporter en CSV",
+    "statsCaption": "Dans le journal du routeur",
+    "statLogins": "Connexions",
+    "statLogouts": "Déconnexions",
+    "statFailed": "Connexions échouées",
+    "statCleanup": "Retirés par le nettoyage",
+    "filterLabel": "Filtrer par événement",
+    "all": "Tous",
+    "event": {
+      "login": "Connexion",
+      "logout": "Déconnexion",
+      "failed": "Échec",
+      "cleanup": "Nettoyage",
+      "system": "Système"
+    },
+    "filter": {
+      "login": "Connexions",
+      "logout": "Déconnexions",
+      "failed": "Échecs",
+      "cleanup": "Nettoyage",
+      "system": "Système"
+    },
+    "search": "Rechercher dans les journaux",
+    "searchPlaceholder": "Utilisateur, IP ou message",
+    "colTime": "Heure",
+    "colEvent": "Événement",
+    "colUser": "Utilisateur",
+    "colAddress": "Adresse",
+    "colMessage": "Message",
+    "today": "Aujourd'hui",
+    "loadOlder": "Charger les événements plus anciens",
+    "empty": "Aucune entrée de journal hotspot pour l'instant",
+    "noMatch": "Aucune entrée ne correspond à vos filtres",
+    "retry": "Réessayer",
+    "failedToLoad": "Échec du chargement des journaux"
   }
 }

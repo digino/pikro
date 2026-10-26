@@ -7,9 +7,9 @@
           <nav :aria-label="t('users.breadcrumb')" class="eyebrow">
             {{ t('users.breadcrumb') }} / {{ t('users.title') }}
           </nav>
-          <h1 class="type-display m-0 mt-1.5 flex items-center gap-3 text-3xl leading-none">
+          <h1 class="type-display flex items-center gap-3 text-3xl">
             {{ t('users.title') }}
-            <span class="chip h-8 px-3 text-sm bg-primary text-primary-fg">{{ users.length }}</span>
+            <span class="chip px-2 text-sm bg-primary text-primary-fg">{{ users.length }}</span>
           </h1>
         </div>
       </div>
