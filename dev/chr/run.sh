@@ -2,7 +2,7 @@
 # Boot a local RouterOS CHR (Cloud Hosted Router) VM for testing Pikro without
 # touching a production router. See dev/chr/README.md.
 #
-#   dev/chr/run.sh v7    RouterOS 7, native ARM64 (Apple Silicon, hvf)
+#   dev/chr/run.sh v7    RouterOS 7, ARM64 (emulated CPU, see below)
 #   dev/chr/run.sh v6    RouterOS 6, x86 emulated (slow, for compatibility checks)
 #
 # The RouterOS console runs in this terminal. Quit QEMU with Ctrl-A then X.
@@ -36,8 +36,10 @@ fi
 # Delete the .img to start again from a factory-fresh router.
 [ -f "$IMG" ] || unzip -o -d "$(dirname "$IMG")" "$ZIP"
 
-# Only localhost can reach the forwarded ports.
+# ether1: uplink with the API/WinBox ports forwarded (only localhost can reach them).
 NET="user,id=n0,hostfwd=tcp:127.0.0.1:${API_PORT}-:8728,hostfwd=tcp:127.0.0.1:${WINBOX_PORT}-:8291"
+# ether2: an isolated LAN port for Pikro's hotspot setup to use.
+LAN="user,id=n1,restrict=on"
 
 echo "RouterOS $1 — API 127.0.0.1:${API_PORT}, WinBox 127.0.0.1:${WINBOX_PORT} (Ctrl-A X quits)"
 
@@ -50,11 +52,13 @@ if [ "$1" = v7 ]; then
     -bios "$QEMU_SHARE/edk2-aarch64-code.fd" \
     -drive file="$IMG",if=none,format=raw,id=hd0 -device virtio-blk-device,drive=hd0 \
     -netdev "$NET" -device virtio-net-device,netdev=n0 \
+    -netdev "$LAN" -device virtio-net-device,netdev=n1 \
     -nographic
 else
   exec qemu-system-x86_64 \
     -machine q35 -accel tcg -smp 1 -m 256 \
     -drive file="$IMG",if=none,format=raw,id=hd0 -device virtio-blk-pci,drive=hd0 \
     -netdev "$NET" -device virtio-net-pci,netdev=n0 \
+    -netdev "$LAN" -device virtio-net-pci,netdev=n1 \
     -nographic
 fi

@@ -6,8 +6,8 @@ licence caps throughput at 1 Mbps per interface, which does not matter here.
 
 | Target | RouterOS | API | WinBox | Speed on Apple Silicon |
 |---|---|---|---|---|
-| `make chr7` | 7.25 (main target) | `127.0.0.1:18728` | `127.0.0.1:18291` | native (ARM64, hvf) |
-| `make chr6` | 6.49.23 (compatibility) | `127.0.0.1:28728` | `127.0.0.1:28291` | slow (x86 emulated) |
+| `make chr7` | 7.25 (main target) | `127.0.0.1:18728` | `127.0.0.1:18291` | fast enough (ARM64, emulated CPU, boots in ~15 s) |
+| `make chr6` | 6.49.23 (compatibility) | `127.0.0.1:28728` | `127.0.0.1:28291` | fine (x86 emulated, boots in ~20 s) |
 
 The console runs in the terminal; quit with **Ctrl-A then X**.
 
@@ -27,10 +27,11 @@ Check each zip against MikroTik's published SHA256 (same URL plus `.sha256`).
 
 ## Use it from Pikro
 
-1. `make chr7` and wait for the `MikroTik Login:` prompt.
+1. `make chr7` and wait for the `CHR Login:` prompt.
 2. In Pikro: Routers, then **Add by IP address**: `127.0.0.1`, port `18728`,
-   user `admin`, password as set on first console login.
-3. Run Pikro's hotspot setup on it, then test freely.
+   user `admin`, empty password (unless you set one at the console).
+3. Run Pikro's hotspot setup on it using **ether2** (an isolated LAN port;
+   ether1 is the uplink carrying the API), then test freely.
 
 Network scan (MNDP) will not find the VM: it sits behind QEMU's NAT. Add it by IP.
 
