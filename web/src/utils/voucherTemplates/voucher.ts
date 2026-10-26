@@ -1,5 +1,6 @@
 import type { VoucherTemplate } from "./types";
 import { voucherDurationLabel, longestCode } from "./types";
+import { ticketLabels } from "./labels";
 import { loginQrSvg } from "./qr";
 
 const QR_SIZE_PX = 52;
@@ -10,6 +11,7 @@ const QR_SIZE_PX = 52;
 // Ticket layout from the v1 design: details and code on the left, the login QR
 // on a stub behind a dashed tear line. Black and white only, to print cheaply.
 const render: VoucherTemplate["render"] = async (items, opts) => {
+  const L = ticketLabels();
   const { businessName } = opts;
 
   const cards = await Promise.all(
@@ -22,7 +24,7 @@ const render: VoucherTemplate["render"] = async (items, opts) => {
           <div class="info">
             <div class="head"><span>${businessName}</span><span>${duration}</span></div>
             <div class="code">${name}</div>
-            <div class="foot">Connect to the Wi-Fi, then enter this code.${price ? ` <b>${price}</b>` : ""}</div>
+            <div class="foot">${L.connectHint}${price ? ` <b>${price}</b>` : ""}</div>
           </div>
           ${qr ? `<div class="stub"><div class="qr">${qr}</div></div>` : ""}
         </div>`;

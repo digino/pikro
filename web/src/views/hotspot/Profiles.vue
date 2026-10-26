@@ -1,275 +1,323 @@
 <template>
-  <PageLayout title="Hotspot" subtitle="Profiles">
-    <template #actions>
+  <div v-if="!store.activeId" class="p-6">
+    <NoRouterSelected />
+  </div>
+
+  <main v-else class="flex flex-col gap-6 px-4 sm:px-6 lg:px-10 pt-7 pb-14">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <img :src="inkIcon('profiles')" alt="" width="64" height="64" class="shrink-0" />
+        <div>
+          <nav :aria-label="t('profiles.breadcrumb')" class="eyebrow">
+            {{ t('profiles.breadcrumb') }} / {{ t('profiles.title') }}
+          </nav>
+          <h1 class="type-display text-3xl">{{ t('profiles.title') }}</h1>
+          <p class="text-sm text-text-secondary">{{ t('profiles.subtitle') }}</p>
+        </div>
+      </div>
       <button
-        v-if="store.activeId && !loading && !error"
-        class="btn btn-ink"
+        v-if="!loading && !error"
+        type="button"
+        class="btn btn-primary"
         @click="openCreate"
       >
-        <PlusIcon class="size-3.5" />
-        New profile
+        <PlusIcon class="size-4" />
+        {{ t('profiles.newProfile') }}
       </button>
-    </template>
+    </header>
 
-    <NoRouterSelected v-if="!store.activeId" />
-
-    <div v-else-if="loading" class="flex justify-center py-10">
+    <div v-if="loading" class="flex justify-center py-10">
       <span class="spinner" />
     </div>
 
     <div
       v-else-if="error"
-      class="flex items-center gap-2 p-4 rounded-xl text-sm border bg-red/8 border-red/20 text-red"
+      role="alert"
+      class="flex items-center gap-2.5 p-4 rounded-control border-2 border-danger-text bg-danger-wash text-danger-text text-sm"
     >
-      <ExclamationTriangleIcon class="size-4 shrink-0" />
+      <ExclamationTriangleIcon class="size-5 shrink-0" />
       {{ error }}
-      <button class="ml-auto text-xs underline" @click="load">Retry</button>
+      <button type="button" class="btn btn-sm ml-auto" @click="load">{{ t('profiles.retry') }}</button>
     </div>
 
-    <!-- Profile cards grid -->
-    <div v-else-if="profiles.length > 0" class="space-y-3">
-      <div class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5">
-        <div
-          v-for="p in profiles"
-          :key="p['.id']"
-          class="border border-border rounded-xl flex flex-col transition-colors hover:border-muted bg-surface"
-        >
-          <div class="p-4 flex flex-col gap-3">
-            <div>
-              <p class="text-sm font-semibold text-text-primary">
-                {{ p.name }}
-              </p>
-              <p
-                v-if="p['rate-limit']"
-                class="text-sm text-text-secondary font-mono mt-0.5"
-              >
-                {{ p["rate-limit"] }}
-              </p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-              <span class="text-text-secondary">Validity</span>
-              <span class="text-text-primary">{{
-                profileMetas[p.name]?.validity || "—"
-              }}</span>
-              <span class="text-text-secondary">Shared users</span>
-              <span class="text-text-primary">{{
-                p["shared-users"] || "1"
-              }}</span>
-              <span class="text-text-secondary">Price</span>
-              <span class="text-text-primary">{{
-                profileMetas[p.name]?.price
-                  ? `${profileMetas[p.name].price} ${currency}`
-                  : "—"
-              }}</span>
-            </div>
-          </div>
-
-          <div class="h-px bg-border" />
-
-          <div class="flex flex-wrap gap-2 py-3 px-3.5">
-            <button
-              class="btn btn-ghost flex-1 min-w-0 justify-center whitespace-normal text-center"
-              @click="openEdit(p)"
-            >
-              <PencilSquareIcon class="size-3.5 shrink-0" />
-              Edit
-            </button>
-            <button
-              class="btn border-transparent bg-red-10 text-red hover:bg-red/50 hover:text-white flex-1 min-w-0 justify-center whitespace-normal text-center"
-              @click="remove(p)"
-            >
-              <TrashIcon class="size-3.5 shrink-0" />
-              Delete
-            </button>
-          </div>
+    <div v-else class="grid grid-cols-1 xl:grid-cols-[2fr_1fr] items-start gap-7">
+      <!-- Profile cards grid -->
+      <section :aria-label="t('profiles.title')">
+        <div v-if="profiles.length === 0" class="card border-dashed shadow-none p-10 text-center">
+          <img :src="inkIcon('profiles')" alt="" width="64" height="64" class="mx-auto" />
+          <p class="m-0 mt-3 font-semibold">{{ t('profiles.noProfilesTitle') }}</p>
+          <p class="m-0 mt-1 text-sm text-text-muted">{{ t('profiles.noProfilesBody') }}</p>
         </div>
-      </div>
-    </div>
 
-    <div
-      v-else
-      class="border border-dashed border-border rounded-xl py-16 text-center"
-    >
-      <RectangleGroupIcon class="size-8 text-text-muted mx-auto mb-3" />
-      <p class="text-sm font-medium text-text-secondary">No profiles yet</p>
-      <p class="text-sm text-text-muted mt-1">
-        Create your first profile to define bandwidth and pricing tiers.
-      </p>
-      <button class="btn btn-ink btn-sm mt-4" @click="openCreate">
-        <PlusIcon class="size-3.5" />
-        New profile
-      </button>
-    </div>
-
-    <!-- Create / Edit dialog -->
-    <AppDialog
-      :open="showForm"
-      :title="editing ? 'Edit Profile' : 'Create New profile'"
-      @update:open="showForm = $event"
-    >
-      <TooltipProvider :delay-duration="200">
-        <form class="space-y-4" @submit.prevent="submit">
-          <label class="flex flex-col gap-1">
-            <span class="font-medium">Name <span>*</span></span>
-            <input
-              v-model="form.name"
-              class="input"
-              required
-              :disabled="!!editing"
-              placeholder="e.g. 1hour, daily, weekly"
-            />
-          </label>
-
-          <div class="flex flex-col gap-1">
-            <FieldLabel
-              label="Validity"
-              tip="How long the account stays active after first login. Use: 30m, 2h, 1d, 1w, or combine: 1d12h. Leave blank for unlimited."
-            />
-            <input
-              v-model="validityRaw"
-              class="input font-mono"
-              placeholder="e.g. 1h, 1d, 1w, 1d12h"
-              @blur="normalizeValidity"
-            />
-            <p v-if="validityRaw && !validityPreview" class="text-xs text-red">
-              Invalid format — use: 30m, 2h, 1d, 1w or combinations like 1d12h
-            </p>
-            <p v-else-if="validityPreview" class="text-xs text-text-secondary">
-              Sends to router:
-              <span class="font-mono">{{ validityPreview }}</span>
-              <span class="ml-1 opacity-70"
-                >(ROS {{ rosVersion || "…" }})</span
-              >
-            </p>
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <FieldLabel
-              label="Rate limit"
-              tip="Speed cap for this profile. Upload = client sending data. Download = client receiving data. Leave at 0 for unlimited."
-            />
-            <div class="flex gap-2">
-              <div class="flex flex-col gap-1 flex-1 min-w-0">
-                <span class="text-sm text-text-secondary">Upload</span>
-                <div class="join">
-                  <input
-                    v-model.number="rateUp"
-                    type="number"
-                    min="0"
-                    class="input min-w-0 flex-1"
-                    placeholder="0"
-                  />
-                  <AppSelect
-                    v-model="rateUpUnit"
-                    :options="rateUnitOptions"
-                    trigger-class="w-auto shrink-0"
-                  />
-                </div>
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-5.5">
+          <article
+            v-for="c in cards"
+            :key="c.id"
+            class="flex flex-col overflow-hidden rounded-card border-2 border-ink"
+            :class="c.cardClass"
+          >
+            <div class="flex items-start justify-between gap-3 px-4.5 pt-4.5 pb-3.5">
+              <div class="min-w-0">
+                <div class="eyebrow" :class="{ 'text-current opacity-75': c.free }">{{ c.kind }}</div>
+                <h2 class="type-display m-0 mt-1 text-[28px] leading-none truncate">{{ c.name }}</h2>
               </div>
-              <div class="flex flex-col gap-1 flex-1 min-w-0">
-                <span class="text-sm text-text-secondary">Download</span>
-                <div class="join">
-                  <input
-                    v-model.number="rateDown"
-                    type="number"
-                    min="0"
-                    class="input min-w-0 flex-1"
-                    placeholder="0"
-                  />
-                  <AppSelect
-                    v-model="rateDownUnit"
-                    :options="rateUnitOptions"
-                    trigger-class="w-auto shrink-0"
-                  />
-                </div>
+              <span
+                class="type-display shrink-0 whitespace-nowrap rounded-[10px] border-2 px-2.5 py-1.5 text-[15px]"
+                :class="c.priced ? 'bg-primary text-primary-fg border-ink' : 'border-current'"
+              >
+                {{ c.price }}
+              </span>
+            </div>
+            <div class="mx-4.5 border-t-2 border-dashed border-current opacity-90" />
+            <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 px-4.5 py-3.5 text-sm">
+              <dt class="eyebrow self-center" :class="{ 'text-current opacity-75': c.free }">{{ t('profiles.validity') }}</dt>
+              <dd class="m-0 font-semibold">{{ c.validity }}</dd>
+              <dt class="eyebrow self-center" :class="{ 'text-current opacity-75': c.free }">{{ t('profiles.speed') }}</dt>
+              <dd class="m-0 font-mono text-[13px]">{{ c.speed }}</dd>
+              <dt class="eyebrow self-center" :class="{ 'text-current opacity-75': c.free }">{{ t('profiles.devices') }}</dt>
+              <dd class="m-0">{{ c.devices }}</dd>
+            </dl>
+            <div
+              class="mt-auto flex flex-wrap items-center justify-between gap-2.5 px-4.5 py-3"
+              :class="c.footClass"
+            >
+              <span class="text-[13px]">{{ c.stats }}</span>
+              <div class="flex gap-2">
+                <RouterLink
+                  v-if="!c.system"
+                  :to="{ path: '/hotspot/vouchers', query: { profile: c.name } }"
+                  class="btn btn-sm"
+                  :aria-label="t('profiles.generateFor', { name: c.name })"
+                >
+                  {{ t('profiles.generate') }}
+                </RouterLink>
+                <button
+                  type="button"
+                  class="btn btn-sm"
+                  :class="{ 'btn-primary': c.editing }"
+                  :aria-pressed="c.editing"
+                  :aria-label="t('profiles.editProfile', { name: c.name })"
+                  @click="openEdit(c.raw)"
+                >
+                  {{ t('profiles.edit') }}
+                </button>
               </div>
             </div>
-          </div>
+          </article>
+        </div>
+      </section>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div class="flex flex-col gap-1">
-              <FieldLabel
-                label="Shared users"
-                tip="How many devices can be logged in simultaneously with the same credentials."
-              />
-              <input
-                v-model="form.sharedUsers"
-                type="number"
-                min="1"
-                class="input"
-                placeholder="1"
-              />
+      <!-- Create / Edit form -->
+      <aside
+        :aria-label="formTitle"
+        class="card p-6 flex flex-col gap-4.5 xl:sticky xl:top-6"
+      >
+        <TooltipProvider :delay-duration="200">
+          <form class="flex flex-col gap-4.5" @submit.prevent="submit">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="type-display m-0 text-[26px] truncate">{{ formTitle }}</h2>
+              <span class="chip bg-primary text-primary-fg">{{ formChip }}</span>
             </div>
-            <label class="flex flex-col gap-1">
-              <span class="text-sm font-medium text-text-secondary"
-                >Price{{ currency ? ` (${currency})` : "" }}</span
-              >
+
+            <label class="flex flex-col gap-1.5">
+              <span class="eyebrow">{{ t('profiles.name') }}</span>
               <input
-                v-model="form.price"
+                ref="nameInput"
+                v-model="form.name"
                 class="input"
-                placeholder="e.g. 500"
+                required
+                :disabled="!!editing"
+                :placeholder="t('profiles.namePlaceholder')"
               />
             </label>
-          </div>
 
-          <div class="flex flex-col gap-1">
-            <FieldLabel
-              label="Address pool"
-              tip="IP address pool to assign to users of this profile. Leave blank to use the hotspot's default pool."
-            />
-            <AppSelect
-              v-model="form.addressPool"
-              :options="
-                addressPools.map((p) => ({
-                  value: p.name,
-                  label: p.ranges ? `${p.name} (${p.ranges})` : p.name,
-                }))
-              "
-              placeholder="Use hotspot's default pool"
-            />
-          </div>
-
-          <p v-if="formError" class="text-xs text-red">{{ formError }}</p>
-
-          <div class="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              class="btn btn-ghost"
-              @click="showForm = false"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              class="btn btn-ink"
-              :disabled="
-                submitting ||
-                (!!validityRaw && !validityPreview) ||
-                (!rosVersion && !!validityPreview)
-              "
-            >
-              <span
-                v-if="submitting"
-                class="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin"
+            <div class="flex flex-col gap-1.5">
+              <FieldLabel
+                :label="t('profiles.validity')"
+                tip="How long the account stays active after first login. Use: 30m, 2h, 1d, 1w, or combine: 1d12h. Leave blank for unlimited."
               />
-              {{ editing ? "Save" : "Create" }}
-            </button>
-          </div>
-        </form>
-      </TooltipProvider>
-    </AppDialog>
-  </PageLayout>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="v in VALIDITY_CHIPS"
+                  :key="v"
+                  type="button"
+                  :aria-pressed="validityRaw === v"
+                  class="min-h-10 min-w-13 px-3 rounded-full border-2 border-ink text-[13px] font-semibold cursor-pointer"
+                  :class="validityRaw === v ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-primary-wash'"
+                  @click="validityRaw = v"
+                >
+                  {{ v }}
+                </button>
+                <button
+                  type="button"
+                  :aria-pressed="isCustomValidity"
+                  class="min-h-10 px-3 rounded-full border-2 border-ink text-[13px] font-semibold cursor-pointer"
+                  :class="isCustomValidity ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-primary-wash'"
+                  @click="validityInput?.focus()"
+                >
+                  {{ t('profiles.custom') }}
+                </button>
+              </div>
+              <input
+                ref="validityInput"
+                v-model="validityRaw"
+                class="input font-mono"
+                :aria-label="t('profiles.validityCustom')"
+                :placeholder="t('profiles.validityPlaceholder')"
+                @blur="normalizeValidity"
+              />
+              <p v-if="validityRaw && !validityPreview" class="m-0 text-xs text-red">
+                {{ t('profiles.validityInvalid') }}
+              </p>
+              <p v-else-if="validityPreview" class="m-0 text-xs text-text-secondary">
+                {{ t('profiles.sendsToRouter') }}
+                <span class="font-mono">{{ validityPreview }}</span>
+                <span class="ml-1 opacity-70">(ROS {{ rosVersion || "…" }})</span>
+              </p>
+            </div>
+
+            <label class="flex flex-col gap-1.5">
+              <span class="eyebrow">{{ t('profiles.price') }}</span>
+              <span class="join">
+                <input v-model="form.price" class="input min-w-0 flex-1 font-semibold" inputmode="decimal" placeholder="500" />
+                <span
+                  v-if="currency"
+                  class="inline-flex items-center px-3 border-2 border-ink rounded-control bg-primary text-primary-fg text-[13px] font-bold"
+                >
+                  {{ currency }}
+                </span>
+              </span>
+            </label>
+
+            <div class="flex flex-col gap-1.5">
+              <FieldLabel
+                :label="t('profiles.speedLimit')"
+                tip="Speed cap for this profile. Upload = client sending data. Download = client receiving data. Leave at 0 for unlimited."
+              />
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[13px] text-text-muted" for="rate-down">{{ t('profiles.down') }}</label>
+                  <div class="join">
+                    <input
+                      id="rate-down"
+                      v-model.number="rateDown"
+                      type="number"
+                      min="0"
+                      class="input min-w-0 flex-1"
+                      placeholder="0"
+                    />
+                    <AppSelect v-model="rateDownUnit" :options="rateUnitOptions" trigger-class="w-auto shrink-0" />
+                  </div>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[13px] text-text-muted" for="rate-up">{{ t('profiles.up') }}</label>
+                  <div class="join">
+                    <input
+                      id="rate-up"
+                      v-model.number="rateUp"
+                      type="number"
+                      min="0"
+                      class="input min-w-0 flex-1"
+                      placeholder="0"
+                    />
+                    <AppSelect v-model="rateUpUnit" :options="rateUnitOptions" trigger-class="w-auto shrink-0" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col gap-1.5">
+                <FieldLabel
+                  :label="t('profiles.devicesPerVoucher')"
+                  tip="How many devices can be logged in simultaneously with the same credentials."
+                />
+                <div class="flex items-center min-h-11 border-2 border-ink rounded-control overflow-hidden bg-paper">
+                  <button
+                    type="button"
+                    :aria-label="t('profiles.fewerDevices')"
+                    class="inline-flex items-center justify-center size-11 border-r-2 border-ink cursor-pointer hover:bg-primary-wash disabled:opacity-40"
+                    :disabled="sharedUsers <= 1"
+                    @click="sharedUsers = sharedUsers - 1"
+                  >
+                    <MinusIcon class="size-4.5" />
+                  </button>
+                  <span class="type-display flex-1 text-center text-xl" aria-live="polite">{{ sharedUsers }}</span>
+                  <button
+                    type="button"
+                    :aria-label="t('profiles.moreDevices')"
+                    class="inline-flex items-center justify-center size-11 border-l-2 border-ink bg-primary text-primary-fg cursor-pointer"
+                    @click="sharedUsers = sharedUsers + 1"
+                  >
+                    <PlusIcon class="size-4.5" />
+                  </button>
+                </div>
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <FieldLabel
+                  :label="t('profiles.addressPool')"
+                  tip="IP address pool to assign to users of this profile. Leave blank to use the hotspot's default pool."
+                />
+                <AppSelect
+                  v-model="form.addressPool"
+                  :options="
+                    addressPools.map((p) => ({
+                      value: p.name,
+                      label: p.ranges ? `${p.name} (${p.ranges})` : p.name,
+                    }))
+                  "
+                  :placeholder="t('profiles.defaultPool')"
+                />
+              </div>
+            </div>
+
+            <div class="flex items-start gap-2.5 p-3 rounded-control bg-ground text-[13px] leading-snug">
+              <img :src="inkIcon('settings')" alt="" width="28" height="28" class="shrink-0" />
+              <span>{{ t('profiles.note') }}</span>
+            </div>
+
+            <p v-if="formError" role="alert" class="m-0 text-sm text-red">{{ formError }}</p>
+
+            <div class="flex flex-wrap gap-2.5">
+              <button
+                type="submit"
+                class="btn btn-primary flex-1 min-h-12.5 text-[15px]"
+                :disabled="
+                  submitting ||
+                  (!!validityRaw && !validityPreview) ||
+                  (!rosVersion && !!validityPreview)
+                "
+              >
+                <span v-if="submitting" class="spinner spinner--sm" />
+                {{ t('profiles.save') }}
+              </button>
+              <button type="button" class="btn min-h-12.5" @click="openCreate">{{ t('profiles.cancel') }}</button>
+              <button
+                v-if="editingProfile && editingProfile.name !== 'default'"
+                type="button"
+                class="btn btn-danger min-h-12.5"
+                @click="remove(editingProfile)"
+              >
+                <TrashIcon class="size-4" />
+                {{ t('profiles.delete') }}
+              </button>
+            </div>
+          </form>
+        </TooltipProvider>
+      </aside>
+    </div>
+  </main>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, defineComponent, h } from "vue";
+import { ref, computed, watch, nextTick, defineComponent, h } from "vue";
+import { RouterLink } from "vue-router";
+import { useI18n } from "vue-i18n";
 import {
   PlusIcon,
+  MinusIcon,
   TrashIcon,
-  PencilSquareIcon,
   ExclamationTriangleIcon,
-  RectangleGroupIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/vue/24/outline";
 import {
@@ -290,15 +338,18 @@ import {
   getSystemResource,
   getProfileMetas,
   listAddressPools,
+  listHotspotUsers,
+  listHotspotActive,
+  getSalesLedger,
   type ProfileMeta,
 } from "@/api";
 import { friendlyError } from "@/utils/errors";
-import AppDialog from "@/components/AppDialog.vue";
-import PageLayout from "@/components/PageLayout.vue";
+import { inkIcon } from "@/utils/inkIcons";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
 import AppSelect from "@/components/AppSelect.vue";
 
 const store = useRoutersStore();
+const { t, locale } = useI18n();
 
 const FieldLabel = defineComponent({
   props: { label: String, tip: String, iconOnly: Boolean },
@@ -307,7 +358,7 @@ const FieldLabel = defineComponent({
       h("div", { class: "flex items-center gap-1" }, [
         props.iconOnly
           ? null
-          : h("span", { class: "font-medium" }, props.label),
+          : h("span", { class: "eyebrow" }, props.label),
         h(
           TooltipRoot,
           {},
@@ -322,6 +373,7 @@ const FieldLabel = defineComponent({
                       "button",
                       {
                         type: "button",
+                        "aria-label": props.tip,
                         class:
                           "text-text-muted hover:text-text-secondary transition-colors",
                       },
@@ -338,9 +390,7 @@ const FieldLabel = defineComponent({
                       TooltipContent,
                       {
                         class:
-                          "z-50 max-w-xs px-3 py-2 text-xs rounded-lg shadow-lg leading-relaxed",
-                        style:
-                          "background: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border);",
+                          "z-50 max-w-xs px-3 py-2 text-xs rounded-lg leading-relaxed bg-paper text-ink border-2 border-ink shadow-btn",
                         side: "top",
                         sideOffset: 6,
                       },
@@ -355,6 +405,8 @@ const FieldLabel = defineComponent({
   },
 });
 
+const VALIDITY_CHIPS = ["1h", "1d", "7d", "30d"];
+
 const rateUnitOptions = [
   { value: "k", label: "kbps" },
   { value: "M", label: "Mbps" },
@@ -367,11 +419,15 @@ const loading = ref(false);
 const error = ref("");
 const currency = ref("");
 const rosVersion = ref("");
+// Per-profile counters for the card footers: vouchers sold this year, users online now.
+const soldByProfile = ref<Record<string, number>>({});
+const onlineByProfile = ref<Record<string, number>>({});
 
-const showForm = ref(false);
 const editing = ref<string | null>(null);
 const submitting = ref(false);
 const formError = ref("");
+const nameInput = ref<HTMLInputElement | null>(null);
+const validityInput = ref<HTMLInputElement | null>(null);
 
 const rateUp = ref(0);
 const rateUpUnit = ref<"k" | "M">("M");
@@ -386,6 +442,28 @@ const emptyForm = () => ({
   price: "",
 });
 const form = ref(emptyForm());
+
+const sharedUsers = computed({
+  get: () => Math.max(1, parseInt(form.value.sharedUsers) || 1),
+  set: (n: number) => {
+    form.value.sharedUsers = String(Math.max(1, n));
+  },
+});
+
+const isCustomValidity = computed(() => !VALIDITY_CHIPS.includes(validityRaw.value));
+
+const editingProfile = computed(() => profiles.value.find((p) => p[".id"] === editing.value) ?? null);
+
+const formTitle = computed(() =>
+  editingProfile.value
+    ? t("profiles.formEdit", { name: editingProfile.value.name })
+    : t("profiles.formNew"),
+);
+const formChip = computed(() =>
+  editingProfile.value
+    ? t("profiles.soldChip", { n: soldByProfile.value[editingProfile.value.name] ?? 0 })
+    : t("profiles.draft"),
+);
 
 const isMajorV7 = computed(() => rosVersion.value.startsWith("7"));
 
@@ -488,6 +566,52 @@ function validityToShorthand(s: string): string {
     .join("");
 }
 
+// ── Cards ────────────────────────────────────────────────────────────────
+const cards = computed(() =>
+  profiles.value.map((p) => {
+    const meta = profileMetas.value[p.name];
+    const price = parseFloat(meta?.price ?? "");
+    const system = p.name === "default";
+    const free = !price && !system;
+    const isEditing = p[".id"] === editing.value;
+    const [up, down] = (p["rate-limit"] ?? "").split("/");
+    const shared = parseInt(p["shared-users"] ?? "1") || 1;
+    return {
+      id: p[".id"],
+      raw: p,
+      name: p.name,
+      system,
+      free,
+      priced: !!price,
+      editing: isEditing,
+      kind: system ? t("profiles.kindSystem") : free ? t("profiles.kindFree") : t("profiles.kindForSale"),
+      price: price
+        ? `${new Intl.NumberFormat(locale.value).format(price)}${currency.value ? " " + currency.value : ""}`
+        : system ? t("profiles.noPrice") : t("profiles.free"),
+      validity: validityToShorthand(meta?.validity ?? "") || (system ? t("profiles.routerDefault") : t("profiles.unlimited")),
+      speed: up || down ? t("profiles.speedValue", { down: down || "—", up: up || "—" }) : t("profiles.noLimit"),
+      devices: t("profiles.devicesCount", { n: shared }, shared),
+      stats: t("profiles.soldOnline", {
+        sold: soldByProfile.value[p.name] ?? 0,
+        online: onlineByProfile.value[p.name] ?? 0,
+      }),
+      // Free plans read as ink tickets; RouterOS's own default is a dashed outline.
+      cardClass: [
+        system ? "border-dashed" : "",
+        free ? "bg-ink text-paper" : "bg-paper text-ink",
+        isEditing
+          ? "shadow-[6px_6px_0_var(--color-primary),6px_6px_0_2px_var(--color-ink)]"
+          : system ? "" : "shadow-card",
+      ],
+      footClass: [
+        "border-t-2",
+        system ? "border-dashed" : "",
+        free ? "border-paper bg-white/5" : "border-ink bg-ground/60",
+      ],
+    };
+  }),
+);
+
 async function load() {
   if (!store.activeId) return;
   loading.value = true;
@@ -509,10 +633,31 @@ async function load() {
     rosVersion.value =
       (res as any)["ros-version"] ?? (res as any)["version"] ?? "";
   } catch (e: any) {
-    error.value = friendlyError(e, "Failed to load profiles");
+    error.value = friendlyError(e, t("profiles.failedToLoad"));
   } finally {
     loading.value = false;
   }
+  loadCounters();
+}
+
+// Non-critical: the cards render without these and fill in when they arrive.
+async function loadCounters() {
+  if (!store.activeId) return;
+  const [ledger, users, active] = await Promise.all([
+    getSalesLedger(store.activeId, new Date().getFullYear()).catch(() => []),
+    listHotspotUsers(store.activeId).catch(() => []),
+    listHotspotActive(store.activeId).catch(() => []),
+  ]);
+  const sold: Record<string, number> = {};
+  for (const e of ledger) sold[e.profile] = (sold[e.profile] ?? 0) + e.count;
+  const profileOf = new Map(users.map((u) => [u.name, u.profile || "default"]));
+  const online: Record<string, number> = {};
+  for (const s of active) {
+    const prof = profileOf.get(s.user);
+    if (prof) online[prof] = (online[prof] ?? 0) + 1;
+  }
+  soldByProfile.value = sold;
+  onlineByProfile.value = online;
 }
 
 function openCreate() {
@@ -524,7 +669,7 @@ function openCreate() {
   rateDownUnit.value = "M";
   validityRaw.value = "";
   formError.value = "";
-  showForm.value = true;
+  nextTick(() => nameInput.value?.focus());
 }
 
 function openEdit(p: Record<string, string>) {
@@ -542,7 +687,6 @@ function openEdit(p: Record<string, string>) {
   parseRate(downStr ?? "", rateDown, rateDownUnit);
   validityRaw.value = validityToShorthand((meta as ProfileMeta).validity ?? "");
   formError.value = "";
-  showForm.value = true;
 }
 
 function parseRate(s: string, val: typeof rateUp, unit: typeof rateUpUnit) {
@@ -573,28 +717,23 @@ async function submit() {
     } else {
       await createHotspotProfile(store.activeId, params);
     }
-    showForm.value = false;
     await load();
+    openCreate();
   } catch (e: any) {
-    formError.value = friendlyError(e, "Failed to save profile");
+    formError.value = friendlyError(e, t("profiles.failedToSave"));
   } finally {
     submitting.value = false;
   }
 }
 
 async function remove(p: Record<string, string>) {
-  if (
-    !store.activeId ||
-    !confirm(
-      "Delete this profile? Users assigned to it will fall back to the default profile.",
-    )
-  )
-    return;
+  if (!store.activeId || !confirm(t("profiles.confirmDelete"))) return;
   try {
     await deleteHotspotProfile(store.activeId, p[".id"], p.name);
+    openCreate();
     await load();
   } catch (e: any) {
-    error.value = friendlyError(e, "Failed to delete profile");
+    error.value = friendlyError(e, t("profiles.failedToDelete"));
   }
 }
 

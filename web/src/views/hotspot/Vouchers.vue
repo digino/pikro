@@ -565,6 +565,7 @@ watch(
     uptimePreview.value,
     hotspotSettings.value,
     profileMetas.value,
+    locale.value,
   ],
   async () => {
     const run = ++previewRun;

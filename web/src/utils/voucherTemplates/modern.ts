@@ -1,9 +1,11 @@
 import type { VoucherTemplate } from "./types";
 import { voucherDurationLabel, longestCode } from "./types";
+import { ticketLabels } from "./labels";
 
 // Modern — compact professional card grid, heavy borders, small gap between
 // pieces (as opposed to Classic's zero-gap collapsed-border sheet).
 const render: VoucherTemplate["render"] = async (items, { businessName }) => {
+  const L = ticketLabels();
   const cards = items
     .map((item, i) => {
       const { name, password, price } = item;
@@ -12,9 +14,9 @@ const render: VoucherTemplate["render"] = async (items, { businessName }) => {
         <div class="v">
           ${businessName ? `<div class="biz">${businessName}</div>` : ""}
           <div class="creds">
-            <div class="col"><span class="lbl">Username</span><span class="val">${name}</span></div>
+            <div class="col"><span class="lbl">${L.username}</span><span class="val">${name}</span></div>
             <div class="divider"></div>
-            <div class="col"><span class="lbl">Password</span><span class="val">${password}</span></div>
+            <div class="col"><span class="lbl">${L.password}</span><span class="val">${password}</span></div>
           </div>
           ${duration || price ? `<div class="sub">${[duration, price].filter(Boolean).join(" · ")}</div>` : ""}
           <div class="num">#${i + 1}</div>
