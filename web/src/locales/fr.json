@@ -18,13 +18,10 @@
     "speedTest": "Test de débit"
   },
   "sidebar": {
-    "noRouterSelected": "Aucun routeur sélectionné",
-    "noRoutersConfigured": "Aucun routeur configuré",
     "switchToLight": "Passer en mode clair",
     "switchToDark": "Passer en mode sombre",
     "language": "Langue",
-    "mainNav": "Principal",
-    "switchRouter": "Changer de routeur"
+    "mainNav": "Principal"
   },
   "dashboard": {
     "connectedRouter": "Routeur connecté",
@@ -52,20 +49,6 @@
     "live": "En direct",
     "download": "Téléchargement",
     "upload": "Envoi",
-    "whosOnline": "Qui est en ligne",
-    "allSessions": "Toutes les sessions",
-    "noActiveSessions": "Personne n'est en ligne",
-    "colUser": "Utilisateur",
-    "colProfile": "Profil",
-    "colIp": "IP",
-    "colMac": "MAC",
-    "colOnlineFor": "En ligne depuis",
-    "colDataUsed": "Données utilisées",
-    "colActions": "Actions",
-    "disconnect": "Déconnecter",
-    "disconnectUser": "Déconnecter {user}",
-    "userDisconnected": "{user} déconnecté",
-    "failedToDisconnect": "Échec de la déconnexion",
     "autoCleanup": {
       "title": "Nettoyage automatique",
       "description": "Retire du routeur les tickets expirés ou dont le quota est épuisé.",

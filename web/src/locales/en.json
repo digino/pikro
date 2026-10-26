@@ -18,13 +18,10 @@
     "speedTest": "Speed Test"
   },
   "sidebar": {
-    "noRouterSelected": "No router selected",
-    "noRoutersConfigured": "No routers configured",
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode",
     "language": "Language",
-    "mainNav": "Main",
-    "switchRouter": "Switch router"
+    "mainNav": "Main"
   },
   "dashboard": {
     "connectedRouter": "Connected router",
@@ -52,20 +49,6 @@
     "live": "Live",
     "download": "Download",
     "upload": "Upload",
-    "whosOnline": "Who's online",
-    "allSessions": "All sessions",
-    "noActiveSessions": "No one is online",
-    "colUser": "User",
-    "colProfile": "Profile",
-    "colIp": "IP",
-    "colMac": "MAC",
-    "colOnlineFor": "Online for",
-    "colDataUsed": "Data used",
-    "colActions": "Actions",
-    "disconnect": "Disconnect",
-    "disconnectUser": "Disconnect {user}",
-    "userDisconnected": "{user} disconnected",
-    "failedToDisconnect": "Failed to disconnect",
     "autoCleanup": {
       "title": "Auto-cleanup",
       "description": "Removes expired and quota-exhausted vouchers from the router.",

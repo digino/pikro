@@ -40,56 +40,8 @@
       </div>
     </nav>
 
-    <!-- Router switcher, language and theme -->
-    <div class="mt-auto flex flex-col gap-2.5">
-      <SelectRoot
-        :model-value="store.activeId ?? ''"
-        @update:model-value="onSelectRouter"
-      >
-        <SelectTrigger
-          :aria-label="t('sidebar.switchRouter')"
-          class="flex items-center gap-2.5 w-full p-3 text-left rounded-2xl border-[1.5px] border-sidebar-line text-sidebar-text cursor-pointer transition-colors hover:bg-white/8 focus-visible:outline-3 focus-visible:outline-primary focus-visible:outline-offset-2"
-        >
-          <span class="flex flex-col gap-0.5 min-w-0 flex-1">
-            <span class="truncate text-sm font-semibold">
-              {{ activeRouter?.name ?? t('sidebar.noRouterSelected') }}
-            </span>
-            <span v-if="activeRouter" class="truncate font-mono text-xs text-sidebar-muted">
-              {{ activeRouter.host }}
-            </span>
-          </span>
-          <ChevronUpDownIcon class="size-4 shrink-0 text-sidebar-muted" />
-        </SelectTrigger>
-        <SelectPortal>
-          <SelectContent
-            class="z-50 min-w-56 bg-paper text-ink border-2 border-ink rounded-control shadow-btn overflow-hidden"
-            position="popper"
-            side="top"
-            :side-offset="6"
-          >
-            <SelectViewport class="p-1">
-              <div
-                v-if="store.routers.length === 0"
-                class="px-3 py-2 text-sm text-text-muted"
-              >
-                {{ t('sidebar.noRoutersConfigured') }}
-              </div>
-              <SelectItem
-                v-for="r in store.routers"
-                :key="r.id"
-                :value="r.id"
-                class="flex items-center justify-between gap-3 min-h-11 px-3 text-sm rounded-lg cursor-pointer outline-none data-highlighted:bg-primary-wash data-[state=checked]:font-semibold"
-              >
-                <SelectItemText>{{ r.name }}</SelectItemText>
-                <SelectItemIndicator>
-                  <CheckIcon class="size-4" />
-                </SelectItemIndicator>
-              </SelectItem>
-            </SelectViewport>
-          </SelectContent>
-        </SelectPortal>
-      </SelectRoot>
-
+    <!-- Language and theme -->
+    <div class="mt-auto">
       <div class="flex gap-2">
         <button
           type="button"
@@ -126,27 +78,9 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute, useRouter } from "vue-router";
-import { computed } from "vue";
-import {
-  SelectRoot,
-  SelectTrigger,
-  SelectValue,
-  SelectPortal,
-  SelectContent,
-  SelectViewport,
-  SelectItem,
-  SelectItemText,
-  SelectItemIndicator,
-} from "reka-ui";
-import {
-  ChevronUpDownIcon,
-  CheckIcon,
-  SunIcon,
-  MoonIcon,
-} from "@heroicons/vue/24/outline";
+import { useRoute } from "vue-router";
+import { SunIcon, MoonIcon } from "@heroicons/vue/24/outline";
 import { useI18n } from "vue-i18n";
-import { useRoutersStore } from "@/stores/routers";
 import { useThemeStore } from "@/stores/theme";
 import { useLocaleStore } from "@/stores/locale";
 import { inkIcon, type InkIcon } from "@/utils/inkIcons";
@@ -157,11 +91,7 @@ const localeStore = useLocaleStore();
 
 defineProps<{ appVersion: string }>();
 
-const store = useRoutersStore();
 const route = useRoute();
-const router = useRouter();
-
-const activeRouter = computed(() => store.active());
 
 function toggleLocale() {
   localeStore.set(localeStore.locale === "en" ? "fr" : "en");
@@ -214,9 +144,4 @@ const navSections: NavSection[] = [
     items: [{ to: "/speedtest", icon: "speed-test", label: "nav.speedTest" }],
   },
 ];
-
-function onSelectRouter(id: string) {
-  store.select(id);
-  router.push("/dashboard");
-}
 </script>

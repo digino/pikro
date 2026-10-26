@@ -2,9 +2,9 @@
   <main class="flex flex-col gap-7 px-4 sm:px-6 lg:px-10 pt-7 pb-14">
     <!-- Discovery hero — on amber, contents use primary-fg so they stay dark in both themes -->
     <section
-      class="card bg-primary text-primary-fg p-[clamp(24px,4vw,44px)] flex flex-wrap items-center gap-7 overflow-hidden"
+      class="card bg-primary text-primary-fg p-6 sm:p-8 flex flex-wrap items-center gap-6 overflow-hidden"
     >
-      <div class="flex-[1_1_380px] flex flex-col gap-4">
+      <div class="flex-[1_1_380px] flex flex-col gap-3">
         <span
           v-if="scanning"
           class="chip self-start bg-primary-fg text-primary border-primary-fg"
@@ -12,10 +12,10 @@
           <span class="size-2 rounded-full bg-primary motion-safe:animate-pulse" />
           {{ t('routers.scanning') }}
         </span>
-        <h1 class="type-display m-0 text-[clamp(30px,3.5vw,48px)] leading-none">
+        <h1 class="type-display m-0 text-[clamp(24px,2.6vw,34px)] leading-tight">
           {{ t('routers.heroTitle') }}
         </h1>
-        <p class="m-0 max-w-120 text-[16px] leading-normal">{{ t('routers.heroBody') }}</p>
+        <p class="m-0 max-w-120 text-sm leading-normal">{{ t('routers.heroBody') }}</p>
         <div class="flex flex-wrap gap-3">
           <button type="button" class="btn btn-ink" @click="openAdd({})">
             <PlusIcon class="size-4" />
@@ -29,18 +29,18 @@
       </div>
       <div
         aria-hidden="true"
-        class="relative flex-[0_1_320px] h-70 mx-auto flex items-center justify-center"
+        class="relative flex-[0_1_200px] h-40 mx-auto flex items-center justify-center max-sm:hidden"
       >
         <div
-          class="absolute size-70 rounded-full border-2 border-dashed border-primary-fg opacity-35"
+          class="absolute size-40 rounded-full border-2 border-dashed border-primary-fg opacity-35"
           :class="{ 'motion-safe:animate-pulse': scanning }"
         />
         <div
-          class="absolute size-50 rounded-full border-2 border-dashed border-primary-fg opacity-60"
+          class="absolute size-29 rounded-full border-2 border-dashed border-primary-fg opacity-60"
           :class="{ 'motion-safe:animate-pulse': scanning }"
         />
-        <div class="absolute size-32.5 rounded-full bg-white border-2 border-primary-fg" />
-        <img :src="inkIcon('routers')" alt="" width="190" height="190" class="relative -rotate-6" />
+        <div class="absolute size-19 rounded-full bg-white border-2 border-primary-fg" />
+        <img :src="inkIcon('routers')" alt="" width="110" height="110" class="relative -rotate-6" />
       </div>
     </section>
 
@@ -74,7 +74,7 @@
         <p class="m-0 mt-1 mx-auto max-w-120 text-sm text-text-muted">{{ t('routers.noneBody') }}</p>
       </div>
 
-      <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
+      <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
         <article
           v-for="d in discovered"
           :key="d.mac || d.ip"
@@ -135,7 +135,7 @@
         <p class="m-0 mt-1 text-sm text-text-muted">{{ t('routers.noneYetBody') }}</p>
       </div>
 
-      <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
+      <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
         <article
           v-for="r in store.routers"
           :key="r.id"
@@ -146,9 +146,18 @@
             <img :src="inkIcon('routers')" alt="" width="56" height="56" class="shrink-0" />
             <div class="flex-1 min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <h3 class="type-display m-0 text-xl truncate">{{ r.name }}</h3>
+                <h3 class="type-display text-xl truncate">{{ r.name }}</h3>
                 <span v-if="store.activeId === r.id" class="chip bg-primary text-primary-fg">
                   {{ t('routers.active') }}
+                </span>
+                <span v-if="testResults[r.id] === 'ok'" class="chip bg-online-wash">
+                  <span class="size-2 rounded-full bg-online" />{{ t('routers.reachable') }}
+                </span>
+                <span
+                  v-else-if="testResults[r.id] === 'error'"
+                  class="chip bg-danger-wash text-danger-text border-danger-text"
+                >
+                  <span class="size-2 rotate-45 bg-danger" />{{ t('routers.unreachable') }}
                 </span>
               </div>
               <div class="font-mono text-sm text-text-secondary">
@@ -162,32 +171,10 @@
             <span class="truncate">{{ hotspotLine(r) }}</span>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <span v-if="testResults[r.id] === 'ok'" class="chip bg-online-wash">
-              <span class="size-2 rounded-full bg-online" />{{ t('routers.reachable') }}
-            </span>
-            <span
-              v-else-if="testResults[r.id] === 'error'"
-              class="chip bg-danger-wash text-danger-text border-danger-text"
-            >
-              <span class="size-2 rotate-45 bg-danger" />{{ t('routers.unreachable') }}
-            </span>
+          <div class="mt-auto pt-3.5 border-t border-hairline flex gap-2.5">
             <button
               type="button"
-              class="btn btn-sm ml-auto"
-              :disabled="testing[r.id]"
-              :aria-label="t('routers.pingRouter', { name: r.name })"
-              @click="test(r.id)"
-            >
-              <ArrowPathIcon class="size-4" :class="{ 'animate-spin': testing[r.id] }" />
-              {{ testing[r.id] ? t('routers.pinging') : t('routers.ping') }}
-            </button>
-          </div>
-
-          <div class="mt-auto pt-3.5 border-t border-hairline flex flex-wrap gap-2">
-            <button
-              type="button"
-              class="btn btn-ink flex-1"
+              class="btn btn-ink btn-sm flex-1 min-w-0"
               :disabled="store.activeId === r.id"
               @click="selectRouter(r.id)"
             >
@@ -195,21 +182,31 @@
             </button>
             <button
               type="button"
-              class="btn flex-1"
-              :aria-label="t('routers.editRouter', { name: r.name })"
-              @click="openEdit(r)"
+              class="btn btn-sm"
+              :disabled="testing[r.id]"
+              :aria-label="t('routers.pingRouter', { name: r.name })"
+              @click="test(r.id)"
             >
-              <PencilSquareIcon class="size-4" />
-              {{ t('routers.edit') }}
+              <ArrowPathIcon class="size-4" :class="{ 'animate-spin': testing[r.id] }" />
+              {{ testing[r.id] ? t('routers.pinging') : t('routers.ping') }}
             </button>
             <button
               type="button"
-              class="btn btn-danger"
+              class="btn btn-sm"
+              :aria-label="t('routers.editRouter', { name: r.name })"
+              :title="t('routers.edit')"
+              @click="openEdit(r)"
+            >
+              <PencilSquareIcon class="size-5" />
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-danger"
               :aria-label="t('routers.deleteRouter', { name: r.name })"
               :title="t('routers.delete')"
               @click="remove(r.id)"
             >
-              <TrashIcon class="size-4" />
+              <TrashIcon class="size-5" />
             </button>
           </div>
         </article>

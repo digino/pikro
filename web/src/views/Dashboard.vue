@@ -169,31 +169,6 @@
       />
     </section>
 
-    <!-- Who's online -->
-    <section class="card overflow-hidden">
-      <div class="flex flex-wrap justify-between items-center gap-3 px-6 py-5">
-        <div class="flex items-center gap-3">
-          <h2 class="type-display m-0 text-2xl">{{ t('dashboard.whosOnline') }}</h2>
-          <span class="chip bg-primary text-primary-fg">{{ activeSessions }}</span>
-        </div>
-        <RouterLink
-          to="/hotspot/users?tab=active"
-          class="inline-flex items-center min-h-11 text-sm font-semibold text-ink underline underline-offset-2"
-        >
-          {{ t('dashboard.allSessions') }}
-        </RouterLink>
-      </div>
-      <div class="border-t-2 border-ink">
-        <ActiveSessionsTable
-          :sessions="activeList"
-          :users="allUsers"
-          :loading="hotspotLoading"
-          :disconnecting="disconnectingId"
-          @disconnect="disconnect"
-        />
-      </div>
-    </section>
-
     <AppDialog
       :open="showDisableCleanupConfirm"
       :title="t('dashboard.turnOffAutoCleanupTitle')"
@@ -238,7 +213,6 @@ import {
   getPollSnapshot,
   listHotspotUsers,
   listHotspotActive,
-  disconnectHotspotActive,
   getCleanupScheduler,
   putCleanupScheduler,
   getSalesLedger,
@@ -249,7 +223,6 @@ import { inkIcon } from "@/utils/inkIcons";
 import AppDialog from "@/components/AppDialog.vue";
 import BandwidthChart from "@/components/BandwidthChart.vue";
 import AutoCleanupCard from "@/components/AutoCleanupCard.vue";
-import ActiveSessionsTable from "@/components/ActiveSessionsTable.vue";
 import SystemHealthCard from "@/components/SystemHealthCard.vue";
 
 const store = useRoutersStore();
@@ -273,7 +246,6 @@ const cleanupError = ref("");
 const showDisableCleanupConfirm = ref(false);
 const hotspotLoading = ref(false);
 const hotspotError = ref("");
-const disconnectingId = ref<string | null>(null);
 
 const salesLedger = ref<SaleEntry[]>([]);
 const salesLoading = ref(false);
@@ -305,20 +277,6 @@ const routerMeta = computed(() =>
     .filter(Boolean)
     .join(" · "),
 );
-
-async function disconnect(session: Record<string, string>) {
-  if (!store.activeId) return;
-  disconnectingId.value = session[".id"];
-  try {
-    await disconnectHotspotActive(store.activeId, session[".id"]);
-    toast.success(t("dashboard.userDisconnected", { user: session.user }));
-    await loadHotspot();
-  } catch (e: any) {
-    toast.error(t("dashboard.failedToDisconnect"), friendlyError(e, t("dashboard.failedToDisconnect")));
-  } finally {
-    disconnectingId.value = null;
-  }
-}
 
 function toggleCleanup(enabled: boolean) {
   if (!store.activeId || cleanupToggling.value) return;
