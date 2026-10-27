@@ -132,42 +132,11 @@
           <p class="m-0 text-xs text-text-muted">{{ t('vouchers.maxHint') }}</p>
         </div>
 
-        <!-- 3. Code style -->
+        <!-- 3. Ticket design — chosen before the code style, which depends on it -->
         <div class="flex flex-col gap-3">
           <div class="flex items-center gap-2.5">
             <span :class="STEP">3</span>
             <h2 class="m-0 text-[17px] font-bold">{{ t('vouchers.step3') }}</h2>
-          </div>
-          <div class="grid grid-cols-3 gap-2.5">
-            <label class="flex flex-col gap-1.5 min-w-0">
-              <span class="eyebrow">{{ t('vouchers.prefix') }}</span>
-              <input v-model.trim="form.prefix" class="input font-mono" maxlength="8" placeholder="lum-" />
-            </label>
-            <label class="flex flex-col gap-1.5 min-w-0">
-              <span class="eyebrow">{{ t('vouchers.length') }}</span>
-              <select v-model.number="form.nameLength" class="input-select font-semibold">
-                <option v-for="n in NAME_LENGTHS" :key="n" :value="n">{{ n }}</option>
-              </select>
-            </label>
-            <label class="flex flex-col gap-1.5 min-w-0">
-              <span class="eyebrow">{{ t('vouchers.login') }}</span>
-              <select
-                :value="form.passwordMode === 'same' ? 'same' : 'random'"
-                class="input-select font-semibold"
-                @change="form.passwordMode = ($event.target as HTMLSelectElement).value as 'same' | 'random'"
-              >
-                <option value="same">{{ t('vouchers.codeOnly') }}</option>
-                <option value="random">{{ t('vouchers.codeAndPassword') }}</option>
-              </select>
-            </label>
-          </div>
-        </div>
-
-        <!-- 4. Template -->
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center gap-2.5">
-            <span :class="STEP">4</span>
-            <h2 class="m-0 text-[17px] font-bold">{{ t('vouchers.step4') }}</h2>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <button
@@ -187,6 +156,93 @@
               <span class="text-xs opacity-80">{{ t(`templates.${tpl.key}.description`) }}</span>
             </button>
           </div>
+          <p
+            v-if="QR_TEMPLATES.includes(form.template) && !loginUrl"
+            role="status"
+            class="m-0 flex items-start gap-2 p-3 rounded-control border-2 border-ink bg-primary-wash text-sm"
+          >
+            <ExclamationTriangleIcon class="size-4.5 shrink-0 mt-0.5" />
+            {{ t('vouchers.qrMissing') }}
+          </p>
+        </div>
+
+        <!-- 4. Code style -->
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-2.5">
+            <span :class="STEP">4</span>
+            <h2 class="m-0 text-[17px] font-bold">{{ t('vouchers.step4') }}</h2>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <label class="flex flex-col gap-1.5 min-w-0">
+              <span class="eyebrow">{{ t('vouchers.prefix') }}</span>
+              <input v-model.trim="form.prefix" class="input font-mono" maxlength="8" placeholder="lum-" />
+              <span class="text-xs text-text-muted">{{ t('vouchers.prefixHint') }}</span>
+            </label>
+            <label class="flex flex-col gap-1.5 min-w-0">
+              <span class="eyebrow">{{ t('vouchers.length') }}</span>
+              <select v-model.number="form.nameLength" class="input-select font-semibold">
+                <option v-for="n in NAME_LENGTHS" :key="n" :value="n">{{ n }}</option>
+              </select>
+              <span class="text-xs text-text-muted">{{ t('vouchers.lengthHint') }}</span>
+            </label>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <span id="charset-label" class="eyebrow">{{ t('vouchers.characters') }}</span>
+            <div role="group" aria-labelledby="charset-label" class="flex border-2 border-ink rounded-control overflow-hidden">
+              <button
+                v-for="(opt, i) in CHARSET_OPTS"
+                :key="opt.key"
+                type="button"
+                :aria-pressed="charsetKey === opt.key"
+                class="flex-1 min-h-11 px-2 text-xs font-semibold cursor-pointer"
+                :class="[
+                  i > 0 && 'border-l-2 border-ink',
+                  charsetKey === opt.key ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-primary-wash',
+                ]"
+                @click="setCharset(opt.key)"
+              >
+                {{ t(opt.label) }}
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <span id="login-label" class="eyebrow">{{ t('vouchers.login') }}</span>
+            <div role="group" aria-labelledby="login-label" class="flex border-2 border-ink rounded-control overflow-hidden">
+              <button
+                v-for="(mode, i) in LOGIN_MODES"
+                :key="mode.value"
+                type="button"
+                :aria-pressed="form.passwordMode === mode.value"
+                :disabled="singleCodeTemplate && mode.value !== 'same'"
+                class="flex-1 min-h-11 px-2 text-xs font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                :class="[
+                  i > 0 && 'border-l-2 border-ink',
+                  form.passwordMode === mode.value ? 'bg-ink text-paper' : 'bg-paper text-ink enabled:hover:bg-primary-wash',
+                ]"
+                @click="form.passwordMode = mode.value"
+              >
+                {{ t(mode.label) }}
+              </button>
+            </div>
+            <span class="text-xs text-text-muted">
+              {{ singleCodeTemplate ? t('vouchers.loginLocked') : t(`vouchers.loginHint.${form.passwordMode}`) }}
+            </span>
+            <input
+              v-if="form.passwordMode === 'fixed'"
+              v-model="form.fixedPassword"
+              class="input"
+              :placeholder="t('vouchers.samePasswordPlaceholder')"
+              :aria-label="t('vouchers.sharedPassword')"
+            />
+          </div>
+
+          <p class="m-0 px-3 py-2.5 rounded-control bg-ground text-sm">
+            {{ t('vouchers.example') }}
+            <span class="font-mono font-semibold">{{ exampleLogin }}</span>
+          </p>
         </div>
 
         <!-- 5. Options — always visible so no admin misses them -->
@@ -196,43 +252,6 @@
             <h2 class="m-0 text-[17px] font-bold">{{ t('vouchers.step5') }}</h2>
           </div>
           <div class="flex flex-col gap-4">
-            <div class="flex flex-col gap-1.5">
-              <span class="eyebrow">{{ t('vouchers.characters') }}</span>
-              <div role="group" :aria-label="t('vouchers.characters')" class="flex border-2 border-ink rounded-control overflow-hidden">
-                <button
-                  v-for="(opt, i) in CHARSET_OPTS"
-                  :key="opt.key"
-                  type="button"
-                  :aria-pressed="charsetKey === opt.key"
-                  class="flex-1 min-h-11 px-2 text-xs font-semibold cursor-pointer"
-                  :class="[
-                    i > 0 && 'border-l-2 border-ink',
-                    charsetKey === opt.key ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-primary-wash',
-                  ]"
-                  @click="setCharset(opt.key)"
-                >
-                  {{ t(opt.label) }}
-                </button>
-              </div>
-            </div>
-
-            <label class="flex items-center gap-2.5 text-sm font-semibold cursor-pointer">
-              <input
-                type="checkbox"
-                class="size-5 accent-ink"
-                :checked="form.passwordMode === 'fixed'"
-                @change="form.passwordMode = ($event.target as HTMLInputElement).checked ? 'fixed' : 'random'"
-              />
-              {{ t('vouchers.samePassword') }}
-            </label>
-            <input
-              v-if="form.passwordMode === 'fixed'"
-              v-model="form.fixedPassword"
-              class="input"
-              :placeholder="t('vouchers.samePasswordPlaceholder')"
-              :aria-label="t('vouchers.samePassword')"
-            />
-
             <label class="flex flex-col gap-1.5">
               <span class="eyebrow">{{ t('vouchers.timeLimit') }}</span>
               <input
@@ -247,6 +266,7 @@
               <span v-else-if="uptimeWarning" class="text-xs text-text-secondary">
                 {{ t('vouchers.timeLimitWarning') }}
               </span>
+              <span v-else class="text-xs text-text-muted">{{ t('vouchers.timeLimitHint') }}</span>
             </label>
 
             <div class="flex flex-col gap-1.5">
@@ -265,11 +285,13 @@
                   <option value="G">GB</option>
                 </select>
               </div>
+              <span class="text-xs text-text-muted">{{ t('vouchers.dataLimitHint') }}</span>
             </div>
 
             <label class="flex flex-col gap-1.5">
               <span class="eyebrow">{{ t('vouchers.comment') }}</span>
               <input v-model="form.comment" class="input" :placeholder="t('vouchers.commentPlaceholder')" />
+              <span class="text-xs text-text-muted">{{ t('vouchers.commentHint') }}</span>
             </label>
           </div>
         </div>
@@ -396,7 +418,7 @@ import {
 import { friendlyError } from "@/utils/errors";
 import AppDialog from "@/components/AppDialog.vue";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
-import { printVouchers, toVoucherItems, type VoucherEntry } from "@/utils/vouchers";
+import { hotspotLoginUrl, printVouchers, toVoucherItems, type VoucherEntry } from "@/utils/vouchers";
 import { VOUCHER_TEMPLATES, getVoucherTemplate, type VoucherTemplate } from "@/utils/voucherTemplates";
 import { normalizeShorthand, shorthandToSeconds, uptimeForRouter } from "@/utils/duration";
 import { inkIcon } from "@/utils/inkIcons";
@@ -419,11 +441,19 @@ const CHARSET_OPTS = [
   { key: "digits" as const, label: "vouchers.charsDigits", letters: false, digits: true },
 ];
 
+const LOGIN_MODES = [
+  { value: "same" as const, label: "vouchers.codeOnly" },
+  { value: "random" as const, label: "vouchers.codeAndPassword" },
+  { value: "fixed" as const, label: "vouchers.codeAndSharedPassword" },
+];
+
+// Templates that print a login QR code.
+const QR_TEMPLATES: VoucherTemplate["key"][] = ["business", "voucher"];
+
 const profiles = ref<Record<string, string>[]>([]);
 const profileMetas = ref<Record<string, ProfileMeta>>({});
 const hotspotSettings = ref<HotspotSettings>({
   hotspotName: "",
-  dnsName: "",
   currency: "",
 });
 const loading = ref(false);
@@ -432,9 +462,7 @@ const error = ref("");
 // Used by the Business voucher template's QR code — points at the
 // hotspot's own login page, since that DNS name is what devices on the
 // hotspot network actually resolve.
-const loginUrl = computed(() =>
-  hotspotSettings.value.dnsName ? `http://${hotspotSettings.value.dnsName}/login` : "",
-);
+const loginUrl = ref("");
 
 const form = ref({
   profile: "",
@@ -464,12 +492,13 @@ async function load() {
       ),
       getHotspotSettings(store.activeId).catch(
         () =>
-          ({ hotspotName: "", dnsName: "", currency: "" }) as HotspotSettings,
+          ({ hotspotName: "", currency: "" }) as HotspotSettings,
       ),
     ]);
     profiles.value = p;
     profileMetas.value = m;
     hotspotSettings.value = s;
+    loginUrl.value = await hotspotLoginUrl(store.activeId);
     if (!profiles.value.some((x) => x.name === form.value.profile)) {
       form.value.profile = profiles.value[0]?.name ?? "";
     }
@@ -513,6 +542,28 @@ function setCharset(key: (typeof CHARSET_OPTS)[number]["key"]) {
   form.value.charsLetters = opt.letters;
   form.value.charsDigits = opt.digits;
 }
+
+// The Voucher ticket prints one code only, so a separate password would never
+// reach the guest: lock login to "Code only" while it's selected.
+const singleCodeTemplate = computed(() => form.value.template === "voucher");
+watch(singleCodeTemplate, (single) => {
+  if (single) form.value.passwordMode = "same";
+});
+
+// A fixed-looking example so the operator sees what guests will type.
+const exampleLogin = computed(() => {
+  const cs = charset.value || "abc";
+  const code =
+    form.value.prefix +
+    Array.from({ length: form.value.nameLength }, (_, i) => cs[(i * 7 + 3) % cs.length]).join("");
+  const { passwordMode, fixedPassword } = form.value;
+  if (passwordMode === "same") return code;
+  const password =
+    passwordMode === "fixed"
+      ? fixedPassword || "•••••"
+      : Array.from({ length: form.value.nameLength }, (_, i) => cs[(i * 5 + 11) % cs.length]).join("");
+  return `${code} / ${password}`;
+});
 
 const uptimePreview = computed(() => uptimeForRouter(form.value.limitUptimeRaw));
 const uptimeWarning = computed(() => {

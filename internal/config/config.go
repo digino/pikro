@@ -22,7 +22,6 @@ type LoginPageSettings struct {
 
 type HotspotSettings struct {
 	HotspotName  string                 `json:"hotspotName"`
-	DNSName      string                 `json:"dnsName"`
 	Currency     string                 `json:"currency"`
 	ProfileMetas map[string]ProfileMeta `json:"profileMetas,omitempty"`
 	LoginPage    *LoginPageSettings     `json:"loginPage,omitempty"`

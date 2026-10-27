@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"regexp"
+	"strings"
 )
 
 // ─── Preflight types ──────────────────────────────────────────────────────────
@@ -23,6 +24,16 @@ type PreflightResult struct {
 	HotspotProfile string          `json:"hotspotProfile"`
 	HotspotDNSName string          `json:"hotspotDnsName"`
 	HotspotAddPool string          `json:"hotspotAddressPool"`
+	// HotspotAddress is the hotspot interface's own IP: the login page answers
+	// on it even when no dns-name is set.
+	HotspotAddress string `json:"hotspotAddress"`
+}
+
+// addressIP strips the prefix length RouterOS puts on interface addresses
+// ("10.5.50.1/24" -> "10.5.50.1").
+func addressIP(addr string) string {
+	ip, _, _ := strings.Cut(addr, "/")
+	return ip
 }
 
 // ─── Setup types ──────────────────────────────────────────────────────────────
@@ -107,6 +118,14 @@ func (c *Client) HotspotPreflight() (*PreflightResult, error) {
 	})
 	if err == nil && len(profReply.Re) > 0 {
 		result.HotspotDNSName = profReply.Re[0].Map["dns-name"]
+	}
+
+	addrReply, err := conn.RunArgs([]string{
+		"/ip/address/print",
+		"?interface=" + result.HotspotOnIface,
+	})
+	if err == nil && len(addrReply.Re) > 0 {
+		result.HotspotAddress = addressIP(addrReply.Re[0].Map["address"])
 	}
 
 	return result, nil

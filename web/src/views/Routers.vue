@@ -305,7 +305,7 @@ function savedRouter(d: DiscoveredDevice): RouterProfile | undefined {
 
 function hotspotLine(r: RouterProfile): string {
   const h = r.hotspotSettings;
-  return [h?.hotspotName, h?.dnsName, h?.currency].filter(Boolean).join(" · ");
+  return [h?.hotspotName, h?.currency].filter(Boolean).join(" · ");
 }
 
 function openAdd(d: Partial<DiscoveredDevice>) {

@@ -763,8 +763,7 @@ import {
 import { friendlyError } from "@/utils/errors";
 import AppDialog from "@/components/AppDialog.vue";
 import PrintTemplateDialog from "@/components/PrintTemplateDialog.vue";
-import { type VoucherEntry } from "@/utils/vouchers";
-import { normalizeDnsName } from "@/utils/dnsName";
+import { hotspotLoginUrl, type VoucherEntry } from "@/utils/vouchers";
 import { inkIcon } from "@/utils/inkIcons";
 
 const store = useRoutersStore();
@@ -912,7 +911,6 @@ const profiles = ref<Record<string, string>[]>([]);
 const profileMetas = ref<Record<string, ProfileMeta>>({});
 const hotspotSettings = ref<HotspotSettings>({
   hotspotName: "",
-  dnsName: "",
   currency: "",
 });
 
@@ -921,10 +919,7 @@ const hotspotSettings = ref<HotspotSettings>({
 // hotspot network actually resolve. normalizeDnsName guards against a
 // dnsName saved with a scheme already in it (e.g. from before this was
 // validated on input) producing a doubled "http://http://...".
-const loginUrl = computed(() => {
-  const host = normalizeDnsName(hotspotSettings.value.dnsName);
-  return host ? `http://${host}/login` : "";
-});
+const loginUrl = ref("");
 
 const loading = ref(false);
 const error = ref("");
@@ -1173,13 +1168,14 @@ async function loadUsers() {
       ),
       getHotspotSettings(store.activeId).catch(
         () =>
-          ({ hotspotName: "", dnsName: "", currency: "" }) as HotspotSettings,
+          ({ hotspotName: "", currency: "" }) as HotspotSettings,
       ),
     ]);
     users.value = u;
     profiles.value = p;
     profileMetas.value = m;
     hotspotSettings.value = s;
+    loginUrl.value = await hotspotLoginUrl(store.activeId);
   } catch (e: any) {
     error.value = friendlyError(e, "Failed to load users");
   } finally {

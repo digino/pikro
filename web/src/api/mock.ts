@@ -53,7 +53,6 @@ let active: Record<string, string>[] = [
 
 let hotspotSettings: HotspotSettings = {
   hotspotName: 'Wifi Zone Nord-Ouest',
-  dnsName: 'nordouest.spot',
   currency: 'XOF',
   loginPage: { title: 'Wifi Zone Nord-Ouest', subtitle: 'Bienvenue — connectez-vous pour accéder à internet', template: 'minimal' },
 }
@@ -169,6 +168,7 @@ export const hotspotPreflight = (_id: string): Promise<PreflightResult> => ok({
   hotspotProfile: 'hsprof1',
   hotspotDnsName: 'hotspot.local',
   hotspotAddressPool: 'hotspot-pool',
+  hotspotAddress: '10.5.50.1',
 })
 
 export const setupHotspot = (_id: string, _body: any): Promise<SetupResult> => ok({

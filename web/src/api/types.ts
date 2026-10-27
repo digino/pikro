@@ -7,7 +7,6 @@ export interface RouterProfile {
   useTls: boolean
   hotspotSettings?: {
     hotspotName?: string
-    dnsName?: string
     currency?: string
   }
 }
@@ -21,7 +20,6 @@ export interface NewRouterProfile {
   useTls: boolean
   hotspotSettings?: {
     hotspotName: string
-    dnsName: string
     currency: string
   }
 }
@@ -67,7 +65,6 @@ export interface LoginPageSettings {
 
 export interface HotspotSettings {
   hotspotName: string
-  dnsName: string
   currency: string
   loginPage?: LoginPageSettings
 }
@@ -101,6 +98,7 @@ export interface PreflightResult {
   hotspotProfile: string
   hotspotDnsName: string
   hotspotAddressPool: string
+  hotspotAddress: string
 }
 
 export interface SetupStepResult {

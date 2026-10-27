@@ -123,7 +123,6 @@
       <RouterHotspotInfoFields
         v-else
         v-model:hotspot-name="form.hotspotName"
-        v-model:dns-name="form.dnsName"
         v-model:currency="form.currency"
       />
 
@@ -173,7 +172,6 @@ import {
 import { updateRouter, type RouterProfile } from "@/api";
 import AppDialog from "@/components/AppDialog.vue";
 import RouterHotspotInfoFields from "@/components/RouterHotspotInfoFields.vue";
-import { normalizeDnsName } from "@/utils/dnsName";
 
 const props = defineProps<{ open: boolean; router: RouterProfile | null }>();
 const emit = defineEmits<{ "update:open": [value: boolean]; saved: [] }>();
@@ -193,7 +191,6 @@ function emptyForm() {
     password: "",
     useTls: false,
     hotspotName: "",
-    dnsName: "",
     currency: "",
   };
 }
@@ -211,7 +208,6 @@ watch(
       password: "",
       useTls: r.useTls,
       hotspotName: r.hotspotSettings?.hotspotName ?? "",
-      dnsName: normalizeDnsName(r.hotspotSettings?.dnsName ?? ""),
       currency: r.hotspotSettings?.currency ?? "",
     };
   },
@@ -246,7 +242,6 @@ async function submit() {
       useTls: f.useTls,
       hotspotSettings: {
         hotspotName: f.hotspotName,
-        dnsName: normalizeDnsName(f.dnsName),
         currency: f.currency,
       },
     });

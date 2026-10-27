@@ -40,7 +40,7 @@
       <button type="button" class="btn btn-sm ml-auto" @click="load">{{ t('profiles.retry') }}</button>
     </div>
 
-    <div v-else class="grid grid-cols-1 xl:grid-cols-[2fr_1fr] items-start gap-7">
+    <template v-else>
       <!-- Profile cards grid -->
       <section :aria-label="t('profiles.title')">
         <div v-if="profiles.length === 0" class="card border-dashed shadow-none p-10 text-center">
@@ -49,7 +49,7 @@
           <p class="m-0 mt-1 text-sm text-text-muted">{{ t('profiles.noProfilesBody') }}</p>
         </div>
 
-        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-5.5">
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5.5">
           <article
             v-for="c in cards"
             :key="c.id"
@@ -108,16 +108,9 @@
       </section>
 
       <!-- Create / Edit form -->
-      <aside
-        :aria-label="formTitle"
-        class="card p-6 flex flex-col gap-4.5 xl:sticky xl:top-6"
-      >
+      <AppDialog :open="showForm" :title="formTitle" @update:open="showForm = $event">
         <TooltipProvider :delay-duration="200">
           <form class="flex flex-col gap-4.5" @submit.prevent="submit">
-            <div class="flex items-center justify-between gap-3">
-              <h2 class="type-display m-0 text-[26px] truncate">{{ formTitle }}</h2>
-              <span class="chip bg-primary text-primary-fg">{{ formChip }}</span>
-            </div>
 
             <label class="flex flex-col gap-1.5">
               <span class="eyebrow">{{ t('profiles.name') }}</span>
@@ -271,11 +264,6 @@
               </div>
             </div>
 
-            <div class="flex items-start gap-2.5 p-3 rounded-control bg-ground text-[13px] leading-snug">
-              <img :src="inkIcon('settings')" alt="" width="28" height="28" class="shrink-0" />
-              <span>{{ t('profiles.note') }}</span>
-            </div>
-
             <p v-if="formError" role="alert" class="m-0 text-sm text-red">{{ formError }}</p>
 
             <div class="flex flex-wrap gap-2.5">
@@ -291,7 +279,7 @@
                 <span v-if="submitting" class="spinner spinner--sm" />
                 {{ t('profiles.save') }}
               </button>
-              <button type="button" class="btn min-h-12.5" @click="openCreate">{{ t('profiles.cancel') }}</button>
+              <button type="button" class="btn min-h-12.5" @click="showForm = false">{{ t('profiles.cancel') }}</button>
               <button
                 v-if="editingProfile && editingProfile.name !== 'default'"
                 type="button"
@@ -304,8 +292,8 @@
             </div>
           </form>
         </TooltipProvider>
-      </aside>
-    </div>
+      </AppDialog>
+    </template>
   </main>
 </template>
 
@@ -346,6 +334,7 @@ import {
 import { friendlyError } from "@/utils/errors";
 import { inkIcon } from "@/utils/inkIcons";
 import NoRouterSelected from "@/components/NoRouterSelected.vue";
+import AppDialog from "@/components/AppDialog.vue";
 import AppSelect from "@/components/AppSelect.vue";
 
 const store = useRoutersStore();
@@ -424,6 +413,7 @@ const soldByProfile = ref<Record<string, number>>({});
 const onlineByProfile = ref<Record<string, number>>({});
 
 const editing = ref<string | null>(null);
+const showForm = ref(false);
 const submitting = ref(false);
 const formError = ref("");
 const nameInput = ref<HTMLInputElement | null>(null);
@@ -459,12 +449,6 @@ const formTitle = computed(() =>
     ? t("profiles.formEdit", { name: editingProfile.value.name })
     : t("profiles.formNew"),
 );
-const formChip = computed(() =>
-  editingProfile.value
-    ? t("profiles.soldChip", { n: soldByProfile.value[editingProfile.value.name] ?? 0 })
-    : t("profiles.draft"),
-);
-
 const isMajorV7 = computed(() => rosVersion.value.startsWith("7"));
 
 function parseShorthand(
@@ -573,7 +557,7 @@ const cards = computed(() =>
     const price = parseFloat(meta?.price ?? "");
     const system = p.name === "default";
     const free = !price && !system;
-    const isEditing = p[".id"] === editing.value;
+    const isEditing = showForm.value && p[".id"] === editing.value;
     const [up, down] = (p["rate-limit"] ?? "").split("/");
     const shared = parseInt(p["shared-users"] ?? "1") || 1;
     return {
@@ -669,11 +653,13 @@ function openCreate() {
   rateDownUnit.value = "M";
   validityRaw.value = "";
   formError.value = "";
+  showForm.value = true;
   nextTick(() => nameInput.value?.focus());
 }
 
 function openEdit(p: Record<string, string>) {
   editing.value = p[".id"];
+  showForm.value = true;
   const meta = profileMetas.value[p.name] ?? {};
   form.value = {
     name: p.name ?? "",
@@ -718,7 +704,7 @@ async function submit() {
       await createHotspotProfile(store.activeId, params);
     }
     await load();
-    openCreate();
+    showForm.value = false;
   } catch (e: any) {
     formError.value = friendlyError(e, t("profiles.failedToSave"));
   } finally {
@@ -730,7 +716,7 @@ async function remove(p: Record<string, string>) {
   if (!store.activeId || !confirm(t("profiles.confirmDelete"))) return;
   try {
     await deleteHotspotProfile(store.activeId, p[".id"], p.name);
-    openCreate();
+    showForm.value = false;
     await load();
   } catch (e: any) {
     error.value = friendlyError(e, t("profiles.failedToDelete"));

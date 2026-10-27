@@ -78,7 +78,6 @@
       <RouterHotspotInfoFields
         v-else
         v-model:hotspot-name="form.hotspotName"
-        v-model:dns-name="form.dnsName"
         v-model:currency="form.currency"
       />
 
@@ -119,7 +118,6 @@ import { useRoutersStore } from '@/stores/routers'
 import type { DiscoveredDevice } from '@/api'
 import AppDialog from '@/components/AppDialog.vue'
 import RouterHotspotInfoFields from '@/components/RouterHotspotInfoFields.vue'
-import { normalizeDnsName } from '@/utils/dnsName'
 
 const props = defineProps<{ open: boolean; prefill?: Partial<DiscoveredDevice> }>()
 const emit = defineEmits<{ 'update:open': [value: boolean]; added: [ip: string] }>()
@@ -134,7 +132,7 @@ const step = ref(1)
 function emptyForm() {
   return {
     name: '', host: '', port: 8728, username: 'admin', password: '', useTls: false,
-    hotspotName: '', dnsName: '', currency: '',
+    hotspotName: '', currency: '',
   }
 }
 const form = ref(emptyForm())
@@ -169,7 +167,6 @@ async function submit() {
       password: f.password, useTls: f.useTls,
       hotspotSettings: {
         hotspotName: f.hotspotName,
-        dnsName: normalizeDnsName(f.dnsName),
         currency: f.currency,
       },
     })

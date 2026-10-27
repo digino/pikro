@@ -58,7 +58,7 @@ const settingsError = ref('')
 
 // hotspotName/dnsName/currency are edited from the router's Add/Edit dialog
 // (see Routers page) — loaded here read-only for the login-page-title tab to consume.
-const form = ref({ hotspotName: '', dnsName: '', currency: '' })
+const form = ref({ hotspotName: '', currency: '' })
 
 const loginPageRef = ref<InstanceType<typeof SettingsLoginPage> | null>(null)
 
@@ -69,7 +69,6 @@ async function load() {
   try {
     const s = await getHotspotSettings(store.activeId)
     form.value.hotspotName = s.hotspotName ?? ''
-    form.value.dnsName = s.dnsName ?? ''
     form.value.currency = s.currency ?? ''
     loginPageRef.value?.init(s.loginPage)
   } catch (e: any) {

@@ -31,7 +31,6 @@ export interface UpdateRouterProfile {
   useTls: boolean
   hotspotSettings?: {
     hotspotName: string
-    dnsName: string
     currency: string
   }
 }

@@ -1,5 +1,17 @@
-import type { ProfileMeta } from "@/api";
+import { hotspotPreflight, type ProfileMeta } from "@/api";
 import { getVoucherTemplate, type VoucherTemplate, type VoucherItem } from "./voucherTemplates";
+import { normalizeDnsName } from "./dnsName";
+
+/**
+ * Login page URL for ticket QR codes, read from the router: its hotspot
+ * dns-name (Pikro's setup always sets one), else the hotspot interface's IP,
+ * which the login page also answers on. "" when the router has no hotspot.
+ */
+export async function hotspotLoginUrl(routerId: string): Promise<string> {
+  const preflight = await hotspotPreflight(routerId).catch(() => null);
+  const host = normalizeDnsName(preflight?.hotspotDnsName || preflight?.hotspotAddress || "");
+  return host ? `http://${host}/login` : "";
+}
 
 export interface VoucherEntry {
   name: string;

@@ -71,7 +71,6 @@ func UpdateRouter(w http.ResponseWriter, r *http.Request) {
 		UseTLS          bool   `json:"useTls"`
 		HotspotSettings *struct {
 			HotspotName string `json:"hotspotName"`
-			DNSName     string `json:"dnsName"`
 			Currency    string `json:"currency"`
 		} `json:"hotspotSettings"`
 	}
@@ -116,7 +115,6 @@ func UpdateRouter(w http.ResponseWriter, r *http.Request) {
 				cfg.Routers[i].HotspotSettings = hs
 			}
 			hs.HotspotName = input.HotspotSettings.HotspotName
-			hs.DNSName = input.HotspotSettings.DNSName
 			hs.Currency = input.HotspotSettings.Currency
 		}
 		break
