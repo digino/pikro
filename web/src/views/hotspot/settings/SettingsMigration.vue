@@ -1,93 +1,108 @@
 <template>
-  <div class="max-w-xl space-y-5">
-    <div>
-      <div class="flex items-center gap-2">
-        <h3 class="font-semibold text-text-primary">Migrate from Mikhmonv3</h3>
-        <StatusBadge label="Beta" color="amber" variant="pill" />
+  <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-7 items-start">
+    <section class="card p-7 flex flex-col gap-4.5">
+      <div class="flex flex-wrap items-center gap-3">
+        <h2 class="type-display m-0 text-3xl">{{ t('settings.migration.heading') }}</h2>
+        <span class="chip bg-primary text-primary-fg">{{ t('settings.beta') }}</span>
       </div>
-      <p class="text-sm text-text-secondary mt-0.5">
-        If this router was previously managed with Mikhmon, its hotspot users and
-        profiles use a different expiry format that Pikro can't read yet — they'll
-        show as "Waiting" even if connected, and expiry columns stay blank.
-      </p>
-    </div>
-
-    <div class="p-4 border border-border rounded-xl bg-surface space-y-2 font-medium">
-      <p class="font-medium text-text-primary underline">What this does</p>
-      <ul class="list-disc list-inside space-y-1 text-sm text-text-secondary">
-        <li>Unused vouchers (never logged in) — comment cleared, same as a fresh Pikro voucher</li>
-        <li>Already-activated users — expiry converted to Pikro's format (already-expired ones will be removed by auto-cleanup on its normal schedule)</li>
-        <li>Hotspot profiles — on-login script replaced so future logins use Pikro's format</li>
-        <li>Mikhmon's own leftover per-user schedulers and scripts (created by its old on-login script at every login) are removed</li>
-        <li>Pikro's own cleanup scheduler is installed, so expired vouchers keep getting removed automatically</li>
-        <li>Anything already in Pikro's format, or not recognized, is left untouched</li>
+      <p class="m-0 text-[15px] leading-relaxed text-text-secondary max-w-155">{{ t('settings.migration.intro') }}</p>
+      <ul class="m-0 p-0 list-none flex flex-col gap-2.5 text-sm leading-snug">
+        <li v-for="(step, i) in tm('settings.migration.steps')" :key="i" class="flex items-start gap-2.5">
+          <CheckIcon class="size-5 shrink-0 mt-px stroke-[2.75]" aria-hidden="true" />
+          <span>{{ rt(step) }}</span>
+        </li>
       </ul>
-      <p class="text-sm">Safe to run more than once.</p>
-    </div>
+      <p class="m-0 text-[13px] font-semibold">{{ t('settings.migration.safe') }}</p>
+    </section>
 
-    <div v-if="result" class="p-4 border border-green/20 bg-green/8 rounded-xl space-y-1 text-sm">
-      <p class="font-medium text-green">Migration complete</p>
-      <p class="text-text-secondary">
-        {{ result.usersConverted }} user{{ result.usersConverted !== 1 ? 's' : '' }} converted,
-        {{ result.usersUnused }} unused voucher{{ result.usersUnused !== 1 ? 's' : '' }} cleared,
-        {{ result.usersSkipped }} left untouched
-        ({{ result.usersScanned }} scanned)
-      </p>
-      <p class="text-text-secondary">
-        {{ result.profilesConverted }} profile{{ result.profilesConverted !== 1 ? 's' : '' }} converted
-        ({{ result.profilesScanned }} scanned)
-      </p>
-      <p class="text-text-secondary">
-        {{ result.schedulersRemoved }} leftover scheduler{{ result.schedulersRemoved !== 1 ? 's' : '' }} and
-        {{ result.scriptsRemoved }} leftover script{{ result.scriptsRemoved !== 1 ? 's' : '' }} removed
-      </p>
-      <p class="text-text-secondary">
-        {{ result.cleanupInstalled ? 'Pikro cleanup scheduler installed' : 'Could not install Pikro cleanup scheduler — set it up manually from the Dashboard' }}
-      </p>
-    </div>
-    <p v-else-if="error" class="text-xs text-red">{{ error }}</p>
+    <section class="card p-6 flex flex-col gap-4">
+      <div>
+        <h3 class="m-0 font-bold">{{ t('settings.migration.actionTitle') }}</h3>
+        <p class="m-0 mt-1 text-sm text-text-secondary">{{ t('settings.migration.actionBody') }}</p>
+      </div>
 
-    <button
-      type="button"
-      class="btn btn-ink"
-      :disabled="migrating"
-      @click="runMigration"
-    >
-      <span
-        v-if="migrating"
-        class="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin"
-      />
-      {{ migrating ? 'Migrating…' : 'Migrate from Mikhmon' }}
-    </button>
+      <template v-if="result">
+        <div class="flex items-center gap-2.5 p-3.5 rounded-control border-2 border-ink bg-online-wash font-semibold">
+          <CheckIcon class="size-5 shrink-0 stroke-3 text-online" aria-hidden="true" />
+          <span>
+            {{ t('settings.migration.done') }}
+            <template v-if="result.cleanupInstalled">{{ t('settings.migration.cleanupOn') }}</template>
+          </span>
+        </div>
+        <p v-if="!result.cleanupInstalled" role="alert" class="m-0 text-sm text-danger-text">
+          {{ t('settings.migration.cleanupFailed') }}
+        </p>
+        <dl class="m-0 grid grid-cols-2 gap-2.5">
+          <div v-for="s in stats" :key="s.label" class="rounded-control border-2 border-ink p-3">
+            <dd class="m-0 type-display text-[28px] leading-none">{{ s.value }}</dd>
+            <dt class="mt-1 text-xs">{{ s.label }}</dt>
+          </div>
+        </dl>
+        <p class="m-0 text-xs text-text-muted">
+          {{ t('settings.migration.scanned', { users: result.usersScanned, profiles: result.profilesScanned, skipped: result.usersSkipped }) }}
+        </p>
+      </template>
+      <p v-else-if="error" role="alert" class="m-0 text-sm text-danger-text">{{ error }}</p>
+
+      <button
+        type="button"
+        class="btn min-h-12.5 text-[15px]"
+        :class="result ? '' : 'btn-primary'"
+        :disabled="migrating"
+        @click="confirming = true"
+      >
+        <span v-if="migrating" class="spinner spinner--sm" />
+        {{ migrating ? t('settings.migration.running') : result ? t('settings.migration.runAgain') : t('settings.migration.run') }}
+      </button>
+    </section>
+
+    <AppDialog v-model:open="confirming" :title="t('settings.migration.confirmTitle')">
+      <p class="m-0 text-sm leading-normal text-text-secondary">{{ t('settings.migration.confirmBody') }}</p>
+      <div class="flex justify-end gap-2.5 mt-6">
+        <button type="button" class="btn" @click="confirming = false">{{ t('settings.migration.cancel') }}</button>
+        <button type="button" class="btn btn-primary" @click="runMigration">{{ t('settings.migration.run') }}</button>
+      </div>
+    </AppDialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { CheckIcon } from '@heroicons/vue/24/outline'
 import { useRoutersStore } from '@/stores/routers'
 import { migrateFromMikhmon, type MikhmonMigrationResult } from '@/api'
-import StatusBadge from '@/components/StatusBadge.vue'
+import AppDialog from '@/components/AppDialog.vue'
 
+const { t, tm, rt } = useI18n()
 const store = useRoutersStore()
 
+const confirming = ref(false)
 const migrating = ref(false)
 const result = ref<MikhmonMigrationResult | null>(null)
 const error = ref('')
 
+const stats = computed(() => {
+  const r = result.value
+  if (!r) return []
+  return [
+    { label: t('settings.migration.usersConverted'), value: r.usersConverted },
+    { label: t('settings.migration.usersUnused'), value: r.usersUnused },
+    { label: t('settings.migration.profilesConverted'), value: r.profilesConverted },
+    { label: t('settings.migration.leftoversRemoved'), value: r.schedulersRemoved + r.scriptsRemoved },
+  ]
+})
+
 async function runMigration() {
+  confirming.value = false
   if (!store.activeId) return
-  if (!confirm(
-    'This will rewrite hotspot user comments and profile on-login scripts, remove Mikhmon\'s ' +
-    'own leftover schedulers/scripts, and install Pikro\'s cleanup scheduler on this router. ' +
-    'Already-migrated data is left untouched. Continue?',
-  )) return
   migrating.value = true
   error.value = ''
   result.value = null
   try {
     result.value = await migrateFromMikhmon(store.activeId)
   } catch (e: any) {
-    error.value = e?.response?.data?.error ?? e?.message ?? 'Migration failed'
+    error.value = e?.response?.data?.error ?? e?.message ?? t('settings.migration.failed')
   } finally {
     migrating.value = false
   }

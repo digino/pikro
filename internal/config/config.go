@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 // ProfileMeta stores Pikro-only metadata for a hotspot user profile.
@@ -39,9 +40,14 @@ func ValiditySecs(s string) int64 {
 }
 
 type LoginPageSettings struct {
-	Title    string `json:"title,omitempty"`
-	Subtitle string `json:"subtitle,omitempty"`
-	Template string `json:"template,omitempty"` // "minimal" | "voucher" | "card"
+	Title      string     `json:"title,omitempty"`
+	Subtitle   string     `json:"subtitle,omitempty"`
+	Template   string     `json:"template,omitempty"`  // legacy "minimal" | "voucher" | "card", superseded by LoginMode
+	LoginMode  string     `json:"loginMode,omitempty"` // "code" | "password"
+	Language   string     `json:"language,omitempty"`  // "en" | "fr"
+	ShowPrices bool       `json:"showPrices,omitempty"`
+	Contact    string     `json:"contact,omitempty"` // phone number guests call to buy a ticket
+	UploadedAt *time.Time `json:"uploadedAt,omitempty"`
 }
 
 type HotspotSettings struct {
@@ -52,13 +58,13 @@ type HotspotSettings struct {
 }
 
 type RouterProfile struct {
-	ID              string          `json:"id"`
-	Name            string          `json:"name"`
-	Host            string          `json:"host"`
-	Port            int             `json:"port"`
-	Username        string          `json:"username"`
-	Password        string          `json:"password"`
-	UseTLS          bool            `json:"useTls"`
+	ID              string           `json:"id"`
+	Name            string           `json:"name"`
+	Host            string           `json:"host"`
+	Port            int              `json:"port"`
+	Username        string           `json:"username"`
+	Password        string           `json:"password"`
+	UseTLS          bool             `json:"useTls"`
 	HotspotSettings *HotspotSettings `json:"hotspotSettings,omitempty"`
 }
 

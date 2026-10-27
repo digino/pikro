@@ -1,224 +1,445 @@
 <template>
-  <div class="flex gap-6 items-start">
-    <div class="w-72 shrink-0 space-y-5">
-
-      <button
-        type="button"
-        class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors"
-        :class="showingLive
-          ? 'border-text-primary bg-muted text-text-primary'
-          : 'border-border text-text-secondary hover:border-text-muted'"
-        :disabled="loadingLive"
-        @click="toggleLive"
-      >
-        <span v-if="loadingLive" class="size-3 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
-        {{ showingLive ? 'Back to editor preview' : 'View currently used' }}
-      </button>
-      <p v-if="liveError" class="text-xs text-red -mt-3">{{ liveError }}</p>
-
-      <!-- Template picker -->
-      <div class="flex flex-col gap-2">
-        <span class="text-sm font-medium text-text-secondary">Template</span>
-        <div class="flex flex-col gap-2">
-          <button
-            v-for="t in templates"
-            :key="t.key"
-            type="button"
-            class="flex items-start gap-3 p-3 rounded-lg border text-left transition-colors"
-            :class="loginPage.template === t.key
-              ? 'border-text-primary bg-muted'
-              : 'border-border hover:border-text-muted'"
-            @click="selectTemplate(t.key)"
-          >
-            <span class="text-xl leading-none mt-0.5 shrink-0">{{ t.icon }}</span>
-            <div>
-              <div class="text-sm font-semibold text-text-primary">{{ t.label }}</div>
-              <div class="text-xs text-text-secondary mt-0.5">{{ t.description }}</div>
-            </div>
-          </button>
-        </div>
-        <p v-if="loginPage.template === 'voucher'" class="text-xs text-text-muted">
-          Requires vouchers generated with password set to "Same as username" —
-          otherwise the single code won't log customers in.
+  <div
+    class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-7 items-start"
+  >
+    <section class="card p-6 flex flex-col gap-5.5">
+      <div>
+        <h2 class="type-display m-0 text-2xl">
+          {{ t("settings.loginPage.heading") }}
+        </h2>
+        <p class="m-0 mt-1.5 text-sm leading-normal text-text-secondary">
+          {{ t("settings.loginPage.intro") }}
         </p>
       </div>
 
-      <div class="border-t border-border pt-4 space-y-4">
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-text-secondary">Title</span>
-          <input v-model="loginPage.title" class="input" :placeholder="hotspotName || 'Sign in to continue'" />
-          <p class="text-xs text-text-muted">Leave blank to use your hotspot name.</p>
+      <div class="flex flex-col gap-2">
+        <span :id="modeLabelId" class="eyebrow">{{
+          t("settings.loginPage.howGuestsLogIn")
+        }}</span>
+        <div
+          role="group"
+          :aria-labelledby="modeLabelId"
+          class="grid grid-cols-1 sm:grid-cols-2 gap-3"
+        >
+          <button
+            v-for="m in MODES"
+            :key="m"
+            type="button"
+            :aria-pressed="form.mode === m"
+            class="flex flex-col gap-1 p-3.5 text-left rounded-card border-2 border-ink cursor-pointer transition-colors"
+            :class="
+              form.mode === m
+                ? 'bg-primary text-primary-fg shadow-btn'
+                : 'bg-paper text-ink hover:bg-primary-wash'
+            "
+            @click="form.mode = m"
+          >
+            <span class="font-bold text-sm">{{
+              t(`settings.loginPage.modes.${m}.label`)
+            }}</span>
+            <span class="text-xs leading-snug">{{
+              t(`settings.loginPage.modes.${m}.note`)
+            }}</span>
+          </button>
+        </div>
+        <p class="m-0 text-xs text-text-muted">
+          {{ t("settings.loginPage.modeHint") }}
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <span :id="langLabelId" class="eyebrow">{{
+          t("settings.loginPage.language")
+        }}</span>
+        <div
+          role="group"
+          :aria-labelledby="langLabelId"
+          class="flex self-start border-2 border-ink rounded-control overflow-hidden bg-paper"
+        >
+          <button
+            v-for="(l, i) in LANGUAGES"
+            :key="l.key"
+            type="button"
+            :lang="l.key"
+            :aria-pressed="form.language === l.key"
+            class="min-h-10 px-4 text-sm font-semibold cursor-pointer"
+            :class="[
+              i > 0 && 'border-l-2 border-ink',
+              form.language === l.key
+                ? 'bg-primary text-primary-fg'
+                : 'text-ink hover:bg-primary-wash',
+            ]"
+            @click="form.language = l.key"
+          >
+            {{ l.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <label class="flex flex-col gap-1.5">
+          <span class="eyebrow">{{ t("settings.loginPage.title") }}</span>
+          <input
+            v-model="form.title"
+            class="input"
+            :placeholder="settings.hotspotName || 'Wi-Fi'"
+          />
+          <span class="text-xs text-text-muted">{{
+            t("settings.loginPage.titleHint")
+          }}</span>
         </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-text-secondary">Subtitle</span>
-          <input v-model="loginPage.subtitle" class="input" placeholder="$(hostname)" />
-          <p class="text-xs text-text-muted">Leave blank to show the hotspot DNS name.</p>
+        <label class="flex flex-col gap-1.5">
+          <span class="eyebrow">{{ t("settings.loginPage.subtitle") }}</span>
+          <input
+            v-model="form.subtitle"
+            class="input"
+            placeholder="$(hostname)"
+          />
+          <span class="text-xs text-text-muted">{{
+            t("settings.loginPage.subtitleHint")
+          }}</span>
         </label>
       </div>
 
-      <p v-if="error" class="text-xs text-red">{{ error }}</p>
-      <p v-if="saved" class="text-xs text-green">Uploaded to router.</p>
-
-      <div class="flex flex-col gap-2 pt-1">
-        <button type="button" class="btn btn-ink" :disabled="uploading" @click="upload">
-          <span v-if="uploading" class="size-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-          Upload to router
-        </button>
+      <div class="flex flex-col gap-1.5">
+        <div class="flex items-center justify-between gap-4">
+          <label :for="pricesId" class="eyebrow">{{
+            t("settings.loginPage.showPrices")
+          }}</label>
+          <SwitchRoot
+            :id="pricesId"
+            v-model="form.showPrices"
+            class="relative inline-flex items-center w-15 h-8.5 shrink-0 rounded-full border-2 border-ink shadow-[2px_2px_0_var(--color-shadow)] cursor-pointer transition-colors data-[state=checked]:bg-primary data-[state=unchecked]:bg-paper focus-visible:outline-3 focus-visible:outline-primary focus-visible:outline-offset-2"
+          >
+            <SwitchThumb
+              class="pointer-events-none block size-6 rounded-full bg-ink transition-transform translate-x-0.75 data-[state=checked]:translate-x-7.25"
+            />
+          </SwitchRoot>
+        </div>
+        <span class="text-xs text-text-muted">
+          {{
+            priceList.length
+              ? t("settings.loginPage.showPricesHint")
+              : t("settings.loginPage.noPrices")
+          }}
+        </span>
       </div>
-    </div>
 
-    <div class="flex-1 min-w-0">
-      <p class="text-xs font-medium text-text-muted mb-2">
-        {{ showingLive ? 'Currently used on router' : 'Preview' }}
+      <label class="flex flex-col gap-1.5">
+        <span class="eyebrow">{{ t("settings.loginPage.contact") }}</span>
+        <input
+          v-model="form.contact"
+          class="input"
+          type="tel"
+          inputmode="tel"
+          autocomplete="off"
+          placeholder="+225 07 00 00 00 00"
+        />
+        <span class="text-xs text-text-muted">{{
+          t("settings.loginPage.contactHint")
+        }}</span>
+      </label>
+
+      <div
+        class="flex items-start gap-2.5 p-3 rounded-control bg-ground text-sm leading-snug"
+      >
+        <img
+          :src="inkIcon('routers')"
+          alt=""
+          width="28"
+          height="28"
+          class="shrink-0"
+        />
+        <span>
+          {{ t("settings.loginPage.routerNote") }}
+          <RouterLink to="/routers" class="font-semibold underline">{{
+            t("settings.loginPage.routersLink")
+          }}</RouterLink
+          >.
+        </span>
+      </div>
+
+      <p v-if="error" role="alert" class="m-0 text-sm text-danger-text">
+        {{ error }}
       </p>
-      <div class="border border-border rounded-xl overflow-hidden bg-surface" style="height: 520px">
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          class="btn btn-primary"
+          :disabled="uploading"
+          @click="confirming = true"
+        >
+          <span v-if="uploading" class="spinner spinner--sm" />
+          {{ t("settings.loginPage.upload") }}
+        </button>
+        <button type="button" class="btn" :disabled="uploading" @click="reset">
+          {{ t("settings.loginPage.reset") }}
+        </button>
+        <span class="text-[13px] text-text-muted sm:ml-auto">{{
+          lastUpload
+        }}</span>
+      </div>
+    </section>
+
+    <section
+      :aria-label="t('settings.loginPage.preview')"
+      class="flex flex-col items-center gap-3"
+    >
+      <div v-if="showingLive" class="eyebrow">
+        {{ t("settings.loginPage.livePreview") }}
+      </div>
+      <div
+        class="w-[300px] h-[580px] p-2.5 rounded-[40px] border-[3px] border-black bg-black shadow-[8px_8px_0_var(--color-shadow)]"
+      >
         <iframe
-          :srcdoc="showingLive ? liveHTML : preview"
-          class="w-full h-full border-0"
+          :srcdoc="showingLive ? liveHTML : previewHtml(pages[previewPage])"
+          class="w-full h-full rounded-[30px] border-0 bg-white"
           sandbox=""
-          title="Login page preview"
+          :title="t('settings.loginPage.preview')"
         />
       </div>
-    </div>
+      <div
+        v-if="!showingLive"
+        role="group"
+        :aria-label="t('settings.loginPage.previewPage')"
+        class="flex border-2 border-ink rounded-control overflow-hidden bg-paper"
+      >
+        <button
+          v-for="(p, i) in PREVIEW_PAGES"
+          :key="p"
+          type="button"
+          :aria-pressed="previewPage === p"
+          class="min-h-10 px-3.5 text-[13px] font-semibold cursor-pointer"
+          :class="[
+            i > 0 && 'border-l-2 border-ink',
+            previewPage === p
+              ? 'bg-ink text-paper'
+              : 'text-ink hover:bg-primary-wash',
+          ]"
+          @click="previewPage = p"
+        >
+          {{ t(`settings.loginPage.pages.${p}`) }}
+        </button>
+      </div>
+      <button
+        type="button"
+        class="btn btn-ghost btn-sm"
+        :disabled="loadingLive"
+        @click="toggleLive"
+      >
+        <span v-if="loadingLive" class="spinner spinner--sm" />
+        {{
+          showingLive
+            ? t("settings.loginPage.backToPreview")
+            : t("settings.loginPage.viewLive")
+        }}
+      </button>
+      <p v-if="liveError" role="alert" class="m-0 text-xs text-danger-text">
+        {{ liveError }}
+      </p>
+    </section>
+
+    <AppDialog
+      v-model:open="confirming"
+      :title="t('settings.loginPage.confirmTitle')"
+    >
+      <p class="m-0 text-sm leading-normal text-text-secondary">
+        {{ t("settings.loginPage.confirmBody") }}
+      </p>
+      <div class="flex justify-end gap-2.5 mt-6">
+        <button type="button" class="btn" @click="confirming = false">
+          {{ t("settings.loginPage.cancel") }}
+        </button>
+        <button type="button" class="btn btn-primary" @click="upload">
+          {{ t("settings.loginPage.upload") }}
+        </button>
+      </div>
+    </AppDialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRoutersStore } from '@/stores/routers'
-import { useToastStore } from '@/stores/toast'
+import { ref, computed, watch, useId } from "vue";
+import { useI18n } from "vue-i18n";
+import { SwitchRoot, SwitchThumb } from "reka-ui";
+import { useRoutersStore } from "@/stores/routers";
+import { useToastStore } from "@/stores/toast";
 import {
-  getHotspotSettings, putHotspotSettings, uploadLoginPage as apiUploadLoginPage,
+  getHotspotSettings,
+  putHotspotSettings,
+  uploadLoginPage,
   getLoginPageHTML,
+  type HotspotSettings,
   type LoginPageSettings,
-} from '@/api'
+} from "@/api";
+import AppDialog from "@/components/AppDialog.vue";
+import { inkIcon } from "@/utils/inkIcons";
 import {
-  MINIMAL_TEMPLATE, VOUCHER_TEMPLATE, CARD_TEMPLATE,
-  MINIMAL_LOGOUT_TEMPLATE, MINIMAL_STATUS_TEMPLATE, MINIMAL_REDIRECT_TEMPLATE,
-  VOUCHER_LOGOUT_TEMPLATE, VOUCHER_STATUS_TEMPLATE, VOUCHER_REDIRECT_TEMPLATE,
-  CARD_LOGOUT_TEMPLATE, CARD_STATUS_TEMPLATE, CARD_REDIRECT_TEMPLATE,
-} from './loginPageTemplates'
+  renderGuestPages,
+  previewHtml,
+  type LoginMode,
+  type GuestLanguage,
+  type GuestPages,
+} from "./loginPageTemplates";
 
-const props = defineProps<{ hotspotName: string }>()
+const props = defineProps<{ settings: HotspotSettings }>();
+const emit = defineEmits<{ saved: [settings: HotspotSettings] }>();
 
-const store = useRoutersStore()
-const toast = useToastStore()
+const { t, locale } = useI18n();
+const store = useRoutersStore();
+const toast = useToastStore();
 
-const loginPage = ref<LoginPageSettings>({
-  title: '',
-  subtitle: '',
-  template: 'minimal',
-})
-const uploading = ref(false)
-const error = ref('')
-const saved = ref(false)
+const modeLabelId = useId();
+const langLabelId = useId();
+const pricesId = useId();
 
-const showingLive = ref(false)
-const loadingLive = ref(false)
-const liveError = ref('')
-const liveHTML = ref('')
+const MODES: LoginMode[] = ["password", "code"];
+const LANGUAGES: { key: GuestLanguage; label: string }[] = [
+  { key: "en", label: "English" },
+  { key: "fr", label: "Français" },
+];
+const PREVIEW_PAGES = ["login", "status", "logout"] as const;
 
-const TEMPLATE_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
-  minimal: MINIMAL_TEMPLATE,
-  voucher: VOUCHER_TEMPLATE,
-  card: CARD_TEMPLATE,
+// Pages saved before the login-mode choice only stored a design: the
+// "voucher" design was the code-only one.
+function fromSaved(lp: LoginPageSettings = {}) {
+  return {
+    mode:
+      lp.loginMode ??
+      ((lp.template && lp.template !== "voucher"
+        ? "password"
+        : "code") as LoginMode),
+    language:
+      lp.language ?? ((locale.value === "fr" ? "fr" : "en") as GuestLanguage),
+    title: lp.title ?? "",
+    subtitle: lp.subtitle ?? "",
+    showPrices: lp.showPrices ?? false,
+    contact: lp.contact ?? "",
+  };
 }
 
-// logout/status/redirect don't have a template picker of their own — they
-// always match whichever login template is currently selected, so the whole
-// hotspot page set stays visually consistent (alogin/error stay fixed and
-// are never customized, handled entirely on the Go side).
-const LOGOUT_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
-  minimal: MINIMAL_LOGOUT_TEMPLATE,
-  voucher: VOUCHER_LOGOUT_TEMPLATE,
-  card: CARD_LOGOUT_TEMPLATE,
-}
-const STATUS_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
-  minimal: MINIMAL_STATUS_TEMPLATE,
-  voucher: VOUCHER_STATUS_TEMPLATE,
-  card: CARD_STATUS_TEMPLATE,
-}
-const REDIRECT_SOURCE: Record<NonNullable<LoginPageSettings['template']>, string> = {
-  minimal: MINIMAL_REDIRECT_TEMPLATE,
-  voucher: VOUCHER_REDIRECT_TEMPLATE,
-  card: CARD_REDIRECT_TEMPLATE,
+const form = ref(fromSaved(props.settings.loginPage));
+watch(
+  () => props.settings,
+  (s) => {
+    form.value = fromSaved(s.loginPage);
+  },
+);
+
+function reset() {
+  form.value = fromSaved(props.settings.loginPage);
 }
 
-const templates: { key: LoginPageSettings['template']; icon: string; label: string; description: string }[] = [
-  { key: 'minimal', icon: '◈', label: 'Minimal', description: 'Flat gray background, light card — sharp and focused' },
-  { key: 'voucher', icon: '〜', label: 'Voucher', description: 'One code field — customers type a single voucher code to connect' },
-  { key: 'card',    icon: '▭', label: 'Card',    description: 'Classic centered card — traditional login form look' },
-]
+const priceList = computed(() =>
+  Object.entries(props.settings.profileMetas ?? {})
+    .filter(([, m]) => Number(m.price) > 0)
+    .sort(([, a], [, b]) => Number(a.price) - Number(b.price))
+    .map(([name, m]) => ({
+      name,
+      price: `${m.price} ${props.settings.currency}`.trim(),
+    })),
+);
 
-function init(lp?: LoginPageSettings) {
-  if (lp) {
-    loginPage.value = {
-      title:    lp.title    ?? '',
-      subtitle: lp.subtitle ?? '',
-      template: lp.template ?? 'minimal',
-    }
-  }
-}
+const pages = computed<GuestPages>(() =>
+  renderGuestPages({
+    title: form.value.title || props.settings.hotspotName || "Wi-Fi",
+    subtitle: form.value.subtitle || "$(hostname)",
+    mode: form.value.mode,
+    language: form.value.language,
+    prices: form.value.showPrices ? priceList.value : [],
+    contact: form.value.contact.trim(),
+  }),
+);
+const previewPage = ref<(typeof PREVIEW_PAGES)[number]>("login");
 
-defineExpose({ init })
+const lastUpload = computed(() => {
+  const lp = props.settings.loginPage;
+  if (!lp?.uploadedAt) return t("settings.loginPage.neverUploaded");
+  const date = new Date(lp.uploadedAt).toLocaleDateString(locale.value, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  return t("settings.loginPage.lastUpload", {
+    date,
+    mode: t(`settings.loginPage.modes.${fromSaved(lp).mode}.label`),
+  });
+});
 
-function renderFrom(source: Record<NonNullable<LoginPageSettings['template']>, string>) {
-  const title = loginPage.value.title || props.hotspotName || 'My Hotspot'
-  const subtitle = loginPage.value.subtitle || 'myspot.spot'
-  const tpl = source[loginPage.value.template ?? 'minimal']
-  return tpl
-    .replace(/__TITLE__/g, title)
-    .replace(/__SUBTITLE__/g, subtitle)
-}
-
-function renderTemplate() {
-  return renderFrom(TEMPLATE_SOURCE)
-}
-
-const preview = computed(renderTemplate)
-
-function selectTemplate(key: LoginPageSettings['template']) {
-  loginPage.value.template = key
-  showingLive.value = false
-}
+const showingLive = ref(false);
+const loadingLive = ref(false);
+const liveError = ref("");
+const liveHTML = ref("");
 
 async function toggleLive() {
   if (showingLive.value) {
-    showingLive.value = false
-    return
+    showingLive.value = false;
+    return;
   }
-  if (!store.activeId) return
-  loadingLive.value = true; liveError.value = ''
+  if (!store.activeId) return;
+  loadingLive.value = true;
+  liveError.value = "";
   try {
-    liveHTML.value = await getLoginPageHTML(store.activeId)
-    showingLive.value = true
+    liveHTML.value = await getLoginPageHTML(store.activeId);
+    showingLive.value = true;
   } catch (e: any) {
-    liveError.value = e?.response?.data?.error ?? e?.message ?? 'Failed to fetch'
-  } finally { loadingLive.value = false }
+    liveError.value =
+      e?.response?.data?.error ??
+      e?.message ??
+      t("settings.loginPage.liveFailed");
+  } finally {
+    loadingLive.value = false;
+  }
 }
 
+const confirming = ref(false);
+const uploading = ref(false);
+const error = ref("");
+
 async function upload() {
-  if (!store.activeId) return
-  if (!confirm('This will replace the current hotspot login page on the router. Continue?')) return
-  uploading.value = true; error.value = ''; saved.value = false
+  confirming.value = false;
+  if (!store.activeId) return;
+  uploading.value = true;
+  error.value = "";
   try {
-    const existing = await getHotspotSettings(store.activeId)
-    await apiUploadLoginPage(store.activeId, {
-      ...loginPage.value,
-      html: renderTemplate(),
-      logoutHtml: renderFrom(LOGOUT_SOURCE),
-      statusHtml: renderFrom(STATUS_SOURCE),
-      redirectHtml: renderFrom(REDIRECT_SOURCE),
-    })
-    await putHotspotSettings(store.activeId, { ...existing, loginPage: loginPage.value })
-    showingLive.value = false
-    saved.value = true
-    toast.success('Login page uploaded', 'The new page is now live on the router.')
-    setTimeout(() => { saved.value = false }, 3000)
+    const p = pages.value;
+    await uploadLoginPage(store.activeId, {
+      html: p.login,
+      statusHtml: p.status,
+      logoutHtml: p.logout,
+      redirectHtml: p.redirect,
+    });
+    const f = form.value;
+    const loginPage: LoginPageSettings = {
+      title: f.title.trim(),
+      subtitle: f.subtitle.trim(),
+      loginMode: f.mode,
+      language: f.language,
+      showPrices: f.showPrices,
+      contact: f.contact.trim(),
+      uploadedAt: new Date().toISOString(),
+    };
+    // Re-read so a Profiles or Routers change made meanwhile isn't overwritten.
+    const latest = await getHotspotSettings(store.activeId);
+    emit(
+      "saved",
+      await putHotspotSettings(store.activeId, { ...latest, loginPage }),
+    );
+    showingLive.value = false;
+    toast.success(
+      t("settings.loginPage.uploaded"),
+      t("settings.loginPage.uploadedBody"),
+    );
   } catch (e: any) {
-    const message = e?.response?.data?.error ?? e?.message ?? 'Failed to upload'
-    error.value = message
-    toast.error('Upload failed', message)
-  } finally { uploading.value = false }
+    const message =
+      e?.response?.data?.error ??
+      e?.message ??
+      t("settings.loginPage.uploadFailed");
+    error.value = message;
+    toast.error(t("settings.loginPage.uploadFailed"), message);
+  } finally {
+    uploading.value = false;
+  }
 }
 </script>

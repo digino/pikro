@@ -408,5 +408,120 @@
     "nothingInPeriod": "Aucune vente sur cette période.",
     "failedToLoad": "Échec du chargement des rapports",
     "retry": "Réessayer"
+  },
+  "guestPage": {
+    "code": "Code du ticket",
+    "connect": "Se connecter",
+    "hint": "Le code est imprimé sur votre ticket.",
+    "hintPassword": "Votre identifiant et votre mot de passe sont imprimés sur votre ticket.",
+    "prices": "Tarifs",
+    "buy": "Acheter un ticket",
+    "poweredBy": "Propulsé par Pikro",
+    "connected": "Vous êtes connecté",
+    "loggedOut": "Vous êtes déconnecté",
+    "timeLeft": "Temps restant",
+    "timeUsed": "Temps utilisé",
+    "dataUsed": "Données utilisées",
+    "ip": "Adresse IP",
+    "logout": "Se déconnecter",
+    "signInAgain": "Se reconnecter",
+    "tapIfStuck": "Touchez ici si rien ne se passe",
+    "errors": {
+      "wrong": "Code incorrect. Vérifiez votre ticket et réessayez.",
+      "used": "Ce ticket est épuisé.",
+      "data": "Ce ticket n'a plus de données.",
+      "devices": "Ce ticket est déjà utilisé sur un autre appareil."
+    }
+  },
+  "settings": {
+    "crumb": "Hotspot",
+    "title": "Paramètres",
+    "sections": "Sections des paramètres",
+    "tabs": {
+      "login": "Page de connexion",
+      "migration": "Migration"
+    },
+    "beta": "Bêta",
+    "failedToLoad": "Impossible de charger les paramètres",
+    "retry": "Réessayer",
+    "loginPage": {
+      "heading": "La page que voient les clients",
+      "intro": "Choisissez comment les clients se connectent, réglez le texte, puis envoyez-la au routeur. Les clients la voient dès qu'ils rejoignent votre Wi-Fi.",
+      "howGuestsLogIn": "Connexion des clients",
+      "modes": {
+        "code": {
+          "label": "Code seul",
+          "note": "Un seul champ. Le client tape le code de son ticket."
+        },
+        "password": {
+          "label": "Code + mot de passe",
+          "note": "Deux champs : le code et le mot de passe du ticket."
+        }
+      },
+      "modeHint": "Faites le même choix que pour les tickets imprimés (Tickets, Style du code).",
+      "language": "Langue de la page",
+      "title": "Titre",
+      "titleHint": "Laissez vide pour utiliser le nom du hotspot.",
+      "subtitle": "Sous-titre",
+      "subtitleHint": "Laissez vide pour afficher l'adresse du hotspot.",
+      "showPrices": "Afficher les tarifs",
+      "showPricesHint": "Repris de vos forfaits (page Profils). Renvoyez la page après un changement de prix.",
+      "noPrices": "Aucun forfait n'a de prix. Fixez les prix sur la page Profils.",
+      "contact": "Numéro pour acheter un ticket",
+      "contactHint": "Facultatif. Les clients peuvent le toucher pour vous appeler.",
+      "routerNote": "Le nom du hotspot et la devise se règlent pour chaque routeur dans",
+      "routersLink": "Routeurs",
+      "upload": "Envoyer au routeur",
+      "reset": "Réinitialiser",
+      "lastUpload": "Dernier envoi : {date} · {mode}",
+      "neverUploaded": "Pas encore envoyée depuis Pikro",
+      "preview": "Aperçu de la page de connexion",
+      "livePreview": "En ligne sur le routeur",
+      "previewPage": "Page à prévisualiser",
+      "pages": {
+        "login": "Connexion",
+        "status": "Connecté",
+        "logout": "Déconnecté"
+      },
+      "viewLive": "Voir la page en ligne",
+      "backToPreview": "Retour à l'aperçu",
+      "confirmTitle": "Envoyer au routeur ?",
+      "confirmBody": "Cela remplace les pages que voient les clients sur ce routeur : connexion, connecté, déconnecté et redirection.",
+      "cancel": "Annuler",
+      "uploaded": "Page de connexion envoyée",
+      "uploadedBody": "Les clients voient maintenant la nouvelle page.",
+      "uploadFailed": "Échec de l'envoi",
+      "liveFailed": "Impossible de lire la page en ligne"
+    },
+    "migration": {
+      "heading": "Vous venez de Mikhmon ?",
+      "intro": "Pikro convertit vos tickets et profils Mikhmon v3 pour qu'ils continuent de fonctionner et expirent correctement. Rien qui a encore de la valeur n'est supprimé.",
+      "steps": [
+        "Les tickets inutilisés sont nettoyés et se comportent comme des tickets Pikro neufs",
+        "Les utilisateurs actifs gardent leur temps ; leur expiration est convertie au format Pikro",
+        "Les profils reçoivent le script on-login de Pikro pour les prochaines connexions",
+        "Les planificateurs et scripts laissés par Mikhmon pour chaque utilisateur sont supprimés",
+        "Le nettoyage automatique de Pikro est installé pour retirer les tickets expirés",
+        "Tout ce que Pikro ne reconnaît pas reste intact"
+      ],
+      "safe": "Peut être lancée plusieurs fois sans risque.",
+      "run": "Lancer la migration",
+      "running": "Migration…",
+      "runAgain": "Relancer",
+      "confirmTitle": "Lancer la migration ?",
+      "confirmBody": "Pikro va réécrire les commentaires des utilisateurs hotspot et les scripts on-login des profils, supprimer les restes de Mikhmon et installer le nettoyage automatique de Pikro sur ce routeur.",
+      "cancel": "Annuler",
+      "actionTitle": "Convertir ce routeur",
+      "actionBody": "Lancez-la une fois sur chaque routeur géré par Mikhmon.",
+      "done": "Migration terminée.",
+      "cleanupOn": "Le nettoyage automatique est activé.",
+      "cleanupFailed": "Impossible d'installer le nettoyage automatique. Activez-le depuis le tableau de bord.",
+      "usersConverted": "utilisateurs convertis",
+      "usersUnused": "tickets inutilisés nettoyés",
+      "profilesConverted": "profils convertis",
+      "leftoversRemoved": "restes supprimés",
+      "scanned": "{users} utilisateurs et {profiles} profils vérifiés, {skipped} laissés intacts.",
+      "failed": "Échec de la migration"
+    }
   }
 }

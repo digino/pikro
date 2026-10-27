@@ -1,78 +1,80 @@
 <template>
-  <PageLayout title="Hotspot" subtitle="Settings">
-  <div>
+  <PageLayout :title="t('settings.crumb')" :subtitle="t('settings.title')" icon="settings">
+    <template #actions>
+      <div v-if="store.activeId" role="tablist" :aria-label="t('settings.sections')" class="flex flex-wrap gap-2">
+        <button
+          v-for="key in TABS" :key="key"
+          type="button"
+          role="tab"
+          :aria-selected="tab === key"
+          class="inline-flex items-center gap-2 min-h-11 px-4 rounded-full border-2 border-ink text-sm font-semibold cursor-pointer transition-colors"
+          :class="tab === key ? 'bg-ink text-paper shadow-[3px_3px_0_var(--color-primary)]' : 'bg-paper text-ink hover:bg-primary-wash'"
+          @click="tab = key"
+        >
+          {{ t(`settings.tabs.${key}`) }}
+          <span
+            v-if="key === 'migration'"
+            class="rounded-full border-[1.5px] border-current px-1.75 py-0.5 text-xs"
+          >{{ t('settings.beta') }}</span>
+        </button>
+      </div>
+    </template>
+
     <NoRouterSelected v-if="!store.activeId" />
 
     <div v-else-if="loading" class="flex justify-center py-10">
       <span class="spinner" />
     </div>
 
-    <template v-else>
-      <!-- Tabs -->
-      <div class="flex items-center gap-1 border-b border-border mb-6 -mt-1">
-        <button
-          v-for="t in tabs" :key="t.key"
-          class="px-3 py-2 text-sm font-semibold border-b-2 transition-colors"
-          :class="tab === t.key
-            ? 'border-text-primary text-text-primary'
-            : 'border-transparent text-text-muted hover:text-text-secondary'"
-          @click="tab = t.key"
-        >
-          {{ t.label }}
-        </button>
-      </div>
+    <div
+      v-else-if="settingsError"
+      role="alert"
+      class="flex items-center gap-2.5 p-4 rounded-control border-2 border-danger-text bg-danger-wash text-danger-text text-sm"
+    >
+      <ExclamationTriangleIcon class="size-5 shrink-0" />
+      <span>{{ settingsError }}</span>
+      <button type="button" class="btn btn-sm ml-auto" @click="load">{{ t('settings.retry') }}</button>
+    </div>
 
-      <!-- ── Tab: Login page ── -->
-      <SettingsLoginPage
-        v-if="tab === 'login'"
-        ref="loginPageRef"
-        :hotspot-name="form.hotspotName"
-      />
-
-      <!-- ── Tab: Migration ── -->
-      <SettingsMigration v-else-if="tab === 'migration'" />
+    <template v-else-if="settings">
+      <SettingsLoginPage v-if="tab === 'login'" :settings="settings" @saved="settings = $event" />
+      <SettingsMigration v-else />
     </template>
-  </div>
   </PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 import { useRoutersStore } from '@/stores/routers'
-import { getHotspotSettings } from '@/api'
+import { getHotspotSettings, type HotspotSettings } from '@/api'
 import PageLayout from '@/components/PageLayout.vue'
 import NoRouterSelected from '@/components/NoRouterSelected.vue'
 import SettingsLoginPage from './settings/SettingsLoginPage.vue'
 import SettingsMigration from './settings/SettingsMigration.vue'
 
+const { t } = useI18n()
 const store = useRoutersStore()
 
-const tab = ref<'login' | 'migration'>('login')
-const tabs = [
-  { key: 'login' as const,    label: 'Login page' },
-  { key: 'migration' as const, label: 'Migration' },
-]
+const TABS = ['login', 'migration'] as const
+const tab = ref<(typeof TABS)[number]>('login')
 
 const loading = ref(false)
 const settingsError = ref('')
 
 // hotspotName/dnsName/currency are edited from the router's Add/Edit dialog
 // (see Routers page) — loaded here read-only for the login-page-title tab to consume.
-const form = ref({ hotspotName: '', currency: '' })
-
-const loginPageRef = ref<InstanceType<typeof SettingsLoginPage> | null>(null)
+const settings = ref<HotspotSettings | null>(null)
 
 async function load() {
   if (!store.activeId) return
   loading.value = true
   settingsError.value = ''
   try {
-    const s = await getHotspotSettings(store.activeId)
-    form.value.hotspotName = s.hotspotName ?? ''
-    form.value.currency = s.currency ?? ''
-    loginPageRef.value?.init(s.loginPage)
+    settings.value = await getHotspotSettings(store.activeId)
   } catch (e: any) {
-    settingsError.value = e?.response?.data?.error ?? e?.message ?? 'Failed to load settings'
+    settingsError.value = e?.response?.data?.error ?? e?.message ?? t('settings.failedToLoad')
   } finally {
     loading.value = false
   }

@@ -95,12 +95,19 @@ export interface ProfileMeta {
 export interface LoginPageSettings {
   title?: string
   subtitle?: string
+  /** Legacy design picker, read once to derive loginMode. */
   template?: 'minimal' | 'voucher' | 'card'
+  loginMode?: 'code' | 'password'
+  language?: 'en' | 'fr'
+  showPrices?: boolean
+  contact?: string
+  uploadedAt?: string
 }
 
 export interface HotspotSettings {
   hotspotName: string
   currency: string
+  profileMetas?: Record<string, ProfileMeta>
   loginPage?: LoginPageSettings
 }
 

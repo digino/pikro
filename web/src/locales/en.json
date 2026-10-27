@@ -408,5 +408,120 @@
     "nothingInPeriod": "No sales in this period.",
     "failedToLoad": "Failed to load reports",
     "retry": "Retry"
+  },
+  "guestPage": {
+    "code": "Ticket code",
+    "connect": "Connect",
+    "hint": "The code is printed on your ticket.",
+    "hintPassword": "Your username and password are printed on your ticket.",
+    "prices": "Prices",
+    "buy": "Buy a ticket",
+    "poweredBy": "Powered by Pikro",
+    "connected": "You're connected",
+    "loggedOut": "You're logged out",
+    "timeLeft": "Time left",
+    "timeUsed": "Time used",
+    "dataUsed": "Data used",
+    "ip": "IP address",
+    "logout": "Log out",
+    "signInAgain": "Sign in again",
+    "tapIfStuck": "Tap here if nothing happens",
+    "errors": {
+      "wrong": "Wrong code. Check your ticket and try again.",
+      "used": "This ticket has run out.",
+      "data": "This ticket has no data left.",
+      "devices": "This ticket is already in use on another device."
+    }
+  },
+  "settings": {
+    "crumb": "Hotspot",
+    "title": "Settings",
+    "sections": "Settings sections",
+    "tabs": {
+      "login": "Login page",
+      "migration": "Migration"
+    },
+    "beta": "Beta",
+    "failedToLoad": "Failed to load settings",
+    "retry": "Retry",
+    "loginPage": {
+      "heading": "The page guests see",
+      "intro": "Choose how guests log in, set the text, then upload it to the router. Guests see it as soon as they join your Wi-Fi.",
+      "howGuestsLogIn": "How guests log in",
+      "modes": {
+        "code": {
+          "label": "Code only",
+          "note": "One field. Guests type the code on their ticket."
+        },
+        "password": {
+          "label": "Code + password",
+          "note": "Two fields: the code and the password on their ticket."
+        }
+      },
+      "modeHint": "Use the same choice as the tickets you print (Vouchers, Code style).",
+      "language": "Page language",
+      "title": "Title",
+      "titleHint": "Leave blank to use your hotspot name.",
+      "subtitle": "Subtitle",
+      "subtitleHint": "Leave blank to show the hotspot address.",
+      "showPrices": "Show prices",
+      "showPricesHint": "From your plans on the Profiles page. Upload again after changing a price.",
+      "noPrices": "No plan has a price yet. Set prices on the Profiles page.",
+      "contact": "Phone number to buy a ticket",
+      "contactHint": "Optional. Guests can tap it to call you.",
+      "routerNote": "Hotspot name and currency are set per router in",
+      "routersLink": "Routers",
+      "upload": "Upload to router",
+      "reset": "Reset",
+      "lastUpload": "Last upload: {date} · {mode}",
+      "neverUploaded": "Not uploaded from Pikro yet",
+      "preview": "Login page preview",
+      "livePreview": "Live on the router",
+      "previewPage": "Page to preview",
+      "pages": {
+        "login": "Login",
+        "status": "Connected",
+        "logout": "Logged out"
+      },
+      "viewLive": "See the live page",
+      "backToPreview": "Back to preview",
+      "confirmTitle": "Upload to router?",
+      "confirmBody": "This replaces the pages guests see on this router: login, connected, logged out and redirect.",
+      "cancel": "Cancel",
+      "uploaded": "Login page uploaded",
+      "uploadedBody": "Guests now see the new page.",
+      "uploadFailed": "Upload failed",
+      "liveFailed": "Could not read the live page"
+    },
+    "migration": {
+      "heading": "Coming from Mikhmon?",
+      "intro": "Pikro converts your existing Mikhmon v3 vouchers and profiles so they keep working and expire properly from now on. Nothing that still has value is deleted.",
+      "steps": [
+        "Unused vouchers are cleaned up so they behave like fresh Pikro vouchers",
+        "Active users keep their time; their expiry is converted to the Pikro format",
+        "Profiles get the Pikro on-login script for future logins",
+        "Mikhmon leftover per-user schedulers and scripts are removed",
+        "The Pikro cleanup scheduler is installed so expired vouchers keep being removed",
+        "Anything Pikro does not recognise is left untouched"
+      ],
+      "safe": "Safe to run more than once.",
+      "run": "Run migration",
+      "running": "Migrating…",
+      "runAgain": "Run again",
+      "confirmTitle": "Run the migration?",
+      "confirmBody": "Pikro will rewrite hotspot user comments and profile on-login scripts, remove Mikhmon leftovers and install the Pikro cleanup scheduler on this router.",
+      "cancel": "Cancel",
+      "actionTitle": "Convert this router",
+      "actionBody": "Run it once on each router that Mikhmon managed.",
+      "done": "Migration complete.",
+      "cleanupOn": "Auto-cleanup is on.",
+      "cleanupFailed": "Could not install the cleanup scheduler. Turn it on from the Dashboard.",
+      "usersConverted": "users converted",
+      "usersUnused": "unused vouchers cleared",
+      "profilesConverted": "profiles converted",
+      "leftoversRemoved": "leftovers removed",
+      "scanned": "{users} users and {profiles} profiles checked, {skipped} left untouched.",
+      "failed": "Migration failed"
+    }
   }
 }
