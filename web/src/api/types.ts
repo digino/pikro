@@ -37,12 +37,47 @@ export interface NewHotspotUser {
   currency?: string
 }
 
-export interface SaleEntry {
+// Sales ledger: vouchers are recorded when generated (a batch) and counted as
+// sold once activated (first used). Revenue only counts activations.
+export interface SalesBatch {
+  id: string
   at: string    // ISO UTC timestamp
   profile: string
   price: string
   currency: string
   count: number
+}
+
+export interface SalesActivation {
+  batch: string
+  name: string
+  at: string    // ISO UTC first-login time
+  profile: string
+  price: string
+  currency: string
+}
+
+export interface SalesData {
+  batches: SalesBatch[]
+  activations: SalesActivation[]
+}
+
+export interface NewHotspotUsersBatch {
+  /** Same id for every chunk of one generation run. */
+  batchId: string
+  profile: string
+  limitUptime: string
+  limitBytesTotal: string
+  comment: string
+  price: string
+  currency: string
+  users: { name: string; password: string }[]
+}
+
+export interface BatchCreateResult {
+  name: string
+  ok: boolean
+  error?: string
 }
 
 export interface UpdateHotspotUser {

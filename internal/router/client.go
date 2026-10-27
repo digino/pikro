@@ -301,14 +301,8 @@ type HotspotUserParams struct {
 	Comment         string
 }
 
-// CreateHotspotUser creates a new hotspot user with optional limits.
-func (c *Client) CreateHotspotUser(p HotspotUserParams) (map[string]any, error) {
-	conn, err := c.connect()
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
+// hotspotUserAddArgs builds the /ip/hotspot/user/add arguments, omitting empty optional fields.
+func hotspotUserAddArgs(p HotspotUserParams) []string {
 	args := []string{
 		"/ip/hotspot/user/add",
 		"=name=" + p.Name,
@@ -329,6 +323,45 @@ func (c *Client) CreateHotspotUser(p HotspotUserParams) (map[string]any, error) 
 	if p.Comment != "" {
 		args = append(args, "=comment="+p.Comment)
 	}
+	return args
+}
+
+// CreateResult is the outcome of creating one user in a batch.
+type CreateResult struct {
+	Name  string `json:"name"`
+	OK    bool   `json:"ok"`
+	Error string `json:"error,omitempty"`
+}
+
+// CreateHotspotUsers creates several hotspot users over one connection.
+// Failures are reported per user; the error is returned only if connecting fails.
+func (c *Client) CreateHotspotUsers(params []HotspotUserParams) ([]CreateResult, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	results := make([]CreateResult, 0, len(params))
+	for _, p := range params {
+		r := CreateResult{Name: p.Name, OK: true}
+		if _, err := conn.RunArgs(hotspotUserAddArgs(p)); err != nil {
+			r.OK, r.Error = false, err.Error()
+		}
+		results = append(results, r)
+	}
+	return results, nil
+}
+
+// CreateHotspotUser creates a new hotspot user with optional limits.
+func (c *Client) CreateHotspotUser(p HotspotUserParams) (map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	args := hotspotUserAddArgs(p)
 	reply, err := conn.RunArgs(args)
 	if err != nil {
 		return nil, err

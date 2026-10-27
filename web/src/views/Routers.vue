@@ -166,11 +166,6 @@
             </div>
           </div>
 
-          <div v-if="hotspotLine(r)" class="flex items-center gap-1.5 text-sm text-text-secondary">
-            <WifiIcon class="size-4 shrink-0" />
-            <span class="truncate">{{ hotspotLine(r) }}</span>
-          </div>
-
           <div class="mt-auto pt-3.5 border-t border-hairline flex gap-2.5">
             <button
               type="button"

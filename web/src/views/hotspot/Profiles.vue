@@ -628,12 +628,12 @@ async function load() {
 async function loadCounters() {
   if (!store.activeId) return;
   const [ledger, users, active] = await Promise.all([
-    getSalesLedger(store.activeId, new Date().getFullYear()).catch(() => []),
+    getSalesLedger(store.activeId, new Date().getFullYear()).catch(() => ({ batches: [], activations: [] })),
     listHotspotUsers(store.activeId).catch(() => []),
     listHotspotActive(store.activeId).catch(() => []),
   ]);
   const sold: Record<string, number> = {};
-  for (const e of ledger) sold[e.profile] = (sold[e.profile] ?? 0) + e.count;
+  for (const a of ledger.activations) sold[a.profile] = (sold[a.profile] ?? 0) + 1;
   const profileOf = new Map(users.map((u) => [u.name, u.profile || "default"]));
   const online: Record<string, number> = {};
   for (const s of active) {

@@ -66,10 +66,10 @@
           <img :src="inkIcon('reports')" alt="" width="104" height="104" class="shrink-0 max-sm:hidden" />
         </div>
 
-        <div v-if="salesLoading && salesLedger.length === 0" class="h-37.5 flex items-center justify-center">
+        <div v-if="salesLoading && !hasSales" class="h-37.5 flex items-center justify-center">
           <span class="spinner spinner--sm" />
         </div>
-        <p v-else-if="salesLedger.length === 0" class="m-0 font-semibold">
+        <p v-else-if="!hasSales" class="m-0 font-semibold">
           {{ t('dashboard.noSalesRecorded') }}
         </p>
         <div v-else>
@@ -216,7 +216,7 @@ import {
   getCleanupScheduler,
   putCleanupScheduler,
   getSalesLedger,
-  type SaleEntry,
+  type SalesData,
 } from "@/api";
 import { friendlyError } from "@/utils/errors";
 import { inkIcon } from "@/utils/inkIcons";
@@ -247,7 +247,7 @@ const showDisableCleanupConfirm = ref(false);
 const hotspotLoading = ref(false);
 const hotspotError = ref("");
 
-const salesLedger = ref<SaleEntry[]>([]);
+const salesLedger = ref<SalesData>({ batches: [], activations: [] });
 const salesLoading = ref(false);
 
 const N = 46;
@@ -451,7 +451,7 @@ watch(
     stopTimers();
     allUsers.value = [];
     activeList.value = [];
-    salesLedger.value = [];
+    salesLedger.value = { batches: [], activations: [] };
     bwHistory.value = Array.from({ length: N }, () => ({ down: 0, up: 0 }));
     if (!id) return;
     await Promise.all([loadStatic(), loadHotspot(), loadSales()]);
@@ -475,39 +475,42 @@ onUnmounted(() => {
 });
 
 // ── Sales summary (current month) ──────────────────────────────
-const monthSalesEntries = computed(() => {
+function inThisMonth(iso: string): boolean {
+  const d = new Date(iso);
   const now = new Date();
-  return salesLedger.value.filter((e) => {
-    const d = new Date(e.at);
-    return (
-      d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-    );
-  });
-});
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
 
+// Generated = batches printed this month; revenue = vouchers actually used this month.
 const monthSales = computed(() => {
   let generated = 0;
   let revenue = 0;
-  for (const e of monthSalesEntries.value) {
-    generated += e.count;
-    revenue += (parseFloat(e.price) || 0) * e.count;
-  }
+  for (const b of salesLedger.value.batches) if (inThisMonth(b.at)) generated += b.count;
+  for (const a of salesLedger.value.activations) if (inThisMonth(a.at)) revenue += parseFloat(a.price) || 0;
   return { generated, revenue };
 });
 
+const hasSales = computed(
+  () => salesLedger.value.batches.length > 0 || salesLedger.value.activations.length > 0,
+);
+
 const salesCurrency = computed(
-  () => salesLedger.value.find((e) => e.currency)?.currency ?? "",
+  () =>
+    salesLedger.value.activations.find((e) => e.currency)?.currency ??
+    salesLedger.value.batches.find((e) => e.currency)?.currency ??
+    "",
 );
 
 // By-day breakdown for the current month, for the bar chart.
 const salesBars = computed(() => {
   const now = new Date();
   const revenueByDay = Array.from({ length: now.getDate() }, () => 0);
-  for (const e of monthSalesEntries.value) {
-    const day = new Date(e.at).getDate();
+  for (const a of salesLedger.value.activations) {
+    if (!inThisMonth(a.at)) continue;
+    const day = new Date(a.at).getDate();
     // The router clock can run ahead of the browser's; skip days past "today".
     if (day > revenueByDay.length) continue;
-    revenueByDay[day - 1] += (parseFloat(e.price) || 0) * e.count;
+    revenueByDay[day - 1] += parseFloat(a.price) || 0;
   }
   const max = Math.max(...revenueByDay, 1);
   return revenueByDay.map((revenue, i) => ({

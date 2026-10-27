@@ -409,7 +409,7 @@ import {
 import { useRoutersStore } from "@/stores/routers";
 import {
   listHotspotProfiles,
-  createHotspotUser,
+  createHotspotUsersBatch,
   getProfileMetas,
   getHotspotSettings,
   type ProfileMeta,
@@ -434,6 +434,8 @@ const MAX_COUNT = 500;
 const QUICK_COUNTS = [20, 50, 100, 200];
 const NAME_LENGTHS = [4, 5, 6, 8];
 const PREVIEW_SAMPLES = 12;
+// Vouchers per request to the batch endpoint (its limit is 100); keeps the progress bar moving.
+const BATCH_CHUNK = 50;
 
 const CHARSET_OPTS = [
   { key: "alphanumeric" as const, label: "vouchers.charsMixed", letters: true, digits: true },
@@ -603,6 +605,16 @@ const currentTemplate = computed(() => getVoucherTemplate(form.value.template));
 const previewHtml = ref("");
 let previewRun = 0;
 
+// Picked once, so sample codes stay put while the operator types: only the
+// settings that shape a code (prefix, length, characters) change it.
+const SAMPLE_SEEDS = Array.from({ length: PREVIEW_SAMPLES * 16 }, () => Math.random());
+function sampleChars(cs: string, ticket: number, offset: number, length: number): string {
+  return Array.from(
+    { length },
+    (_, k) => cs[Math.floor(SAMPLE_SEEDS[ticket * 16 + offset + k] * cs.length)],
+  ).join("");
+}
+
 watch(
   () => [
     form.value.profile,
@@ -617,21 +629,21 @@ watch(
     hotspotSettings.value,
     profileMetas.value,
     locale.value,
+    loginUrl.value,
   ],
   async () => {
     const run = ++previewRun;
-    const used = new Set<string>();
+    const cs = charset.value || "abc";
+    const { prefix, nameLength, passwordMode, fixedPassword } = form.value;
     const samples: VoucherEntry[] = Array.from(
       { length: Math.min(PREVIEW_SAMPLES, form.value.count) },
-      () => {
-        const name = generateName(charset.value || "abc", form.value.nameLength, used);
-        used.add(name);
-        return {
-          name,
-          password: generatePassword(name),
-          profile: form.value.profile,
-          timeLimit: uptimePreview.value,
-        };
+      (_, i) => {
+        const name = prefix + sampleChars(cs, i, 0, nameLength);
+        const password =
+          passwordMode === "same" ? name
+          : passwordMode === "fixed" ? fixedPassword
+          : sampleChars(cs, i, 8, nameLength);
+        return { name, password, profile: form.value.profile, timeLimit: uptimePreview.value };
       },
     );
     const html = await currentTemplate.value.render(
@@ -717,34 +729,37 @@ async function submitBatch(andPrint: boolean) {
     ? String(cfg.limitBytesTotalValue * mul)
     : "";
   const usedNames = new Set<string>();
-  for (let i = 0; i < cfg.count; i++) {
+  const vouchers = Array.from({ length: cfg.count }, () => {
     const name = generateName(charset.value, cfg.nameLength, usedNames);
     usedNames.add(name);
-    const password = generatePassword(name);
-    batchCurrentName.value = name;
+    return { name, password: generatePassword(name) };
+  });
+  // One id for the whole run, so every chunk lands in the same sales batch.
+  // randomUUID only exists in secure contexts; Pikro may be opened over plain http on the LAN.
+  const batchId = crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  for (let i = 0; i < vouchers.length; i += BATCH_CHUNK) {
+    const chunk = vouchers.slice(i, i + BATCH_CHUNK);
+    batchCurrentName.value = chunk[0].name;
     try {
-      await createHotspotUser(store.activeId, {
-        name,
-        password,
+      const results = await createHotspotUsersBatch(store.activeId, {
+        batchId,
         profile: cfg.profile,
         limitUptime: uptimePreview.value,
         limitBytesTotal,
-        rateLimit: "",
         comment: cfg.comment,
-        expiryComment: "",
         price: profileMetas.value[cfg.profile]?.price ?? "",
         currency: hotspotSettings.value.currency ?? "",
+        users: chunk,
       });
-      batchResults.value.push({ name, password, ok: true });
+      for (const r of results) {
+        const password = chunk.find((v) => v.name === r.name)?.password ?? "";
+        batchResults.value.push({ name: r.name, password, ok: r.ok, error: r.error });
+      }
     } catch (e: any) {
-      batchResults.value.push({
-        name,
-        password,
-        ok: false,
-        error: e?.response?.data?.error ?? e?.message ?? "error",
-      });
+      const error = e?.response?.data?.error ?? e?.message ?? "error";
+      for (const v of chunk) batchResults.value.push({ ...v, ok: false, error });
     }
-    batchProgress.value = i + 1;
+    batchProgress.value = Math.min(vouchers.length, i + BATCH_CHUNK);
   }
   batchRunning.value = false;
   if (andPrint && createdCount.value) printResults();

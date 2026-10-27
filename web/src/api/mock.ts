@@ -8,7 +8,7 @@ import type {
   ProfileMeta, HotspotSettings,
   CleanupSchedulerStatus, HotspotProfileParams,
   PreflightResult, SetupResult, TeardownResult,
-  DiscoveredDevice,
+  DiscoveredDevice, SalesData, NewHotspotUsersBatch, BatchCreateResult,
 } from './types'
 
 const delay = (ms = 300) => new Promise(r => setTimeout(r, ms))
@@ -188,3 +188,46 @@ export const discoverRouters = (): Promise<DiscoveredDevice[]> => ok([
 
 export const runSpeedTest = (_id: string, _target?: string) =>
   delay(2000).then(() => ({ 'rx-speed': '10485760', 'tx-speed': '0', duration: '8s120ms', 'test-url': 'http://speedtest.tele2.net/10MB.zip', 'file-size': '10485760' }))
+
+// ── Sales ledger (generated batches + activations) ──────────────────────────
+const mockSales: SalesData = (() => {
+  const plans = [
+    { profile: 'Standard 1h', price: '200', weight: 6 },
+    { profile: 'Data 500MB', price: '500', weight: 4 },
+    { profile: 'VIP 24h', price: '2500', weight: 1 },
+  ]
+  const data: SalesData = { batches: [], activations: [] }
+  let seed = 7
+  const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280 }
+  const day = 86_400_000
+  for (let d = 60; d >= 0; d -= 3) {
+    for (const p of plans) {
+      const at = new Date(Date.now() - d * day)
+      const id = `mock-${d}-${p.profile}`
+      const count = Math.round((10 + rand() * 20) * p.weight / 3)
+      data.batches.push({ id, at: at.toISOString(), profile: p.profile, price: p.price, currency: 'XOF', count })
+      const activated = Math.round(count * (0.6 + rand() * 0.3))
+      for (let i = 0; i < activated; i++) {
+        const used = new Date(Math.min(Date.now(), at.getTime() + rand() * 3 * day))
+        data.activations.push({ batch: id, name: `${id}-${i}`, at: used.toISOString(), profile: p.profile, price: p.price, currency: 'XOF' })
+      }
+    }
+  }
+  return data
+})()
+
+export const getSalesLedger = (_id: string, year: number) => ok<SalesData>({
+  batches: mockSales.batches.filter(b => new Date(b.at).getFullYear() === year),
+  activations: mockSales.activations.filter(a => new Date(a.at).getFullYear() === year),
+})
+
+export const createHotspotUsersBatch = (id: string, b: NewHotspotUsersBatch) => {
+  const results: BatchCreateResult[] = b.users.map(u => {
+    createHotspotUser(id, { ...u, profile: b.profile, limitUptime: b.limitUptime, limitBytesTotal: b.limitBytesTotal, rateLimit: '', comment: b.comment })
+    return { name: u.name, ok: true }
+  })
+  const existing = mockSales.batches.find(x => x.id === b.batchId)
+  if (existing) existing.count += results.length
+  else mockSales.batches.push({ id: b.batchId, at: new Date().toISOString(), profile: b.profile, price: b.price, currency: b.currency, count: results.length })
+  return ok(results)
+}

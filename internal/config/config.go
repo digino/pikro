@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 )
 
 // ProfileMeta stores Pikro-only metadata for a hotspot user profile.
@@ -12,6 +14,28 @@ import (
 type ProfileMeta struct {
 	Validity string `json:"validity"` // duration shorthand, e.g. "1d", "4h", "1w"
 	Price    string `json:"price"`
+}
+
+var validityPartRe = regexp.MustCompile(`(\d+)([wdhm])`)
+
+// ValiditySecs converts a shorthand validity string (e.g. "1d", "2h30m", "1w")
+// to seconds. Returns 0 if blank or unparseable.
+func ValiditySecs(s string) int64 {
+	var total int64
+	for _, m := range validityPartRe.FindAllStringSubmatch(s, -1) {
+		n, _ := strconv.ParseInt(m[1], 10, 64)
+		switch m[2] {
+		case "w":
+			total += n * 7 * 86400
+		case "d":
+			total += n * 86400
+		case "h":
+			total += n * 3600
+		case "m":
+			total += n * 60
+		}
+	}
+	return total
 }
 
 type LoginPageSettings struct {

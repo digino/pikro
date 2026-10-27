@@ -5,7 +5,7 @@ import type {
   ProfileMeta, HotspotSettings, LoginPageSettings,
   CleanupSchedulerStatus, HotspotProfileParams,
   PreflightResult, SetupResult, TeardownResult,
-  DiscoveredDevice, SaleEntry,
+  DiscoveredDevice, SalesData, NewHotspotUsersBatch, BatchCreateResult,
 } from './types'
 
 export type * from './types'
@@ -105,6 +105,10 @@ export const listHotspotProfiles = (id: string) =>
 export const listAddressPools = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/address-pools`).then(r => r.data)
 
+// Creates a chunk of vouchers in one call and records them as one sales batch.
+export const createHotspotUsersBatch = (id: string, batch: NewHotspotUsersBatch) =>
+  api.post<{ results: BatchCreateResult[] }>(`/routers/${id}/hotspot/users/batch`, batch).then(r => r.data.results)
+
 export const createHotspotUser = (id: string, user: NewHotspotUser) =>
   api.post(`/routers/${id}/hotspot/users`, user).then(r => r.data)
 
@@ -189,7 +193,7 @@ export const teardownHotspot = (id: string) =>
 
 // Sales ledger
 export const getSalesLedger = (id: string, year: number) =>
-  api.get<SaleEntry[]>(`/routers/${id}/sales`, { params: { year } }).then(r => r.data)
+  api.get<SalesData>(`/routers/${id}/sales`, { params: { year } }).then(r => r.data)
 
 // Discovery
 export const discoverRouters = () =>
