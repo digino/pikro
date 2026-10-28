@@ -428,6 +428,8 @@
     "logout": "Log out",
     "signInAgain": "Sign in again",
     "tapIfStuck": "Tap here if nothing happens",
+    "seeConnection": "See my connection",
+    "continue": "Continue browsing",
     "errors": {
       "wrong": "Wrong code. Check your ticket and try again.",
       "used": "This ticket has run out.",

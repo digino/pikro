@@ -428,6 +428,8 @@
     "logout": "Se déconnecter",
     "signInAgain": "Se reconnecter",
     "tapIfStuck": "Touchez ici si rien ne se passe",
+    "seeConnection": "Voir ma connexion",
+    "continue": "Continuer la navigation",
     "errors": {
       "wrong": "Code incorrect. Vérifiez votre ticket et réessayez.",
       "used": "Ce ticket est épuisé.",

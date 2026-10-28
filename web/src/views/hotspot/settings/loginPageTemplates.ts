@@ -44,6 +44,7 @@ export interface GuestPages {
   status: string
   logout: string
   redirect: string
+  alogin: string
 }
 
 function esc(s: string) {
@@ -65,6 +66,7 @@ const STYLE = [
   'input:focus { outline: 3px solid #ffbf00; outline-offset: 1px; }',
   '.btn { display: flex; align-items: center; justify-content: center; width: 100%; height: 50px; border: 0; border-radius: 12px; background: #111; color: #fff; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; text-decoration: none; }',
   '.hint { font-size: 12px; color: #666; }',
+  '.hint a { color: #111; font-weight: 600; }',
   '.err { width: 100%; padding: 10px 12px; border: 2px solid #b42318; border-radius: 12px; background: #fdecea; color: #b42318; font-size: 13px; font-weight: 600; }',
   '.box { width: 100%; border: 2px solid #111; border-radius: 12px; background: #fff; padding: 12px 14px; text-align: left; }',
   '.box h2 { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 6px; }',
@@ -273,7 +275,24 @@ export function renderGuestPages(o: GuestPageOptions): GuestPages {
     '<\/html>',
   ].join('\n')
 
-  return { login, status, logout, redirect }
+  // Shown right after a successful login: confirm, then carry on to the site
+  // the guest first asked for, as RouterOS's stock page does.
+  const alogin = [
+    head(o.language, t('guestPage.connected'), '<meta http-equiv="refresh" content="3; url=$(link-redirect)" />'),
+    '<\/head>',
+    '<body>',
+    '<main class="wrap">',
+    header,
+    `<p class="ok">${t('guestPage.connected')}<\/p>`,
+    `<a class="btn" href="$(link-status)">${t('guestPage.seeConnection')}<\/a>`,
+    `<p class="hint"><a href="$(link-redirect)">${t('guestPage.continue')}<\/a><\/p>`,
+    foot,
+    '<\/main>',
+    '<\/body>',
+    '<\/html>',
+  ].join('\n')
+
+  return { login, status, logout, redirect, alogin }
 }
 
 // The iframe preview has no RouterOS to expand $(...) tokens: show the page

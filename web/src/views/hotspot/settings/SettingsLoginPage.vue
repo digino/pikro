@@ -409,6 +409,7 @@ async function upload() {
       statusHtml: p.status,
       logoutHtml: p.logout,
       redirectHtml: p.redirect,
+      aloginHtml: p.alogin,
     });
     const f = form.value;
     const loginPage: LoginPageSettings = {
