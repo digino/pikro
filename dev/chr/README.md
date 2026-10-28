@@ -35,6 +35,24 @@ Check each zip against MikroTik's published SHA256 (same URL plus `.sha256`).
 
 Network scan (MNDP) will not find the VM: it sits behind QEMU's NAT. Add it by IP.
 
+## Test as a hotspot guest
+
+`make chr7-guest` (or `chr6-guest`) boots the same router with a guest device
+on the hotspot, so the login pages can be tested end to end without Wi-Fi:
+
+1. Stop the normal VM first (Ctrl-A X): both use the same disk image.
+2. `make chr7-guest`. Everything sent to `http://127.0.0.1:18080`
+   (`28080` for v6) reaches the hotspot as the guest `192.168.88.254`.
+3. A browser must use the hotspot's DNS name, because the hotspot redirects
+   to it. In Chrome: `--host-resolver-rules="MAP chr7.spot:80 127.0.0.1:18080"`,
+   then open `http://chr7.spot/login`.
+4. Quit with Ctrl-A X and go back to `make chr7`.
+
+The defaults match a hotspot on `192.168.88.0/24` at `192.168.88.1`. For another
+subnet set `GUEST_NET`, `GUEST_HOTSPOT` and `GUEST_CLIENT`, for example
+`GUEST_NET=10.5.50.0/24 GUEST_HOTSPOT=10.5.50.1 GUEST_CLIENT=10.5.50.254 make chr7-guest`.
+All requests come from one guest device, so this tests one guest at a time.
+
 ## State and reset
 
 The VM writes to the unpacked `.img`, so router state survives restarts.
@@ -43,7 +61,7 @@ the next run unpacks it again from the zip.
 
 ## Limits
 
-- No Wi-Fi clients: logins, "Online now" and login/logout log lines need a
-  device on the hotspot side of the VM.
+- No Wi-Fi clients: for logins, "Online now" and login/logout log lines use
+  guest mode (one guest device, above).
 - To test a different RouterOS version, download its CHR zip and update the
   file names in `run.sh`.
