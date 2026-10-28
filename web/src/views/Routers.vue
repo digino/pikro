@@ -166,6 +166,15 @@
             </div>
           </div>
 
+          <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-1.5 text-sm">
+            <dt class="eyebrow self-center">{{ t('routers.hotspotName') }}</dt>
+            <dd class="m-0 truncate">{{ r.hotspotSettings?.hotspotName || '—' }}</dd>
+            <dt class="eyebrow self-center">{{ t('routers.currency') }}</dt>
+            <dd class="m-0">{{ r.hotspotSettings?.currency || '—' }}</dd>
+            <dt class="eyebrow self-center">{{ t('routers.mac') }}</dt>
+            <dd class="m-0 font-mono">{{ r.mac || '—' }}</dd>
+          </dl>
+
           <div class="mt-auto pt-3.5 border-t border-hairline flex gap-2.5">
             <button
               type="button"

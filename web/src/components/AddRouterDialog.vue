@@ -165,6 +165,8 @@ async function submit() {
     await store.add({
       name: f.name, host: f.host, port: f.port, username: f.username,
       password: f.password, useTls: f.useTls,
+      // Only trust the scanned MAC if the operator kept the scanned address.
+      mac: props.prefill?.ip === f.host ? props.prefill.mac : undefined,
       hotspotSettings: {
         hotspotName: f.hotspotName,
         currency: f.currency,

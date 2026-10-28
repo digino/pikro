@@ -5,6 +5,7 @@ export interface RouterProfile {
   port: number
   username: string
   useTls: boolean
+  mac?: string
   hotspotSettings?: {
     hotspotName?: string
     currency?: string
@@ -18,6 +19,7 @@ export interface NewRouterProfile {
   username: string
   password: string
   useTls: boolean
+  mac?: string
   hotspotSettings?: {
     hotspotName: string
     currency: string

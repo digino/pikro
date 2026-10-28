@@ -6,13 +6,12 @@
   <main v-else class="flex flex-col gap-6 px-4 sm:px-6 lg:px-10 pt-7 pb-14">
     <header class="flex flex-wrap items-end justify-between gap-4">
       <div class="flex items-center gap-4">
-        <img :src="inkIcon('profiles')" alt="" width="64" height="64" class="shrink-0" />
+        <img :src="inkIcon('profiles')" alt="" width="50" height="50" class="shrink-0" />
         <div>
           <nav :aria-label="t('profiles.breadcrumb')" class="eyebrow">
             {{ t('profiles.breadcrumb') }} / {{ t('profiles.title') }}
           </nav>
-          <h1 class="type-display text-3xl">{{ t('profiles.title') }}</h1>
-          <p class="text-sm text-text-secondary">{{ t('profiles.subtitle') }}</p>
+          <h1 class="type-display mt-1 text-3xl">{{ t('profiles.title') }}</h1>
         </div>
       </div>
       <button

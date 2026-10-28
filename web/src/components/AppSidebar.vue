@@ -3,7 +3,10 @@
     class="w-64 min-w-64 h-screen bg-sidebar text-sidebar-text border-r-2 border-ink flex flex-col gap-5.5 px-4 py-5.5 sticky top-0 overflow-y-auto"
   >
     <!-- Logo -->
-    <RouterLink to="/dashboard" class="flex items-center gap-2.5 px-1.5 no-underline text-sidebar-text">
+    <RouterLink
+      to="/dashboard"
+      class="flex items-center gap-2.5 px-1.5 no-underline text-sidebar-text"
+    >
       <span
         class="type-display inline-flex items-center justify-center size-10 shrink-0 rounded-control border-2 border-sidebar-text bg-primary text-primary-fg text-2xl leading-none"
         aria-hidden="true"
@@ -19,8 +22,14 @@
 
     <!-- Nav sections -->
     <nav :aria-label="t('sidebar.mainNav')" class="flex flex-col gap-5.5">
-      <div v-for="section in navSections" :key="section.label" class="flex flex-col gap-0.5">
-        <div class="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-widest text-sidebar-muted">
+      <div
+        v-for="section in navSections"
+        :key="section.label"
+        class="flex flex-col gap-0.5"
+      >
+        <div
+          class="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-widest text-sidebar-muted"
+        >
           {{ t(section.label) }}
         </div>
         <RouterLink
@@ -34,7 +43,13 @@
               : 'font-medium text-sidebar-text border-transparent hover:bg-white/8'
           "
         >
-          <img :src="inkIcon(item.icon)" alt="" width="30" height="30" class="shrink-0" />
+          <img
+            :src="inkIcon(item.icon)"
+            alt=""
+            width="30"
+            height="30"
+            class="shrink-0"
+          />
           <span>{{ t(item.label) }}</span>
         </RouterLink>
       </div>
@@ -50,9 +65,13 @@
           :title="t('sidebar.language')"
           @click="toggleLocale"
         >
-          <span :class="{ 'text-sidebar-text': localeStore.locale === 'en' }">EN</span>
+          <span :class="{ 'text-sidebar-text': localeStore.locale === 'en' }"
+            >EN</span
+          >
           ·
-          <span :class="{ 'text-sidebar-text': localeStore.locale === 'fr' }">FR</span>
+          <span :class="{ 'text-sidebar-text': localeStore.locale === 'fr' }"
+            >FR</span
+          >
         </button>
         <button
           type="button"
@@ -124,8 +143,8 @@ const navSections: NavSection[] = [
     label: "nav.hotspot",
     items: [
       { to: "/hotspot/users", icon: "users", label: "nav.users" },
-      { to: "/hotspot/vouchers", icon: "vouchers", label: "nav.vouchers" },
       { to: "/hotspot/profiles", icon: "profiles", label: "nav.profiles" },
+      { to: "/hotspot/vouchers", icon: "vouchers", label: "nav.vouchers" },
       { to: "/hotspot/reports", icon: "reports", label: "nav.reports" },
       { to: "/hotspot/logs", icon: "logs", label: "nav.logs" },
       { to: "/hotspot/settings", icon: "settings", label: "nav.settings" },

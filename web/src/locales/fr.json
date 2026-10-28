@@ -95,6 +95,8 @@
     "foundCount": "Aucun appareil | {n} appareil | {n} appareils",
     "ip": "IP",
     "mac": "MAC",
+    "hotspotName": "Hotspot",
+    "currency": "Devise",
     "connected": "Connecté",
     "ready": "Prêt à connecter",
     "noIp": "Pas d'adresse IP",

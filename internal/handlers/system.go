@@ -14,16 +14,18 @@ func GetAppVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetSystemResource(w http.ResponseWriter, r *http.Request) {
-	client, err := clientFromRequest(r)
+	profile, err := findProfile(r.PathValue("id"))
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusNotFound)
 		return
 	}
+	client := router.NewClient(profile.Host, profile.Port, profile.Username, profile.Password, profile.UseTLS)
 	resource, err := client.SystemResource()
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
 	}
+	rememberMAC(profile, client)
 	jsonOK(w, resource)
 }
 

@@ -31,14 +31,14 @@
           v-for="(value, i) in INTERVALS"
           :key="value"
           type="button"
-          :aria-pressed="interval === value"
+          :aria-pressed="selected === value"
           :disabled="saving"
           class="flex-1 min-h-11 px-1 text-xs font-semibold cursor-pointer transition-colors disabled:cursor-not-allowed"
           :class="[
             i > 0 && 'border-l-2 border-ink',
-            interval === value ? 'bg-primary text-primary-fg' : 'bg-paper text-ink hover:bg-primary-wash',
+            selected === value ? 'bg-primary text-primary-fg' : 'bg-paper text-ink hover:bg-primary-wash',
           ]"
-          @click="interval !== value && $emit('update:interval', value)"
+          @click="selected !== value && $emit('update:interval', value)"
         >
           {{ t(`dashboard.autoCleanup.every.${value}`) }}
         </button>
@@ -75,6 +75,7 @@ import { SwitchRoot, SwitchThumb } from 'reka-ui'
 import { CheckIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 import { CLEANUP_INTERVAL_OPTIONS } from '@/utils/cleanupIntervals'
 import { inkIcon } from '@/utils/inkIcons'
+import { shorthandToSeconds } from '@/utils/duration'
 
 const props = defineProps<{
   installed: boolean | null
@@ -93,6 +94,13 @@ const { t } = useI18n()
 const intervalLabelId = useId()
 
 const INTERVALS = CLEANUP_INTERVAL_OPTIONS.map(o => String(o.value))
+
+// RouterOS reports the interval in its own form ("7d" comes back as "1w",
+// "30d" as "4w2d"), so compare durations rather than strings.
+const selected = computed(() => {
+  const secs = shorthandToSeconds(props.interval)
+  return INTERVALS.find(v => shorthandToSeconds(v) === secs)
+})
 
 const deviceModeBlocked = computed(() => props.error.toLowerCase().includes('device-mode'))
 </script>

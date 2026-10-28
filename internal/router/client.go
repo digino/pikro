@@ -51,6 +51,55 @@ func (c *Client) Ping() error {
 	return err
 }
 
+// MACAddress returns the MAC of the interface Pikro reaches the router on,
+// the same one neighbour discovery reports.
+func (c *Client) MACAddress() (string, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+	addrs, err := conn.Run("/ip/address/print")
+	if err != nil {
+		return "", err
+	}
+	ifaces, err := conn.Run("/interface/print")
+	if err != nil {
+		return "", err
+	}
+	var addrMaps, ifaceMaps []map[string]string
+	for _, s := range addrs.Re {
+		addrMaps = append(addrMaps, s.Map)
+	}
+	for _, s := range ifaces.Re {
+		ifaceMaps = append(ifaceMaps, s.Map)
+	}
+	return pickMAC(c.host, addrMaps, ifaceMaps), nil
+}
+
+// pickMAC finds the interface holding host's IP. When the host isn't one of
+// the router's own addresses (NAT, DNS name) it falls back to the first
+// ethernet port.
+func pickMAC(host string, addrs, ifaces []map[string]string) string {
+	macByName := map[string]string{}
+	for _, i := range ifaces {
+		macByName[i["name"]] = i["mac-address"]
+	}
+	for _, a := range addrs {
+		if addressIP(a["address"]) == host {
+			if mac := macByName[a["interface"]]; mac != "" {
+				return mac
+			}
+		}
+	}
+	for _, i := range ifaces {
+		if i["type"] == "ether" && i["mac-address"] != "" {
+			return i["mac-address"]
+		}
+	}
+	return ""
+}
+
 // SystemResource returns CPU load, free memory, total memory, and uptime.
 func (c *Client) SystemResource() (map[string]any, error) {
 	conn, err := c.connect()

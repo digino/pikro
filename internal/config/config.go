@@ -65,6 +65,7 @@ type RouterProfile struct {
 	Username        string           `json:"username"`
 	Password        string           `json:"password"`
 	UseTLS          bool             `json:"useTls"`
+	MAC             string           `json:"mac,omitempty"` // filled from discovery or the first connection
 	HotspotSettings *HotspotSettings `json:"hotspotSettings,omitempty"`
 }
 

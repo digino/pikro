@@ -46,7 +46,7 @@
           >
         </template>
       </i18n-t>
-      <p class="m-0 max-w-85 text-[15px] leading-normal text-text-muted">
+      <p class="m-0 max-w-96 text-sm leading-normal text-text-muted">
         {{ t('dashboard.onlineNow', activeSessions) }}
         <template v-if="cleanupInstalled">{{ t('dashboard.cleanupKeepsTidy') }}</template>
       </p>
@@ -63,7 +63,7 @@
               <span class="text-2xl">{{ salesCurrency }}</span>
             </div>
           </div>
-          <img :src="inkIcon('reports')" alt="" width="104" height="104" class="shrink-0 max-sm:hidden" />
+          <img :src="inkIcon('reports')" alt="" width="100" height="100" class="shrink-0 max-sm:hidden" />
         </div>
 
         <div v-if="salesLoading && !hasSales" class="h-37.5 flex items-center justify-center">

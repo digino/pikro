@@ -23,11 +23,12 @@ func ListRouters(w http.ResponseWriter, r *http.Request) {
 		Port            int                     `json:"port"`
 		Username        string                  `json:"username"`
 		UseTLS          bool                    `json:"useTls"`
+		MAC             string                  `json:"mac,omitempty"`
 		HotspotSettings *config.HotspotSettings `json:"hotspotSettings,omitempty"`
 	}
 	safe := make([]safeProfile, len(cfg.Routers))
 	for i, p := range cfg.Routers {
-		safe[i] = safeProfile{p.ID, p.Name, p.Host, p.Port, p.Username, p.UseTLS, p.HotspotSettings}
+		safe[i] = safeProfile{p.ID, p.Name, p.Host, p.Port, p.Username, p.UseTLS, p.MAC, p.HotspotSettings}
 	}
 	jsonOK(w, safe)
 }
@@ -166,7 +167,31 @@ func TestRouter(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
 	}
+	rememberMAC(profile, client)
 	jsonOK(w, map[string]bool{"ok": true})
+}
+
+// rememberMAC saves the router's MAC the first time Pikro reaches it, for
+// routers added by IP rather than from a scan. Best effort: errors are ignored.
+func rememberMAC(profile *config.RouterProfile, client *router.Client) {
+	if profile.MAC != "" {
+		return
+	}
+	mac, err := client.MACAddress()
+	if err != nil || mac == "" {
+		return
+	}
+	cfg, err := config.Load()
+	if err != nil {
+		return
+	}
+	for i := range cfg.Routers {
+		if cfg.Routers[i].ID == profile.ID {
+			cfg.Routers[i].MAC = mac
+			config.Save(cfg)
+			return
+		}
+	}
 }
 
 func findProfile(id string) (*config.RouterProfile, error) {

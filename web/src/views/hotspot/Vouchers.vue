@@ -5,12 +5,12 @@
 
   <main v-else class="flex flex-col gap-6 px-4 sm:px-6 lg:px-10 pt-7 pb-14">
     <header class="flex items-center gap-4">
-      <img :src="inkIcon('vouchers')" alt="" width="64" height="64" />
+      <img :src="inkIcon('vouchers')" alt="" width="50" height="50" />
       <div>
         <nav :aria-label="t('vouchers.breadcrumb')" class="eyebrow">
           {{ t('vouchers.breadcrumb') }} / {{ t('nav.vouchers') }}
         </nav>
-        <h1 class="type-display text-3xl">{{ t('vouchers.title') }}</h1>
+        <h1 class="type-display mt-1 text-3xl">{{ t('vouchers.title') }}</h1>
       </div>
     </header>
 

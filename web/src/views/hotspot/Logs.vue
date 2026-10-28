@@ -11,7 +11,7 @@
           <nav :aria-label="t('logs.breadcrumb')" class="eyebrow">
             {{ t('logs.breadcrumb') }} / {{ t('logs.title') }}
           </nav>
-          <h1 class="type-display text-3xl">{{ t('logs.title') }}</h1>
+          <h1 class="type-display mt-1 text-3xl">{{ t('logs.title') }}</h1>
         </div>
       </div>
       <div class="flex flex-wrap gap-3">
