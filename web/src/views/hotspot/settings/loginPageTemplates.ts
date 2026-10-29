@@ -2,9 +2,14 @@ import i18n from '@/locales'
 
 // Minified Paul Johnston reference MD5 impl (the same one MikroTik's own
 // stock hotspot templates use)
+const MD5_JS =
+  'function safe_add(f,i){var n=(65535&f)+(65535&i);return(f>>16)+(i>>16)+(n>>16)<<16|65535&n}function rol(f,i){return f<<i|f>>>32-i}function cmn(f,i,n,h,r,g){return safe_add(rol(safe_add(safe_add(i,f),safe_add(h,g)),r),n)}function ff(f,i,n,h,r,g,e){return cmn(i&n|~i&h,f,i,r,g,e)}function gg(f,i,n,h,r,g,e){return cmn(i&h|n&~h,f,i,r,g,e)}function hh(f,i,n,h,r,g,e){return cmn(i^n^h,f,i,r,g,e)}function ii(f,i,n,h,r,g,e){return cmn(n^(i|~h),f,i,r,g,e)}function coreMD5(f){for(var i=1732584193,n=-271733879,h=-1732584194,r=271733878,g=0;g<f.length;g+=16){var e=i,t=n,a=h,c=r;i=ff(i,n,h,r,f[g+0],7,-680876936),r=ff(r,i,n,h,f[g+1],12,-389564586),h=ff(h,r,i,n,f[g+2],17,606105819),n=ff(n,h,r,i,f[g+3],22,-1044525330),i=ff(i,n,h,r,f[g+4],7,-176418897),r=ff(r,i,n,h,f[g+5],12,1200080426),h=ff(h,r,i,n,f[g+6],17,-1473231341),n=ff(n,h,r,i,f[g+7],22,-45705983),i=ff(i,n,h,r,f[g+8],7,1770035416),r=ff(r,i,n,h,f[g+9],12,-1958414417),h=ff(h,r,i,n,f[g+10],17,-42063),n=ff(n,h,r,i,f[g+11],22,-1990404162),i=ff(i,n,h,r,f[g+12],7,1804603682),r=ff(r,i,n,h,f[g+13],12,-40341101),h=ff(h,r,i,n,f[g+14],17,-1502002290),i=gg(i,n=ff(n,h,r,i,f[g+15],22,1236535329),h,r,f[g+1],5,-165796510),r=gg(r,i,n,h,f[g+6],9,-1069501632),h=gg(h,r,i,n,f[g+11],14,643717713),n=gg(n,h,r,i,f[g+0],20,-373897302),i=gg(i,n,h,r,f[g+5],5,-701558691),r=gg(r,i,n,h,f[g+10],9,38016083),h=gg(h,r,i,n,f[g+15],14,-660478335),n=gg(n,h,r,i,f[g+4],20,-405537848),i=gg(i,n,h,r,f[g+9],5,568446438),r=gg(r,i,n,h,f[g+14],9,-1019803690),h=gg(h,r,i,n,f[g+3],14,-187363961),n=gg(n,h,r,i,f[g+8],20,1163531501),i=gg(i,n,h,r,f[g+13],5,-1444681467),r=gg(r,i,n,h,f[g+2],9,-51403784),h=gg(h,r,i,n,f[g+7],14,1735328473),i=hh(i,n=gg(n,h,r,i,f[g+12],20,-1926607734),h,r,f[g+5],4,-378558),r=hh(r,i,n,h,f[g+8],11,-2022574463),h=hh(h,r,i,n,f[g+11],16,1839030562),n=hh(n,h,r,i,f[g+14],23,-35309556),i=hh(i,n,h,r,f[g+1],4,-1530992060),r=hh(r,i,n,h,f[g+4],11,1272893353),h=hh(h,r,i,n,f[g+7],16,-155497632),n=hh(n,h,r,i,f[g+10],23,-1094730640),i=hh(i,n,h,r,f[g+13],4,681279174),r=hh(r,i,n,h,f[g+0],11,-358537222),h=hh(h,r,i,n,f[g+3],16,-722521979),n=hh(n,h,r,i,f[g+6],23,76029189),i=hh(i,n,h,r,f[g+9],4,-640364487),r=hh(r,i,n,h,f[g+12],11,-421815835),h=hh(h,r,i,n,f[g+15],16,530742520),i=ii(i,n=hh(n,h,r,i,f[g+2],23,-995338651),h,r,f[g+0],6,-198630844),r=ii(r,i,n,h,f[g+7],10,1126891415),h=ii(h,r,i,n,f[g+14],15,-1416354905),n=ii(n,h,r,i,f[g+5],21,-57434055),i=ii(i,n,h,r,f[g+12],6,1700485571),r=ii(r,i,n,h,f[g+3],10,-1894986606),h=ii(h,r,i,n,f[g+10],15,-1051523),n=ii(n,h,r,i,f[g+1],21,-2054922799),i=ii(i,n,h,r,f[g+8],6,1873313359),r=ii(r,i,n,h,f[g+15],10,-30611744),h=ii(h,r,i,n,f[g+6],15,-1560198380),n=ii(n,h,r,i,f[g+13],21,1309151649),i=ii(i,n,h,r,f[g+4],6,-145523070),r=ii(r,i,n,h,f[g+11],10,-1120210379),h=ii(h,r,i,n,f[g+2],15,718787259),n=ii(n,h,r,i,f[g+9],21,-343485551),i=safe_add(i,e),n=safe_add(n,t),h=safe_add(h,a),r=safe_add(r,c)}return[i,n,h,r]}function binl2hex(f){for(var i="0123456789abcdef",n="",h=0;h<4*f.length;h++)n+=i.charAt(f[h>>2]>>h%4*8+4&15)+i.charAt(f[h>>2]>>h%4*8&15);return n}function str2binl(f){for(var i=1+(f.length+8>>6),n=new Array(16*i),h=0;h<16*i;h++)n[h]=0;for(h=0;h<f.length;h++)n[h>>2]|=(255&f.charCodeAt(h))<<h%4*8;return n[h>>2]|=128<<h%4*8,n[16*i-2]=8*f.length,n}function hexMD5(f){return binl2hex(coreMD5(str2binl(f)))}'
+
+// The hash script is the router's md5.js, not inlined: RouterOS 6 refuses
+// to store a page over 4 KB through the API.
 const CHAP_SCRIPT = [
+  '<script src="/md5.js"><\/script>',
   '<script>',
-  'function safe_add(f,i){var n=(65535&f)+(65535&i);return(f>>16)+(i>>16)+(n>>16)<<16|65535&n}function rol(f,i){return f<<i|f>>>32-i}function cmn(f,i,n,h,r,g){return safe_add(rol(safe_add(safe_add(i,f),safe_add(h,g)),r),n)}function ff(f,i,n,h,r,g,e){return cmn(i&n|~i&h,f,i,r,g,e)}function gg(f,i,n,h,r,g,e){return cmn(i&h|n&~h,f,i,r,g,e)}function hh(f,i,n,h,r,g,e){return cmn(i^n^h,f,i,r,g,e)}function ii(f,i,n,h,r,g,e){return cmn(n^(i|~h),f,i,r,g,e)}function coreMD5(f){for(var i=1732584193,n=-271733879,h=-1732584194,r=271733878,g=0;g<f.length;g+=16){var e=i,t=n,a=h,c=r;i=ff(i,n,h,r,f[g+0],7,-680876936),r=ff(r,i,n,h,f[g+1],12,-389564586),h=ff(h,r,i,n,f[g+2],17,606105819),n=ff(n,h,r,i,f[g+3],22,-1044525330),i=ff(i,n,h,r,f[g+4],7,-176418897),r=ff(r,i,n,h,f[g+5],12,1200080426),h=ff(h,r,i,n,f[g+6],17,-1473231341),n=ff(n,h,r,i,f[g+7],22,-45705983),i=ff(i,n,h,r,f[g+8],7,1770035416),r=ff(r,i,n,h,f[g+9],12,-1958414417),h=ff(h,r,i,n,f[g+10],17,-42063),n=ff(n,h,r,i,f[g+11],22,-1990404162),i=ff(i,n,h,r,f[g+12],7,1804603682),r=ff(r,i,n,h,f[g+13],12,-40341101),h=ff(h,r,i,n,f[g+14],17,-1502002290),i=gg(i,n=ff(n,h,r,i,f[g+15],22,1236535329),h,r,f[g+1],5,-165796510),r=gg(r,i,n,h,f[g+6],9,-1069501632),h=gg(h,r,i,n,f[g+11],14,643717713),n=gg(n,h,r,i,f[g+0],20,-373897302),i=gg(i,n,h,r,f[g+5],5,-701558691),r=gg(r,i,n,h,f[g+10],9,38016083),h=gg(h,r,i,n,f[g+15],14,-660478335),n=gg(n,h,r,i,f[g+4],20,-405537848),i=gg(i,n,h,r,f[g+9],5,568446438),r=gg(r,i,n,h,f[g+14],9,-1019803690),h=gg(h,r,i,n,f[g+3],14,-187363961),n=gg(n,h,r,i,f[g+8],20,1163531501),i=gg(i,n,h,r,f[g+13],5,-1444681467),r=gg(r,i,n,h,f[g+2],9,-51403784),h=gg(h,r,i,n,f[g+7],14,1735328473),i=hh(i,n=gg(n,h,r,i,f[g+12],20,-1926607734),h,r,f[g+5],4,-378558),r=hh(r,i,n,h,f[g+8],11,-2022574463),h=hh(h,r,i,n,f[g+11],16,1839030562),n=hh(n,h,r,i,f[g+14],23,-35309556),i=hh(i,n,h,r,f[g+1],4,-1530992060),r=hh(r,i,n,h,f[g+4],11,1272893353),h=hh(h,r,i,n,f[g+7],16,-155497632),n=hh(n,h,r,i,f[g+10],23,-1094730640),i=hh(i,n,h,r,f[g+13],4,681279174),r=hh(r,i,n,h,f[g+0],11,-358537222),h=hh(h,r,i,n,f[g+3],16,-722521979),n=hh(n,h,r,i,f[g+6],23,76029189),i=hh(i,n,h,r,f[g+9],4,-640364487),r=hh(r,i,n,h,f[g+12],11,-421815835),h=hh(h,r,i,n,f[g+15],16,530742520),i=ii(i,n=hh(n,h,r,i,f[g+2],23,-995338651),h,r,f[g+0],6,-198630844),r=ii(r,i,n,h,f[g+7],10,1126891415),h=ii(h,r,i,n,f[g+14],15,-1416354905),n=ii(n,h,r,i,f[g+5],21,-57434055),i=ii(i,n,h,r,f[g+12],6,1700485571),r=ii(r,i,n,h,f[g+3],10,-1894986606),h=ii(h,r,i,n,f[g+10],15,-1051523),n=ii(n,h,r,i,f[g+1],21,-2054922799),i=ii(i,n,h,r,f[g+8],6,1873313359),r=ii(r,i,n,h,f[g+15],10,-30611744),h=ii(h,r,i,n,f[g+6],15,-1560198380),n=ii(n,h,r,i,f[g+13],21,1309151649),i=ii(i,n,h,r,f[g+4],6,-145523070),r=ii(r,i,n,h,f[g+11],10,-1120210379),h=ii(h,r,i,n,f[g+2],15,718787259),n=ii(n,h,r,i,f[g+9],21,-343485551),i=safe_add(i,e),n=safe_add(n,t),h=safe_add(h,a),r=safe_add(r,c)}return[i,n,h,r]}function binl2hex(f){for(var i="0123456789abcdef",n="",h=0;h<4*f.length;h++)n+=i.charAt(f[h>>2]>>h%4*8+4&15)+i.charAt(f[h>>2]>>h%4*8&15);return n}function str2binl(f){for(var i=1+(f.length+8>>6),n=new Array(16*i),h=0;h<16*i;h++)n[h]=0;for(h=0;h<f.length;h++)n[h>>2]|=(255&f.charCodeAt(h))<<h%4*8;return n[h>>2]|=128<<h%4*8,n[16*i-2]=8*f.length,n}function hexMD5(f){return binl2hex(coreMD5(str2binl(f)))}',
   'function doLogin(){document.sendin.username.value=document.login.username.value;document.sendin.password.value=hexMD5(\'$(chap-id)\'+document.login.password.value+\'$(chap-challenge)\');document.sendin.submit();return false}',
   '<\/script>',
 ].join('\n')
@@ -23,8 +28,8 @@ const CHAP_HIDDEN_FORM = [
 
 // ── Guest pages ──────────────────────────────────────────────────────────────
 // One Ink & Amber style for login, status, logout and redirect. The operator
-// picks how guests log in and the page language; alogin/error stay the fixed
-// Go defaults. Text comes from the `guestPage` locale keys, in the page's
+// picks how guests log in and the page language; error stays the fixed
+// Go default. Text comes from the `guestPage` locale keys, in the page's
 // language rather than the language Pikro itself is shown in.
 
 export type LoginMode = 'code' | 'password'
@@ -45,14 +50,16 @@ export interface GuestPages {
   logout: string
   redirect: string
   alogin: string
+  css: string
+  md5Js: string
 }
 
 function esc(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-const STYLE = [
-  '<style>',
+// Uploaded as the router's css/style.css and linked, for the same 4 KB reason.
+const GUEST_CSS = [
   '*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }',
   'body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f2f2ef; color: #111; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 20px; }',
   '.wrap { width: 100%; max-width: 340px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }',
@@ -77,8 +84,8 @@ const STYLE = [
   '.ok { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #157f3b; }',
   '.ok::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #157f3b; }',
   '.foot { font-size: 11px; color: #999; margin-top: 6px; }',
-  '<\/style>',
 ].join('\n')
+const STYLESHEET = '<link rel="stylesheet" href="/css/style.css" />'
 
 const WIFI_TILE = '<div class="tile"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M2 8.8a15.5 15.5 0 0 1 20 0M5 12.6a11 11 0 0 1 14 0M8.5 16.2a6 6 0 0 1 7 0"/><circle cx="12" cy="20" r="1.4" fill="currentColor"/><\/svg><\/div>'
 
@@ -93,7 +100,7 @@ function head(lang: GuestLanguage, title: string, extra = '') {
     '<meta http-equiv="expires" content="-1" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1.0" />',
     `<title>${title}<\/title>`,
-    STYLE,
+    STYLESHEET,
   ].join('\n')
 }
 
@@ -292,7 +299,7 @@ export function renderGuestPages(o: GuestPageOptions): GuestPages {
     '<\/html>',
   ].join('\n')
 
-  return { login, status, logout, redirect, alogin }
+  return { login, status, logout, redirect, alogin, css: GUEST_CSS, md5Js: MD5_JS }
 }
 
 // The iframe preview has no RouterOS to expand $(...) tokens: show the page
@@ -307,6 +314,7 @@ const PREVIEW_SAMPLES: Record<string, string> = {
 
 export function previewHtml(html: string) {
   return html
+    .replace(STYLESHEET, `<style>${GUEST_CSS}<\/style>`) // the iframe can't fetch the router's file
     .replace(/\$\(if error\)[\s\S]*?\$\(endif\)/g, '')
     .replace(/\$\((?:if|elif) [^)]*\)|\$\((?:else|endif)\)/g, '')
     .replace(/\$\(([\w-]+)\)/g, (_, token: string) => PREVIEW_SAMPLES[token] ?? '')

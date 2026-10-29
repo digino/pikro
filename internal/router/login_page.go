@@ -68,14 +68,24 @@ func hotspotFiles(content LoginPageContent) ([]hotspotFile, error) {
 	if content.Alogin == "" {
 		content.Alogin = string(assets.HotspotAloginHTML)
 	}
-	return []hotspotFile{
+	files := []hotspotFile{
 		{"hotspot/login.html", content.Login},
 		{"hotspot/logout.html", content.Logout},
 		{"hotspot/status.html", content.Status},
 		{"hotspot/alogin.html", content.Alogin},
 		{"hotspot/error.html", string(assets.HotspotErrorHTML)},
 		{"hotspot/redirect.html", content.Redirect},
-	}, nil
+	}
+	// Only pages that link them need these, and the built-in pages don't.
+	// Both already exist in a new hotspot's folder, which matters on
+	// RouterOS 6: it can overwrite files over the API but not create them.
+	if content.Style != "" {
+		files = append(files, hotspotFile{"hotspot/css/style.css", content.Style})
+	}
+	if content.MD5 != "" {
+		files = append(files, hotspotFile{"hotspot/md5.js", content.MD5})
+	}
+	return files, nil
 }
 
 // LoginPageContent holds the fully-rendered HTML for each customizable
@@ -90,6 +100,8 @@ type LoginPageContent struct {
 	Status   string
 	Redirect string
 	Alogin   string // shown right after a successful login
+	Style    string // stylesheet the pages link, kept out of them for size
+	MD5      string // CHAP hash script the login page links
 }
 
 // UploadLoginPage uploads the given (or default, if empty) rendered hotspot
@@ -119,7 +131,9 @@ func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) e
 		}
 	}
 
-	var firstErr error
+	// Stop at the first file the router refuses: login.html goes first, so a
+	// page RouterOS 6 finds too long (over 4 KB) leaves the hotspot as it was
+	// instead of half-replaced.
 	for _, f := range files {
 		// Create file if it doesn't exist yet (ignore error — may already exist).
 		conn.RunArgs([]string{"/file/add", "=name=" + f.name, "=type=.html"})
@@ -150,12 +164,9 @@ func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) e
 		default:
 			setErr = fmt.Errorf("%s not found after /file/add — ensure the hotspot is set up first", f.name)
 		}
-		if setErr != nil && firstErr == nil {
-			firstErr = fmt.Errorf("file/set %s: %w", f.name, setErr)
+		if setErr != nil {
+			return fmt.Errorf("file/set %s: %w", f.name, setErr)
 		}
-	}
-	if firstErr != nil {
-		return firstErr
 	}
 
 	if profileName == "" {

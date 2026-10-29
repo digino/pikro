@@ -193,7 +193,7 @@
         class="w-[300px] h-[580px] p-2.5 rounded-[40px] border-[3px] border-black bg-black shadow-[8px_8px_0_var(--color-shadow)]"
       >
         <iframe
-          :srcdoc="showingLive ? liveHTML : previewHtml(pages[previewPage])"
+          :srcdoc="previewHtml(showingLive ? liveHTML : pages[previewPage])"
           class="w-full h-full rounded-[30px] border-0 bg-white"
           sandbox=""
           :title="t('settings.loginPage.preview')"
@@ -410,6 +410,8 @@ async function upload() {
       logoutHtml: p.logout,
       redirectHtml: p.redirect,
       aloginHtml: p.alogin,
+      css: p.css,
+      md5Js: p.md5Js,
     });
     const f = form.value;
     const loginPage: LoginPageSettings = {

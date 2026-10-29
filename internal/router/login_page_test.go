@@ -6,14 +6,19 @@ import (
 	"github.com/digino/pikro/internal/assets"
 )
 
-func TestHotspotFilesAlogin(t *testing.T) {
+func TestHotspotFiles(t *testing.T) {
 	tests := []struct {
 		name    string
 		content LoginPageContent
-		want    string
+		file    string
+		want    string // "" means the file must not be uploaded
 	}{
-		{"custom page is uploaded", LoginPageContent{Alogin: "<p>custom</p>"}, "<p>custom</p>"},
-		{"empty falls back to the built-in page", LoginPageContent{}, string(assets.HotspotAloginHTML)},
+		{"custom alogin is uploaded", LoginPageContent{Alogin: "<p>custom</p>"}, "hotspot/alogin.html", "<p>custom</p>"},
+		{"empty alogin falls back to the built-in page", LoginPageContent{}, "hotspot/alogin.html", string(assets.HotspotAloginHTML)},
+		{"stylesheet is uploaded", LoginPageContent{Style: "body{}"}, "hotspot/css/style.css", "body{}"},
+		{"no stylesheet leaves the router's one", LoginPageContent{}, "hotspot/css/style.css", ""},
+		{"md5 script is uploaded", LoginPageContent{MD5: "function hexMD5(){}"}, "hotspot/md5.js", "function hexMD5(){}"},
+		{"no md5 script leaves the router's one", LoginPageContent{}, "hotspot/md5.js", ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -21,15 +26,15 @@ func TestHotspotFilesAlogin(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			got := ""
 			for _, f := range files {
-				if f.name == "hotspot/alogin.html" {
-					if f.content != tt.want {
-						t.Errorf("alogin.html = %q, want %q", f.content, tt.want)
-					}
-					return
+				if f.name == tt.file {
+					got = f.content
 				}
 			}
-			t.Error("alogin.html not in the uploaded files")
+			if got != tt.want {
+				t.Errorf("%s = %q, want %q", tt.file, got, tt.want)
+			}
 		})
 	}
 }

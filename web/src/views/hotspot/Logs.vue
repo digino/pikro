@@ -36,7 +36,6 @@
     </header>
 
     <section :aria-label="t('logs.statsCaption')" class="flex flex-col gap-2.5">
-      <span class="eyebrow">{{ t('logs.statsCaption') }}</span>
       <div class="grid grid-cols-2 xl:grid-cols-4 gap-4.5">
         <div
           v-for="s in stats"

@@ -140,6 +140,8 @@ export interface UploadLoginPagePayload extends LoginPageSettings {
   statusHtml?: string
   redirectHtml?: string
   aloginHtml?: string
+  css?: string
+  md5Js?: string
 }
 
 export const uploadLoginPage = (id: string, p: UploadLoginPagePayload) =>
