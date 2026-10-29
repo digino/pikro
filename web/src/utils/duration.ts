@@ -34,6 +34,11 @@ export function uptimeForRouter(raw: string): string {
     .join("");
 }
 
+/** RouterOS durations ("3h12m5s") read better spaced out ("3h 12m 5s"); "—" when empty. */
+export function spacedDuration(d?: string): string {
+  return d ? d.replace(/([a-z])(?=\d)/g, "$1 ") : "—";
+}
+
 /** Tidies what the operator typed ("1W02h" -> "1w2h"); leaves invalid input untouched. */
 export function normalizeShorthand(raw: string): string {
   const p = parseShorthand(raw);

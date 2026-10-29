@@ -3,6 +3,7 @@ package router
 import (
 	"crypto/tls"
 	"fmt"
+	"net/netip"
 	"regexp"
 	"strconv"
 	"strings"
@@ -807,6 +808,84 @@ func (c *Client) DHCPLeases() ([]map[string]any, error) {
 		return nil, err
 	}
 	return replyToList(reply), nil
+}
+
+// DHCPServer is one DHCP server with the address pool it hands out from.
+type DHCPServer struct {
+	Name      string `json:"name"`
+	Interface string `json:"interface"`
+	LeaseTime string `json:"leaseTime"`
+	Disabled  bool   `json:"disabled"`
+	Ranges    string `json:"ranges"` // as RouterOS writes them; empty for static-only servers
+	Size      int    `json:"size"`   // addresses in Ranges
+}
+
+func (c *Client) DHCPServers() ([]DHCPServer, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	servers, err := conn.Run("/ip/dhcp-server/print")
+	if err != nil {
+		return nil, err
+	}
+	pools, err := conn.Run("/ip/pool/print")
+	if err != nil {
+		return nil, err
+	}
+	rangesByPool := map[string]string{}
+	for _, p := range pools.Re {
+		rangesByPool[p.Map["name"]] = p.Map["ranges"]
+	}
+
+	out := make([]DHCPServer, 0, len(servers.Re))
+	for _, s := range servers.Re {
+		ranges := rangesByPool[s.Map["address-pool"]]
+		out = append(out, DHCPServer{
+			Name:      s.Map["name"],
+			Interface: s.Map["interface"],
+			LeaseTime: s.Map["lease-time"],
+			Disabled:  s.Map["disabled"] == "true",
+			Ranges:    ranges,
+			Size:      poolSize(ranges),
+		})
+	}
+	return out, nil
+}
+
+// poolSize counts the IPv4 addresses in a RouterOS pool's ranges, which mix
+// "a-b" ranges, single addresses and CIDR prefixes, separated by commas.
+func poolSize(ranges string) int {
+	total := 0
+	for _, part := range strings.Split(ranges, ",") {
+		part = strings.TrimSpace(part)
+		if prefix, err := netip.ParsePrefix(part); err == nil {
+			if prefix.Addr().Is4() {
+				total += 1 << (32 - prefix.Bits())
+			}
+			continue
+		}
+		from, to, isRange := strings.Cut(part, "-")
+		if !isRange {
+			to = from
+		}
+		a, errA := netip.ParseAddr(from)
+		b, errB := netip.ParseAddr(to)
+		if errA != nil || errB != nil || !a.Is4() || !b.Is4() {
+			continue
+		}
+		if n := ipv4Number(b) - ipv4Number(a) + 1; n > 0 {
+			total += n
+		}
+	}
+	return total
+}
+
+func ipv4Number(a netip.Addr) int {
+	b := a.As4()
+	return int(b[0])<<24 | int(b[1])<<16 | int(b[2])<<8 | int(b[3])
 }
 
 // BandwidthTest measures internet download speed from the router using /tool/fetch.

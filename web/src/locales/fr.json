@@ -122,7 +122,29 @@
     "confirmDelete": "Supprimer ce routeur ?",
     "apiSsl": "API-SSL",
     "noneYetTitle": "Aucun routeur pour l'instant",
-    "noneYetBody": "Lancez une recherche sur le réseau ou ajoutez un routeur par adresse IP."
+    "noneYetBody": "Lancez une recherche sur le réseau ou ajoutez un routeur par adresse IP.",
+    "addDialog": {
+      "title": "Ajouter un routeur",
+      "connection": "Connexion",
+      "hotspot": "Hotspot",
+      "name": "Nom",
+      "namePlaceholder": "Routeur maison",
+      "host": "Hôte / IP",
+      "port": "Port",
+      "username": "Utilisateur",
+      "password": "Mot de passe",
+      "useTls": "Utiliser TLS (port 8729)",
+      "cancel": "Annuler",
+      "add": "Ajouter le routeur",
+      "failed": "Impossible d’ajouter le routeur"
+    },
+    "hotspotFields": {
+      "hint": "Facultatif. Affiché sur la page de connexion et les tickets de ce routeur. Vous pourrez les changer plus tard en modifiant le routeur.",
+      "name": "Nom du hotspot",
+      "namePlaceholder": "ex. monspot",
+      "currency": "Devise",
+      "none": "Aucune"
+    }
   },
   "users": {
     "breadcrumb": "Hotspot",
@@ -568,5 +590,84 @@
       "local": "Réseau local",
       "spare": "Port libre"
     }
+  },
+  "hosts": {
+    "intro": "Tous les appareils que votre hotspot voit, connectés ou non.",
+    "bannerCount": "{n} appareil | {n} appareils",
+    "bannerRest": "est sur votre Wi-Fi mais ne s’est pas encore connecté. | sont sur votre Wi-Fi mais ne se sont pas encore connectés.",
+    "sellHint": "Vous pouvez lui vendre un ticket. | Vous pouvez leur vendre un ticket.",
+    "printVouchers": "Imprimer des tickets",
+    "filterLabel": "Filtrer par statut",
+    "filters": {
+      "all": "Tous",
+      "loggedIn": "Connectés",
+      "notLoggedIn": "Non connectés"
+    },
+    "search": "Rechercher des hôtes",
+    "searchPlaceholder": "MAC, IP ou serveur",
+    "colMac": "Adresse MAC",
+    "colIp": "Adresse IP",
+    "colTo": "Adresse cible",
+    "colServer": "Serveur",
+    "colStatus": "Statut",
+    "colUptime": "En ligne depuis",
+    "colIdle": "Inactif",
+    "status": {
+      "loggedIn": "Connecté",
+      "notLoggedIn": "Non connecté",
+      "bypassed": "Exempté"
+    },
+    "noHosts": "Aucun appareil sur le hotspot en ce moment.",
+    "noMatch": "Aucun hôte ne correspond.",
+    "clearFilters": "Effacer les filtres",
+    "showing": "{from}–{to} sur {total}",
+    "idleNote": "Inactif depuis plus de 10 min : grisé",
+    "previous": "Page précédente",
+    "next": "Page suivante"
+  },
+  "dhcp": {
+    "title": "Baux DHCP",
+    "intro": "Quel appareil a reçu quelle adresse du routeur.",
+    "pools": "Plages d’adresses",
+    "inUse": "adresses utilisées sur {size}",
+    "leases": "aucun bail | {n} bail | {n} baux",
+    "notes": {
+      "plenty": "Largement assez de place.",
+      "filling": "Se remplit.",
+      "almostFull": "Presque plein : les nouveaux appareils risquent de ne pas avoir d’adresse.",
+      "leaseTime": "Les baux durent {time}.",
+      "static": "| {n} bail statique. | {n} baux statiques.",
+      "staticOnly": "Pas de plage : ce serveur ne donne que des baux statiques.",
+      "disabled": "Ce serveur est désactivé."
+    },
+    "filterLabel": "Filtrer par statut",
+    "filters": {
+      "all": "Tous",
+      "bound": "Attribués",
+      "waiting": "En attente"
+    },
+    "search": "Rechercher des baux",
+    "searchPlaceholder": "Nom d’appareil, IP ou MAC",
+    "colDevice": "Appareil",
+    "colIp": "IP",
+    "colMac": "MAC",
+    "colServer": "Serveur",
+    "colStatus": "Statut",
+    "colExpires": "Expire",
+    "noName": "Sans nom",
+    "status": {
+      "bound": "Attribué",
+      "waiting": "En attente",
+      "offered": "Proposé",
+      "busy": "Occupé"
+    },
+    "expiresIn": "dans {time}",
+    "static": "Statique",
+    "noLeases": "Aucun bail DHCP sur ce routeur.",
+    "noMatch": "Aucun bail ne correspond.",
+    "clearFilters": "Effacer les filtres",
+    "showing": "{from}–{to} sur {total}",
+    "previous": "Page précédente",
+    "next": "Page suivante"
   }
 }

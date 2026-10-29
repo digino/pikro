@@ -112,3 +112,17 @@ func GetDHCPLeases(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonOK(w, leases)
 }
+
+func GetDHCPServers(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	servers, err := client.DHCPServers()
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	jsonOK(w, servers)
+}

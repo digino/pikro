@@ -122,7 +122,29 @@
     "confirmDelete": "Remove this router?",
     "apiSsl": "API-SSL",
     "noneYetTitle": "No routers yet",
-    "noneYetBody": "Scan your network or add a router by IP address."
+    "noneYetBody": "Scan your network or add a router by IP address.",
+    "addDialog": {
+      "title": "Add router",
+      "connection": "Connection",
+      "hotspot": "Hotspot",
+      "name": "Name",
+      "namePlaceholder": "Home router",
+      "host": "Host / IP",
+      "port": "Port",
+      "username": "Username",
+      "password": "Password",
+      "useTls": "Use TLS (port 8729)",
+      "cancel": "Cancel",
+      "add": "Add router",
+      "failed": "Failed to add router"
+    },
+    "hotspotFields": {
+      "hint": "Optional. Shown on the login page and vouchers for this router. You can change these later by editing the router.",
+      "name": "Hotspot name",
+      "namePlaceholder": "e.g. myspot",
+      "currency": "Currency",
+      "none": "None"
+    }
   },
   "users": {
     "breadcrumb": "Hotspot",
@@ -568,5 +590,84 @@
       "local": "Local network",
       "spare": "Spare port"
     }
+  },
+  "hosts": {
+    "intro": "Every device your hotspot can see, logged in or not.",
+    "bannerCount": "{n} device | {n} devices",
+    "bannerRest": "is on your Wi-Fi but hasn’t logged in yet. | are on your Wi-Fi but haven’t logged in yet.",
+    "sellHint": "That’s who you can sell a voucher to. | That’s who you can sell a voucher to.",
+    "printVouchers": "Print vouchers",
+    "filterLabel": "Filter by status",
+    "filters": {
+      "all": "All",
+      "loggedIn": "Logged in",
+      "notLoggedIn": "Not logged in"
+    },
+    "search": "Search hosts",
+    "searchPlaceholder": "MAC, IP or server",
+    "colMac": "MAC address",
+    "colIp": "IP address",
+    "colTo": "To address",
+    "colServer": "Server",
+    "colStatus": "Status",
+    "colUptime": "Online for",
+    "colIdle": "Idle",
+    "status": {
+      "loggedIn": "Logged in",
+      "notLoggedIn": "Not logged in",
+      "bypassed": "Bypassed"
+    },
+    "noHosts": "No device on the hotspot right now.",
+    "noMatch": "No host matches.",
+    "clearFilters": "Clear filters",
+    "showing": "Showing {from}–{to} of {total}",
+    "idleNote": "Idle longer than 10 min is greyed out",
+    "previous": "Previous page",
+    "next": "Next page"
+  },
+  "dhcp": {
+    "title": "DHCP leases",
+    "intro": "Which device got which address from the router.",
+    "pools": "Address pools",
+    "inUse": "of {size} addresses in use",
+    "leases": "no leases | {n} lease | {n} leases",
+    "notes": {
+      "plenty": "Plenty of room.",
+      "filling": "Filling up.",
+      "almostFull": "Almost full: new devices may not get an address.",
+      "leaseTime": "Leases last {time}.",
+      "static": "| {n} static lease. | {n} static leases.",
+      "staticOnly": "No pool: this server only gives out static leases.",
+      "disabled": "This server is turned off."
+    },
+    "filterLabel": "Filter by status",
+    "filters": {
+      "all": "All",
+      "bound": "Bound",
+      "waiting": "Waiting"
+    },
+    "search": "Search leases",
+    "searchPlaceholder": "Device name, IP or MAC",
+    "colDevice": "Device",
+    "colIp": "IP",
+    "colMac": "MAC",
+    "colServer": "Server",
+    "colStatus": "Status",
+    "colExpires": "Expires",
+    "noName": "No name",
+    "status": {
+      "bound": "Bound",
+      "waiting": "Waiting",
+      "offered": "Offered",
+      "busy": "Busy"
+    },
+    "expiresIn": "in {time}",
+    "static": "Static",
+    "noLeases": "No DHCP leases on this router.",
+    "noMatch": "No lease matches.",
+    "clearFilters": "Clear filters",
+    "showing": "Showing {from}–{to} of {total}",
+    "previous": "Previous page",
+    "next": "Next page"
   }
 }

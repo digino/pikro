@@ -175,7 +175,7 @@
             <dd class="m-0 font-mono">{{ r.mac || '—' }}</dd>
           </dl>
 
-          <div class="mt-auto pt-3.5 border-t border-hairline flex gap-2.5">
+          <div class="mt-auto border-hairline flex gap-2.5">
             <button
               type="button"
               class="btn btn-ink btn-sm flex-1 min-w-0"

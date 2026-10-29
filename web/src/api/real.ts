@@ -77,6 +77,18 @@ export const getSystemLogs = (id: string) =>
 export const getDHCPLeases = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/system/dhcp-leases`).then(r => r.data)
 
+export interface DHCPServer {
+  name: string
+  interface: string
+  leaseTime: string
+  disabled: boolean
+  ranges: string
+  size: number
+}
+
+export const getDHCPServers = (id: string) =>
+  api.get<DHCPServer[]>(`/routers/${id}/system/dhcp-servers`).then(r => r.data)
+
 export interface MikhmonMigrationResult {
   usersScanned: number
   usersUnused: number
