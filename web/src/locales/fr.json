@@ -527,5 +527,46 @@
       "scanned": "{users} utilisateurs et {profiles} profils vérifiés, {skipped} laissés intacts.",
       "failed": "Échec de la migration"
     }
+  },
+  "monitor": {
+    "live": "En direct",
+    "paused": "En pause",
+    "liveHint": "Mettez en pause pour ne plus interroger le routeur.",
+    "downloadNow": "Téléchargement",
+    "uploadNow": "Envoi",
+    "on": "sur {iface}",
+    "peakSince": "Pic depuis {time}",
+    "peakAt": "à {time}",
+    "noPeak": "Pas encore de trafic",
+    "wan": "Internet (WAN)",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "noWan": "Aucune route Internet",
+    "via": "via {iface}",
+    "viaUp": "via {iface} · actif depuis {uptime}",
+    "bandwidth": "Débit · {iface}",
+    "download": "Téléchargement",
+    "upload": "Envoi",
+    "chartLabel": "Trafic sur {iface} ces 5 dernières minutes. En ce moment : téléchargement {down} Mbps, envoi {up} Mbps.",
+    "interfaces": "Interfaces",
+    "pickHint": "Choisissez-en une pour voir son trafic ci-dessus.",
+    "noInterfaces": "Pas encore de données d'interface",
+    "noAddress": "Pas d'adresse",
+    "rx": "RX",
+    "tx": "TX",
+    "status": {
+      "up": "Active",
+      "down": "Coupée",
+      "disabled": "Désactivée"
+    },
+    "roles": {
+      "wan": "Internet (WAN)",
+      "guestNetwork": "Réseau invités",
+      "guestWifi": "Wi-Fi invités · dans {bridge}",
+      "guestPort": "Port invités · dans {bridge}",
+      "bridgePort": "Port de {bridge}",
+      "local": "Réseau local",
+      "spare": "Port libre"
+    }
   }
 }

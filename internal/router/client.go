@@ -535,6 +535,39 @@ type PollSnapshot struct {
 	Addresses  []map[string]string `json:"addresses"`
 	Clock      map[string]string   `json:"clock"`
 	Interfaces []map[string]string `json:"interfaces"`
+	// What each interface is for, shown on the Monitor page.
+	WANInterface      string            `json:"wanInterface"`
+	HotspotInterfaces []string          `json:"hotspotInterfaces"`
+	BridgePorts       map[string]string `json:"bridgePorts"` // port name -> bridge name
+}
+
+// wanInterface returns the interface the active default route leaves
+// through. RouterOS 7 names it in immediate-gw ("10.0.2.2%ether1"),
+// RouterOS 6 in gateway-status ("10.0.2.2 reachable via  ether1"); with
+// PPPoE the gateway is the interface itself.
+func wanInterface(routes []map[string]string) string {
+	for _, r := range routes {
+		if r["active"] != "true" {
+			continue
+		}
+		if gw := r["immediate-gw"]; gw != "" {
+			_, after, found := strings.Cut(gw, "%")
+			if found {
+				return after
+			}
+			return gw
+		}
+		status, _, _ := strings.Cut(r["gateway-status"], ",")
+		fields := strings.Fields(status)
+		if len(fields) == 0 {
+			continue
+		}
+		if len(fields) >= 4 && fields[len(fields)-2] == "via" {
+			return fields[len(fields)-1]
+		}
+		return fields[0]
+	}
+	return ""
 }
 
 // Poll opens one connection and fetches resource, interface traffic, and clock together.
@@ -552,6 +585,9 @@ func (c *Client) Poll() (*PollSnapshot, error) {
 		Addresses:  []map[string]string{},
 		Clock:      map[string]string{},
 		Interfaces: []map[string]string{},
+		// Empty, not null, in the JSON when the router has none.
+		HotspotInterfaces: []string{},
+		BridgePorts:       map[string]string{},
 	}
 
 	// Resource
@@ -593,6 +629,24 @@ func (c *Client) Poll() (*PollSnapshot, error) {
 	// Clock
 	if r, err := conn.Run("/system/clock/print"); err == nil && len(r.Re) > 0 {
 		snap.Clock = r.Re[0].Map
+	}
+
+	if r, err := conn.Run("/ip/route/print", "?dst-address=0.0.0.0/0"); err == nil {
+		routes := make([]map[string]string, 0, len(r.Re))
+		for _, s := range r.Re {
+			routes = append(routes, s.Map)
+		}
+		snap.WANInterface = wanInterface(routes)
+	}
+	if r, err := conn.Run("/ip/hotspot/print"); err == nil {
+		for _, s := range r.Re {
+			snap.HotspotInterfaces = append(snap.HotspotInterfaces, s.Map["interface"])
+		}
+	}
+	if r, err := conn.Run("/interface/bridge/port/print"); err == nil {
+		for _, s := range r.Re {
+			snap.BridgePorts[s.Map["interface"]] = s.Map["bridge"]
+		}
 	}
 
 	return snap, nil

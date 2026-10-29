@@ -63,6 +63,9 @@ export interface PollSnapshot {
   addresses: Record<string, string>[]
   clock: Record<string, string>
   interfaces: Record<string, string>[]
+  wanInterface: string
+  hotspotInterfaces: string[]
+  bridgePorts: Record<string, string>
 }
 
 export const getPollSnapshot = (id: string) =>

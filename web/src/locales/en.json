@@ -527,5 +527,46 @@
       "scanned": "{users} users and {profiles} profiles checked, {skipped} left untouched.",
       "failed": "Migration failed"
     }
+  },
+  "monitor": {
+    "live": "Live",
+    "paused": "Paused",
+    "liveHint": "Pause to stop asking the router for traffic.",
+    "downloadNow": "Download now",
+    "uploadNow": "Upload now",
+    "on": "on {iface}",
+    "peakSince": "Peak since {time}",
+    "peakAt": "at {time}",
+    "noPeak": "No traffic yet",
+    "wan": "Internet (WAN)",
+    "online": "Online",
+    "offline": "Offline",
+    "noWan": "No internet route",
+    "via": "via {iface}",
+    "viaUp": "via {iface} · up {uptime}",
+    "bandwidth": "Bandwidth · {iface}",
+    "download": "Download",
+    "upload": "Upload",
+    "chartLabel": "Traffic on {iface} over the last 5 minutes. Now: download {down} Mbps, upload {up} Mbps.",
+    "interfaces": "Interfaces",
+    "pickHint": "Pick one to see its traffic above.",
+    "noInterfaces": "No interface data yet",
+    "noAddress": "No address",
+    "rx": "RX",
+    "tx": "TX",
+    "status": {
+      "up": "Up",
+      "down": "Down",
+      "disabled": "Disabled"
+    },
+    "roles": {
+      "wan": "Internet (WAN)",
+      "guestNetwork": "Guest network",
+      "guestWifi": "Guest Wi-Fi · in {bridge}",
+      "guestPort": "Guest port · in {bridge}",
+      "bridgePort": "Port of {bridge}",
+      "local": "Local network",
+      "spare": "Spare port"
+    }
   }
 }

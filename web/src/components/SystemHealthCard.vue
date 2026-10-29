@@ -43,6 +43,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 import { inkIcon } from '@/utils/inkIcons'
+import { formatBytes } from '@/utils/bytes'
 
 const props = defineProps<{
   loading: boolean
@@ -63,12 +64,4 @@ const healthScore = computed(() => {
   const ramScore = Math.round(Math.min(freeMemory.value / totalMemory.value / 0.5, 1) * 30)
   return Math.min(100, cpuScore + ramScore + 30)
 })
-
-function formatBytes(n: number): string {
-  if (!n || isNaN(n)) return '—'
-  if (n >= 1_073_741_824) return (n / 1_073_741_824).toFixed(1) + ' GB'
-  if (n >= 1_048_576) return (n / 1_048_576).toFixed(1) + ' MB'
-  if (n >= 1_024) return (n / 1_024).toFixed(0) + ' KB'
-  return n + ' B'
-}
 </script>
