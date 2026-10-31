@@ -214,7 +214,7 @@ const pools = computed(() =>
         ? [
             t(ratio > FULL_RATIO ? 'dhcp.notes.almostFull' : ratio > 0.6 ? 'dhcp.notes.filling' : 'dhcp.notes.plenty'),
             s.leaseTime ? t('dhcp.notes.leaseTime', { time: spacedDuration(s.leaseTime) }) : '',
-            t('dhcp.notes.static', { n: statics }, statics),
+            statics ? t('dhcp.notes.static', { n: statics }, statics) : '',
           ].filter(Boolean).join(' ')
         : t('dhcp.notes.staticOnly')
     return {

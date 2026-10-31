@@ -89,6 +89,12 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/routers/{id}/address-pools", handlers.ListAddressPools)
 
 	mux.HandleFunc("POST /api/routers/{id}/speedtest", handlers.RunSpeedTest)
+	mux.HandleFunc("GET /api/routers/{id}/tools/internet-check", handlers.GetInternetCheck)
+	mux.HandleFunc("POST /api/routers/{id}/tools/public-dns", handlers.PostPublicDNS)
+	mux.HandleFunc("GET /api/routers/{id}/tools/clock", handlers.GetRouterClock)
+	mux.HandleFunc("POST /api/routers/{id}/tools/clock/auto", handlers.PostAutoTime)
+	mux.HandleFunc("GET /api/routers/{id}/tools/updates", handlers.GetUpdates)
+	mux.HandleFunc("POST /api/routers/{id}/tools/reboot", handlers.PostReboot)
 }
 
 func registerSPA(mux *http.ServeMux, webFS fs.FS) {

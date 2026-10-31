@@ -14,7 +14,8 @@ import NetworkLayout from '@/views/Network.vue'
 import NetworkMonitor from '@/views/network/Monitor.vue'
 import NetworkHosts from '@/views/network/Hosts.vue'
 import NetworkDhcp from '@/views/network/Dhcp.vue'
-import SpeedTest from '@/views/SpeedTest.vue'
+import Troubleshoot from '@/views/tools/Troubleshoot.vue'
+import Maintenance from '@/views/tools/Maintenance.vue'
 import Routers from '@/views/Routers.vue'
 
 export default createRouter({
@@ -55,7 +56,11 @@ export default createRouter({
         { path: 'dhcp',    component: NetworkDhcp },
       ],
     },
-    { path: '/speedtest', component: SpeedTest },
+    { path: '/tools', redirect: '/tools/troubleshoot' },
+    { path: '/tools/troubleshoot', component: Troubleshoot },
+    { path: '/tools/maintenance', component: Maintenance },
+    // The speed test now lives on the Troubleshoot page.
+    { path: '/speedtest', redirect: '/tools/troubleshoot' },
     { path: '/routers',   component: Routers },
   ],
 })

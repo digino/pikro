@@ -15,7 +15,8 @@
     "hosts": "Hosts",
     "dhcp": "DHCP",
     "tools": "Tools",
-    "speedTest": "Speed Test"
+    "troubleshoot": "Troubleshoot",
+    "maintenance": "Maintenance"
   },
   "sidebar": {
     "switchToLight": "Switch to light mode",
@@ -636,7 +637,7 @@
       "filling": "Filling up.",
       "almostFull": "Almost full: new devices may not get an address.",
       "leaseTime": "Leases last {time}.",
-      "static": "| {n} static lease. | {n} static leases.",
+      "static": "{n} static lease. | {n} static leases.",
       "staticOnly": "No pool: this server only gives out static leases.",
       "disabled": "This server is turned off."
     },
@@ -669,5 +670,124 @@
     "showing": "Showing {from}–{to} of {total}",
     "previous": "Previous page",
     "next": "Next page"
+  },
+  "troubleshoot": {
+    "intro": "Guests say the Wi-Fi is slow or not working? Start here.",
+    "checkTitle": "Internet check",
+    "checking": "Checking from the router…",
+    "checkAgain": "Check again",
+    "checkedAt": "Checked from the router at {time}",
+    "stillStuck": "Still stuck? Restart the router in Maintenance",
+    "stepsLabel": "What was checked",
+    "usePublicDns": "Use public DNS",
+    "publicDnsDone": "The router now uses public DNS",
+    "publicDnsFailed": "Couldn’t change the DNS servers",
+    "checkFailed": "Couldn’t run the check",
+    "state": {
+      "ok": "OK",
+      "fail": "Problem",
+      "skip": "Not checked",
+      "pending": "Checking"
+    },
+    "skipped": "Skipped: an earlier check failed",
+    "steps": {
+      "cable": {
+        "title": "Internet cable",
+        "ok": "{target} is connected",
+        "noLink": "{target} has no link",
+        "noRoute": "No internet route on the router"
+      },
+      "gateway": {
+        "title": "Your provider’s box",
+        "ok": "Gateway {target} answers in {ms} ms",
+        "okLink": "Connected through {target}",
+        "fail": "Gateway {target} does not answer"
+      },
+      "internet": {
+        "title": "The internet",
+        "ok": "{target} answers in {ms} ms",
+        "fail": "{target} does not answer"
+      },
+      "dns": {
+        "title": "Website names (DNS)",
+        "ok": "{target} found through {via}",
+        "fail": "{target} not found through {via}"
+      }
+    },
+    "verdict": {
+      "ok": {
+        "title": "The internet works from the router.",
+        "advice": "If guests still say it is slow, run a speed test below."
+      },
+      "noRoute": {
+        "title": "The router has no internet route.",
+        "advice": "It doesn’t know where the internet is. Check its internet setup (DHCP client or PPPoE) in WinBox."
+      },
+      "noLink": {
+        "title": "The internet cable is unplugged.",
+        "advice": "{wan} shows no link. Check the cable between the router and your provider’s box, and that the box is switched on."
+      },
+      "gateway": {
+        "title": "Your provider’s box doesn’t answer.",
+        "advice": "The cable is connected, but the box at {gw} doesn’t answer. Restart your provider’s box, then check again."
+      },
+      "internet": {
+        "title": "Your provider’s line is down.",
+        "advice": "The router and its cable are fine, but nothing past your provider’s box answers. Call your provider: their box answers, the internet does not."
+      },
+      "dns": {
+        "title": "Websites can’t be found by name.",
+        "advice": "The internet answers, but the DNS server ({via}) does not. Pikro can switch the router to public DNS (1.1.1.1 and 8.8.8.8)."
+      }
+    },
+    "speedTitle": "Speed test",
+    "lastTest": "Download, last test",
+    "notRun": "Not run yet",
+    "ranAt": "Today at {time} · used {size} MB of data",
+    "testSize": "Test size",
+    "sizeHint10": "Uses about 10 MB of data. Enough for most lines.",
+    "sizeHint50": "Uses about 50 MB of data. More accurate on fast lines; costs more on prepaid.",
+    "runTest": "Run test",
+    "testing": "Testing…",
+    "speedNote": "Measured from the router to a server in Europe, so it can read lower than your plan. Guests will feel it while it runs.",
+    "speedFailed": "Speed test failed"
+  },
+  "maintenance": {
+    "intro": "Keep the router healthy: right time and up to date.",
+    "todo": "Nothing to do | 1 thing to do | {n} things to do",
+    "todoText": "Pikro checked the router just now. Start with the first one.",
+    "allGood": "Pikro checked the router just now. Everything looks fine.",
+    "todoClock": "Fix the router clock",
+    "todoUpdate": "RouterOS {version} is available",
+    "clockTitle": "Router clock",
+    "clockOk": "Matches this computer",
+    "clockWrong": "Wrong time",
+    "clockOkText": "Vouchers expire by the router’s clock, so it must be right.",
+    "clockWrongText": "Vouchers expire by the router’s clock, so they will run out at the wrong time. This usually happens after a power cut on a router without automatic time.",
+    "ntpOn": "Automatic time: on ({servers})",
+    "ntpOff": "Automatic time is off",
+    "turnOnAutoTime": "Turn on automatic time",
+    "autoTimeDone": "Automatic time is on and the clock is set",
+    "autoTimeFailed": "Couldn’t set the router clock",
+    "updatesTitle": "RouterOS updates",
+    "updateAvailable": "Update available",
+    "upToDate": "Up to date",
+    "installed": "Installed",
+    "available": "Available",
+    "updateNote": "Updating restarts the router and a failed update can leave it offline, so Pikro only checks for now. Update from WinBox.",
+    "checkAgain": "Check again",
+    "checking": "Checking…",
+    "restartTitle": "Restart the router",
+    "restartText": "Often fixes a router that has become slow or stuck. Guests are disconnected while it restarts, usually about a minute, and log in again with the same voucher. Settings, plans and vouchers are kept.",
+    "runningFor": "Running for {uptime}",
+    "restart": "Restart router…",
+    "confirmTitle": "Restart the router?",
+    "confirmBody": "Guests are disconnected until it’s back, usually about a minute.",
+    "cancel": "Cancel",
+    "confirmRestart": "Restart",
+    "restarting": "Restarting… Pikro reconnects when the router is back.",
+    "backOnline": "The router is back online",
+    "restartFailed": "Couldn’t restart the router",
+    "loadFailed": "Couldn’t read this from the router"
   }
 }

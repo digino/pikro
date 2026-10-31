@@ -15,7 +15,8 @@
     "hosts": "Hôtes",
     "dhcp": "DHCP",
     "tools": "Outils",
-    "speedTest": "Test de débit"
+    "troubleshoot": "Dépannage",
+    "maintenance": "Maintenance"
   },
   "sidebar": {
     "switchToLight": "Passer en mode clair",
@@ -636,7 +637,7 @@
       "filling": "Se remplit.",
       "almostFull": "Presque plein : les nouveaux appareils risquent de ne pas avoir d’adresse.",
       "leaseTime": "Les baux durent {time}.",
-      "static": "| {n} bail statique. | {n} baux statiques.",
+      "static": "{n} bail statique. | {n} baux statiques.",
       "staticOnly": "Pas de plage : ce serveur ne donne que des baux statiques.",
       "disabled": "Ce serveur est désactivé."
     },
@@ -669,5 +670,124 @@
     "showing": "{from}–{to} sur {total}",
     "previous": "Page précédente",
     "next": "Page suivante"
+  },
+  "troubleshoot": {
+    "intro": "Vos clients disent que le Wi-Fi est lent ou en panne ? Commencez ici.",
+    "checkTitle": "Vérification Internet",
+    "checking": "Vérification depuis le routeur…",
+    "checkAgain": "Vérifier à nouveau",
+    "checkedAt": "Vérifié depuis le routeur à {time}",
+    "stillStuck": "Toujours bloqué ? Redémarrez le routeur dans Maintenance",
+    "stepsLabel": "Ce qui a été vérifié",
+    "usePublicDns": "Utiliser un DNS public",
+    "publicDnsDone": "Le routeur utilise maintenant un DNS public",
+    "publicDnsFailed": "Impossible de changer les serveurs DNS",
+    "checkFailed": "Impossible de lancer la vérification",
+    "state": {
+      "ok": "OK",
+      "fail": "Problème",
+      "skip": "Non vérifié",
+      "pending": "En cours"
+    },
+    "skipped": "Ignoré : une vérification précédente a échoué",
+    "steps": {
+      "cable": {
+        "title": "Câble Internet",
+        "ok": "{target} est branché",
+        "noLink": "{target} n’a pas de liaison",
+        "noRoute": "Aucune route Internet sur le routeur"
+      },
+      "gateway": {
+        "title": "La box de votre fournisseur",
+        "ok": "La passerelle {target} répond en {ms} ms",
+        "okLink": "Connecté via {target}",
+        "fail": "La passerelle {target} ne répond pas"
+      },
+      "internet": {
+        "title": "Internet",
+        "ok": "{target} répond en {ms} ms",
+        "fail": "{target} ne répond pas"
+      },
+      "dns": {
+        "title": "Noms des sites (DNS)",
+        "ok": "{target} trouvé via {via}",
+        "fail": "{target} introuvable via {via}"
+      }
+    },
+    "verdict": {
+      "ok": {
+        "title": "Internet fonctionne depuis le routeur.",
+        "advice": "Si vos clients trouvent encore que c’est lent, lancez un test de débit ci-dessous."
+      },
+      "noRoute": {
+        "title": "Le routeur n’a pas de route Internet.",
+        "advice": "Il ne sait pas où se trouve Internet. Vérifiez sa configuration Internet (client DHCP ou PPPoE) dans WinBox."
+      },
+      "noLink": {
+        "title": "Le câble Internet est débranché.",
+        "advice": "{wan} n’a pas de liaison. Vérifiez le câble entre le routeur et la box de votre fournisseur, et que la box est allumée."
+      },
+      "gateway": {
+        "title": "La box de votre fournisseur ne répond pas.",
+        "advice": "Le câble est branché, mais la box à {gw} ne répond pas. Redémarrez la box de votre fournisseur, puis vérifiez à nouveau."
+      },
+      "internet": {
+        "title": "La ligne de votre fournisseur est coupée.",
+        "advice": "Le routeur et son câble vont bien, mais rien ne répond au-delà de la box. Appelez votre fournisseur : sa box répond, Internet non."
+      },
+      "dns": {
+        "title": "Les sites sont introuvables par leur nom.",
+        "advice": "Internet répond, mais le serveur DNS ({via}) ne répond pas. Pikro peut passer le routeur sur un DNS public (1.1.1.1 et 8.8.8.8)."
+      }
+    },
+    "speedTitle": "Test de débit",
+    "lastTest": "Téléchargement, dernier test",
+    "notRun": "Pas encore lancé",
+    "ranAt": "Aujourd’hui à {time} · {size} Mo de données utilisés",
+    "testSize": "Taille du test",
+    "sizeHint10": "Utilise environ 10 Mo de données. Suffisant pour la plupart des lignes.",
+    "sizeHint50": "Utilise environ 50 Mo de données. Plus précis sur les lignes rapides ; plus cher en prépayé.",
+    "runTest": "Lancer le test",
+    "testing": "Test en cours…",
+    "speedNote": "Mesuré depuis le routeur vers un serveur en Europe : le résultat peut être inférieur à votre abonnement. Vos clients le ressentiront pendant le test.",
+    "speedFailed": "Le test de débit a échoué"
+  },
+  "maintenance": {
+    "intro": "Gardez le routeur en bonne santé : à l’heure et à jour.",
+    "todo": "Rien à faire | 1 chose à faire | {n} choses à faire",
+    "todoText": "Pikro vient de vérifier le routeur. Commencez par la première.",
+    "allGood": "Pikro vient de vérifier le routeur. Tout va bien.",
+    "todoClock": "Corriger l’horloge du routeur",
+    "todoUpdate": "RouterOS {version} est disponible",
+    "clockTitle": "Horloge du routeur",
+    "clockOk": "À l’heure de cet ordinateur",
+    "clockWrong": "Mauvaise heure",
+    "clockOkText": "Les tickets expirent selon l’horloge du routeur : elle doit être juste.",
+    "clockWrongText": "Les tickets expirent selon l’horloge du routeur : ils expireront au mauvais moment. Cela arrive souvent après une coupure de courant sur un routeur sans heure automatique.",
+    "ntpOn": "Heure automatique : activée ({servers})",
+    "ntpOff": "L’heure automatique est désactivée",
+    "turnOnAutoTime": "Activer l’heure automatique",
+    "autoTimeDone": "L’heure automatique est activée et l’horloge réglée",
+    "autoTimeFailed": "Impossible de régler l’horloge du routeur",
+    "updatesTitle": "Mises à jour RouterOS",
+    "updateAvailable": "Mise à jour disponible",
+    "upToDate": "À jour",
+    "installed": "Installée",
+    "available": "Disponible",
+    "updateNote": "La mise à jour redémarre le routeur et un échec peut le laisser hors ligne : Pikro se contente de vérifier pour l’instant. Mettez à jour depuis WinBox.",
+    "checkAgain": "Vérifier à nouveau",
+    "checking": "Vérification…",
+    "restartTitle": "Redémarrer le routeur",
+    "restartText": "Règle souvent un routeur devenu lent ou bloqué. Les clients sont déconnectés pendant le redémarrage, en général une minute, et se reconnectent avec le même ticket. Réglages, forfaits et tickets sont conservés.",
+    "runningFor": "Allumé depuis {uptime}",
+    "restart": "Redémarrer le routeur…",
+    "confirmTitle": "Redémarrer le routeur ?",
+    "confirmBody": "Les clients sont déconnectés jusqu’à son retour, en général une minute.",
+    "cancel": "Annuler",
+    "confirmRestart": "Redémarrer",
+    "restarting": "Redémarrage… Pikro se reconnecte dès que le routeur est revenu.",
+    "backOnline": "Le routeur est de nouveau en ligne",
+    "restartFailed": "Impossible de redémarrer le routeur",
+    "loadFailed": "Impossible de lire cette information sur le routeur"
   }
 }

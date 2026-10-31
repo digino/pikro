@@ -160,7 +160,10 @@ const navSections: NavSection[] = [
   },
   {
     label: "nav.tools",
-    items: [{ to: "/speedtest", icon: "speed-test", label: "nav.speedTest" }],
+    items: [
+      { to: "/tools/troubleshoot", icon: "troubleshoot", label: "nav.troubleshoot" },
+      { to: "/tools/maintenance", icon: "maintenance", label: "nav.maintenance" },
+    ],
   },
 ];
 </script>

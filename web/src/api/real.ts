@@ -218,5 +218,52 @@ export const discoverRouters = () =>
   api.get<DiscoveredDevice[]>('/discover').then(r => r.data)
 
 // Speed test
+export interface CheckStep {
+  key: 'cable' | 'gateway' | 'internet' | 'dns'
+  state: 'ok' | 'fail' | 'skip'
+  target: string
+  reason?: 'noRoute' | 'noLink'
+  rttMs?: number
+  via?: string
+}
+
+export interface InternetCheck {
+  checkedAt: string
+  steps: CheckStep[]
+}
+
+export const getInternetCheck = (id: string) =>
+  api.get<InternetCheck>(`/routers/${id}/tools/internet-check`).then(r => r.data)
+
+export const switchToPublicDNS = (id: string) =>
+  api.post(`/routers/${id}/tools/public-dns`).then(r => r.data)
+
+export interface RouterClock {
+  utc: string
+  local: string
+  ntpEnabled: boolean
+  ntpServers: string
+}
+
+export const getRouterClock = (id: string) =>
+  api.get<RouterClock>(`/routers/${id}/tools/clock`).then(r => r.data)
+
+export const enableAutoTime = (id: string) =>
+  api.post(`/routers/${id}/tools/clock/auto`).then(r => r.data)
+
+export interface UpdateInfo {
+  installed: string
+  latest: string
+  channel: string
+  status: string
+  available: boolean
+}
+
+export const checkUpdates = (id: string) =>
+  api.get<UpdateInfo>(`/routers/${id}/tools/updates`).then(r => r.data)
+
+export const rebootRouter = (id: string) =>
+  api.post(`/routers/${id}/tools/reboot`).then(r => r.data)
+
 export const runSpeedTest = (id: string, target = '10') =>
   api.post<Record<string, string>>(`/routers/${id}/speedtest`, { target }).then(r => r.data)
