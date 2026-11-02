@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Settings</title>
+  <defs><filter id="settings-ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter></defs>
+  <g filter="url(#settings-ink)">
+    <path d="M99.74 54.42L111.53 57.32L111.53 70.68L99.74 73.58L96.04 82.50L102.33 92.89L92.89 102.33L82.50 96.04L73.58 99.74L70.68 111.53L57.32 111.53L54.42 99.74L45.50 96.04L35.11 102.33L25.67 92.89L31.96 82.50L28.26 73.58L16.47 70.68L16.47 57.32L28.26 54.42L31.96 45.50L25.67 35.11L35.11 25.67L45.50 31.96L54.42 28.26L57.32 16.47L70.68 16.47L73.58 28.26L82.50 31.96L92.89 25.67L102.33 35.11L96.04 45.50Z" transform="translate(4 5)" fill="#111111" stroke="#111111" stroke-width="3"/>
+    <path d="M99.74 54.42L111.53 57.32L111.53 70.68L99.74 73.58L96.04 82.50L102.33 92.89L92.89 102.33L82.50 96.04L73.58 99.74L70.68 111.53L57.32 111.53L54.42 99.74L45.50 96.04L35.11 102.33L25.67 92.89L31.96 82.50L28.26 73.58L16.47 70.68L16.47 57.32L28.26 54.42L31.96 45.50L25.67 35.11L35.11 25.67L45.50 31.96L54.42 28.26L57.32 16.47L70.68 16.47L73.58 28.26L82.50 31.96L92.89 25.67L102.33 35.11L96.04 45.50Z" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <circle cx="64" cy="64" r="15" fill="#FFBF00" stroke="#111111" stroke-width="3"/>
+    <circle cx="64" cy="64" r="26" stroke="#111111" stroke-width="2.25"/>
+    <circle cx="64" cy="64" r="5" fill="#111111"/>
+    <path d="M38 48a30 30 0 0 1 10-10" stroke="#111111" stroke-width="2.25"/>
+  </g>
+</svg>

@@ -5,7 +5,7 @@ type Theme = 'dark' | 'light'
 
 export const useThemeStore = defineStore('theme', () => {
   const stored = localStorage.getItem('pikro-theme') as Theme | null
-  const theme = ref<Theme>(stored ?? 'dark')
+  const theme = ref<Theme>(stored ?? 'light')
 
   function apply(t: Theme) {
     document.documentElement.setAttribute('data-theme', t)

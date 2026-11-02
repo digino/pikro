@@ -7,7 +7,7 @@
       <div v-if="store.routers.length === 0" class="border border-dashed rounded-xl p-8 mb-6">
         <ServerIcon class="size-7 text-text-muted mx-auto mb-3" />
         <p class="font-medium text-text-secondary mb-4">No routers configured yet</p>
-        <button class="btn btn-primary" @click="router.push('/routers')">
+        <button class="btn btn-ink" @click="router.push('/routers')">
           <PlusIcon class="size-4" />
           Add your first router
         </button>

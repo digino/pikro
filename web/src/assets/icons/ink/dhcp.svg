@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>DHCP</title>
+  <defs><filter id="dhcp-ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter></defs>
+  <g filter="url(#dhcp-ink)">
+    <path d="M84 16q6 0 14 6v86q0 4-6 6h-8z" fill="#111111" stroke="#111111" stroke-width="3"/>
+    <rect x="28" y="14" width="60" height="100" rx="7" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <rect x="38" y="26" width="40" height="18" rx="4" fill="#FFFFFF" stroke="#111111" stroke-width="2.25"/>
+    <rect x="38" y="52" width="40" height="18" rx="4" fill="#FFFFFF" stroke="#111111" stroke-width="2.25"/>
+    <rect x="38" y="78" width="40" height="18" rx="4" fill="#FFBF00" stroke="#111111" stroke-width="2.25"/>
+    <circle cx="46" cy="35" r="3" fill="#111111"/>
+    <circle cx="46" cy="61" r="3" fill="#111111"/>
+    <circle cx="46" cy="87" r="3" fill="#111111"/>
+    <path d="M57 35h14M57 61h14M57 87h14" stroke="#111111" stroke-width="3"/>
+    <path d="M45 104h6M55 104h6M65 104h6M33 24v10" stroke="#111111" stroke-width="2.25"/>
+  </g>
+</svg>

@@ -43,6 +43,7 @@ func (sw *statusWriter) WriteHeader(code int) {
 
 func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/version", handlers.GetAppVersion)
+	mux.HandleFunc("GET /api/update", handlers.GetUpdate)
 	mux.HandleFunc("GET /api/discover", handlers.DiscoverRouters)
 
 	mux.HandleFunc("GET /api/routers", handlers.ListRouters)
@@ -58,6 +59,7 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/routers/{id}/system/clock", handlers.GetSystemClock)
 	mux.HandleFunc("GET /api/routers/{id}/system/logs", handlers.GetSystemLogs)
 	mux.HandleFunc("GET /api/routers/{id}/system/dhcp-leases", handlers.GetDHCPLeases)
+	mux.HandleFunc("GET /api/routers/{id}/system/dhcp-servers", handlers.GetDHCPServers)
 
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/preflight", handlers.HotspotPreflight)
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/dhcp-check", handlers.CheckExistingDHCP)
@@ -74,6 +76,7 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/routers/{id}/sales", handlers.GetSales)
 	mux.HandleFunc("GET /api/routers/{id}/hotspot/users", handlers.ListHotspotUsers)
 	mux.HandleFunc("POST /api/routers/{id}/hotspot/users", handlers.CreateHotspotUser)
+	mux.HandleFunc("POST /api/routers/{id}/hotspot/users/batch", handlers.CreateHotspotUsersBatch)
 	mux.HandleFunc("PATCH /api/routers/{id}/hotspot/users/{userID}", handlers.UpdateHotspotUser)
 	mux.HandleFunc("POST /api/routers/{id}/hotspot/users/{userID}/toggle", handlers.ToggleHotspotUser)
 	mux.HandleFunc("DELETE /api/routers/{id}/hotspot/users/{userID}", handlers.DeleteHotspotUser)
@@ -87,6 +90,12 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/routers/{id}/address-pools", handlers.ListAddressPools)
 
 	mux.HandleFunc("POST /api/routers/{id}/speedtest", handlers.RunSpeedTest)
+	mux.HandleFunc("GET /api/routers/{id}/tools/internet-check", handlers.GetInternetCheck)
+	mux.HandleFunc("POST /api/routers/{id}/tools/public-dns", handlers.PostPublicDNS)
+	mux.HandleFunc("GET /api/routers/{id}/tools/clock", handlers.GetRouterClock)
+	mux.HandleFunc("POST /api/routers/{id}/tools/clock/auto", handlers.PostAutoTime)
+	mux.HandleFunc("GET /api/routers/{id}/tools/updates", handlers.GetUpdates)
+	mux.HandleFunc("POST /api/routers/{id}/tools/reboot", handlers.PostReboot)
 }
 
 func registerSPA(mux *http.ServeMux, webFS fs.FS) {

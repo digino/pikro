@@ -12,7 +12,7 @@
         <MagnifyingGlassIcon class="size-3.5" />
         Scan network
       </button>
-      <button class="btn btn-primary" @click="showAdd = true">
+      <button class="btn btn-ink" @click="showAdd = true">
         <PlusIcon class="size-3.5" />
         Add router
       </button>

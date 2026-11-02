@@ -3,9 +3,11 @@
 package discovery
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
+	"runtime"
 	"syscall"
 	"time"
 )
@@ -40,6 +42,16 @@ func Scan(timeout time.Duration) ([]Device, error) {
 		return nil, fmt.Errorf("FilePacketConn: %w", err)
 	}
 	defer conn.Close()
+
+	// Directed broadcasts still "succeed" when macOS denies Local Network
+	// access, so the scan would just come back empty. A limited broadcast fails
+	// loudly instead — use it to tell the user what to fix.
+	if runtime.GOOS == "darwin" {
+		limited := &net.UDPAddr{IP: net.IPv4bcast, Port: 5678}
+		if _, err := conn.WriteTo(mndpProbe, limited); errors.Is(err, syscall.EHOSTUNREACH) {
+			return nil, ErrLocalNetworkDenied
+		}
+	}
 
 	if err := sendBroadcast(conn); err != nil {
 		return nil, err

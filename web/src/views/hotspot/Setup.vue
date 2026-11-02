@@ -54,7 +54,7 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <RouterLink to="/hotspot/profiles" class="btn btn-primary">
+        <RouterLink to="/hotspot/profiles" class="btn btn-ink">
           Add profiles
         </RouterLink>
         <button class="btn btn-ghost" @click="runPreflight">
@@ -444,7 +444,7 @@
           <button
             v-if="step < STEPS.length"
             type="button"
-            class="btn btn-primary"
+            class="btn btn-ink"
             :disabled="!canAdvance"
             @click="step++"
           >
@@ -453,7 +453,7 @@
           <button
             v-else
             type="submit"
-            class="btn btn-primary"
+            class="btn btn-ink"
             :disabled="!canSubmit"
           >
             Run Setup
@@ -662,7 +662,7 @@
         <RouterLink
           v-if="result.success"
           to="/hotspot/users"
-          class="btn btn-primary"
+          class="btn btn-ink"
         >
           Add users
         </RouterLink>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Maintenance</title>
+  <defs><filter id="maintenance-ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter></defs>
+  <g filter="url(#maintenance-ink)">
+    <path d="M46 54V38q0-6 6-6H76q6 0 6 6V54" stroke="#111111" stroke-width="11"/>
+    <path d="M46 54V38q0-6 6-6H76q6 0 6 6V54" stroke="#FFFFFF" stroke-width="4.5"/>
+    <rect x="19" y="58" width="100" height="56" rx="8" fill="#111111"/>
+    <rect x="14" y="52" width="100" height="56" rx="8" fill="#FFFFFF"/>
+    <path d="M22 52H106q8 0 8 8V70H14V60q0-8 8-8z" fill="#111111"/>
+    <rect x="14" y="52" width="100" height="56" rx="8" stroke="#111111" stroke-width="3"/>
+    <rect x="54" y="63" width="20" height="15" rx="3" fill="#FFBF00" stroke="#111111" stroke-width="3"/>
+    <circle cx="26" cy="90" r="3" fill="#111111"/>
+    <circle cx="102" cy="90" r="3" fill="#111111"/>
+    <path d="M24 59h16" stroke="#FFFFFF" stroke-width="2.25"/>
+    <path d="M34 100h60" stroke="#111111" stroke-width="2.25"/>
+  </g>
+</svg>

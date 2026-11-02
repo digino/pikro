@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Users</title>
+  <defs><filter id="users-ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter></defs>
+  <g filter="url(#users-ink)">
+    <path d="M58 100V92a24 24 0 0 1 48 0v8q0 4-4 4H62q-4 0-4-4z" transform="translate(4 5)" fill="#111111" stroke="#111111" stroke-width="3"/>
+    <path d="M58 100V92a24 24 0 0 1 48 0v8q0 4-4 4H62q-4 0-4-4z" fill="#FFBF00" stroke="#111111" stroke-width="3"/>
+    <circle cx="86" cy="49" r="14" fill="#111111"/>
+    <circle cx="82" cy="44" r="14" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <path d="M14 108V98a34 30 0 0 1 68 0v10q0 4-4 4H18q-4 0-4-4z" transform="translate(4 5)" fill="#111111" stroke="#111111" stroke-width="3"/>
+    <path d="M14 108V98a34 30 0 0 1 68 0v10q0 4-4 4H18q-4 0-4-4z" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <circle cx="52" cy="55" r="17" fill="#111111"/>
+    <circle cx="48" cy="50" r="17" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+    <path d="M36 45a13 13 0 0 1 6-7M24 94a28 28 0 0 1 8-9" stroke="#111111" stroke-width="2.25"/>
+  </g>
+</svg>

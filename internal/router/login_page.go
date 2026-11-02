@@ -46,28 +46,13 @@ type hotspotFile struct {
 	content string
 }
 
-// LoginPageContent holds the fully-rendered HTML for each customizable
-// hotspot page (built by the frontend from one of its template presets).
-// Any field left empty falls back to the built-in fixed default for that
-// page — this is the path taken during initial hotspot setup, before an
-// admin has picked a template in Settings, and also covers alogin/error,
-// which are never customizable and always use their fixed default.
-type LoginPageContent struct {
-	Login    string
-	Logout   string
-	Status   string
-	Redirect string
-}
-
-// UploadLoginPage uploads the given (or default, if empty) rendered hotspot
-// pages — login, logout, status, alogin, error, redirect — to the router's
-// hotspot/ directory. alogin and error are never customizable and always use
-// their fixed built-in design.
-func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) error {
+// hotspotFiles maps each page to its file, using the built-in page for any
+// left empty.
+func hotspotFiles(content LoginPageContent) ([]hotspotFile, error) {
 	if content.Login == "" {
 		rendered, err := renderDefaultLoginPage(defaultLoginPageParams{})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		content.Login = rendered
 	}
@@ -80,14 +65,53 @@ func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) e
 	if content.Redirect == "" {
 		content.Redirect = string(assets.HotspotRedirectHTML)
 	}
-
+	if content.Alogin == "" {
+		content.Alogin = string(assets.HotspotAloginHTML)
+	}
 	files := []hotspotFile{
 		{"hotspot/login.html", content.Login},
 		{"hotspot/logout.html", content.Logout},
 		{"hotspot/status.html", content.Status},
-		{"hotspot/alogin.html", string(assets.HotspotAloginHTML)},
+		{"hotspot/alogin.html", content.Alogin},
 		{"hotspot/error.html", string(assets.HotspotErrorHTML)},
 		{"hotspot/redirect.html", content.Redirect},
+	}
+	// Only pages that link them need these, and the built-in pages don't.
+	// Both already exist in a new hotspot's folder, which matters on
+	// RouterOS 6: it can overwrite files over the API but not create them.
+	if content.Style != "" {
+		files = append(files, hotspotFile{"hotspot/css/style.css", content.Style})
+	}
+	if content.MD5 != "" {
+		files = append(files, hotspotFile{"hotspot/md5.js", content.MD5})
+	}
+	return files, nil
+}
+
+// LoginPageContent holds the fully-rendered HTML for each customizable
+// hotspot page (built by the frontend from one of its template presets).
+// Any field left empty falls back to the built-in fixed default for that
+// page — this is the path taken during initial hotspot setup, before an
+// admin has picked a template in Settings, and also covers alogin/error,
+// which are never customizable and always use their fixed default.
+type LoginPageContent struct {
+	Login    string
+	Logout   string
+	Status   string
+	Redirect string
+	Alogin   string // shown right after a successful login
+	Style    string // stylesheet the pages link, kept out of them for size
+	MD5      string // CHAP hash script the login page links
+}
+
+// UploadLoginPage uploads the given (or default, if empty) rendered hotspot
+// pages — login, logout, status, alogin, error, redirect — to the router's
+// hotspot/ directory. alogin and error are never customizable and always use
+// their fixed built-in design.
+func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) error {
+	files, err := hotspotFiles(content)
+	if err != nil {
+		return err
 	}
 
 	conn, err := c.connect()
@@ -107,7 +131,9 @@ func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) e
 		}
 	}
 
-	var firstErr error
+	// Stop at the first file the router refuses: login.html goes first, so a
+	// page RouterOS 6 finds too long (over 4 KB) leaves the hotspot as it was
+	// instead of half-replaced.
 	for _, f := range files {
 		// Create file if it doesn't exist yet (ignore error — may already exist).
 		conn.RunArgs([]string{"/file/add", "=name=" + f.name, "=type=.html"})
@@ -138,12 +164,9 @@ func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) e
 		default:
 			setErr = fmt.Errorf("%s not found after /file/add — ensure the hotspot is set up first", f.name)
 		}
-		if setErr != nil && firstErr == nil {
-			firstErr = fmt.Errorf("file/set %s: %w", f.name, setErr)
+		if setErr != nil {
+			return fmt.Errorf("file/set %s: %w", f.name, setErr)
 		}
-	}
-	if firstErr != nil {
-		return firstErr
 	}
 
 	if profileName == "" {
