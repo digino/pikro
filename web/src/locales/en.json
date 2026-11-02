@@ -16,7 +16,8 @@
     "dhcp": "DHCP",
     "tools": "Tools",
     "troubleshoot": "Troubleshoot",
-    "maintenance": "Maintenance"
+    "maintenance": "Maintenance",
+    "about": "About"
   },
   "sidebar": {
     "switchToLight": "Switch to light mode",
@@ -794,5 +795,29 @@
     "restartFailed": "Couldn’t restart the router",
     "loadFailed": "Couldn’t read this from the router",
     "updatesNeedClock": "Fix the router clock first: the update check needs the right date."
+  },
+  "update": {
+    "available": "Pikro {version} is available.",
+    "download": "Download",
+    "dismiss": "Hide until the next version"
+  },
+  "about": {
+    "title": "About",
+    "tagline": "Free, open-source manager for MikroTik hotspots.",
+    "version": "Version {version}",
+    "devBuild": "Development build",
+    "upToDate": "Up to date",
+    "updateAvailable": "{version} is available",
+    "checkFailed": "Couldn’t check for updates",
+    "checkAgain": "Check again",
+    "download": "Download",
+    "linksTitle": "Links",
+    "website": "Pikro website",
+    "source": "Source code on GitHub",
+    "releases": "What’s new in each version",
+    "report": "Report a problem",
+    "privacyTitle": "Your data",
+    "privacy": "Router passwords and settings stay on this computer, in ~/.pikro.json. Pikro sends nothing about you or your routers anywhere. Once a day it asks GitHub whether a newer version exists.",
+    "license": "Apache License 2.0 · Made by Gino Sotongbe"
   }
 }

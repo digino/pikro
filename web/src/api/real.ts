@@ -12,6 +12,17 @@ export type * from './types'
 
 const api = axios.create({ baseURL: '/api' })
 
+export interface UpdateStatus {
+  current: string
+  latest: string
+  available: boolean
+  error?: string
+}
+
+/** Whether a newer Pikro release is out; `refresh` skips the day-long cache. */
+export const getUpdateStatus = (refresh = false) =>
+  api.get<UpdateStatus>('/update', { params: refresh ? { refresh: 1 } : {} }).then(r => r.data)
+
 export const getAppVersion = () =>
   api.get<{ version: string }>('/version').then(r => r.data.version)
 

@@ -2,6 +2,7 @@
   <div class="flex h-screen overflow-hidden bg-base">
     <AppSidebar :app-version="appVersion" />
     <div class="flex-1 overflow-y-auto min-w-0">
+      <UpdateBanner />
       <RouterView />
     </div>
     <AddRouterDialog v-model:open="store.showAddDialog" />
@@ -14,7 +15,9 @@ import { onMounted, ref } from 'vue'
 import { getAppVersion } from '@/api'
 import { useRoutersStore } from '@/stores/routers'
 import { useThemeStore } from '@/stores/theme'
+import { useUpdateStore } from '@/stores/update'
 import AppSidebar from '@/components/AppSidebar.vue'
+import UpdateBanner from '@/components/UpdateBanner.vue'
 import AddRouterDialog from '@/components/AddRouterDialog.vue'
 import ToastHost from '@/components/ToastHost.vue'
 
@@ -27,5 +30,6 @@ useThemeStore()
 onMounted(() => {
   store.load()
   getAppVersion().then(v => { appVersion.value = v }).catch(() => {})
+  useUpdateStore().check()
 })
 </script>

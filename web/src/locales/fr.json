@@ -16,7 +16,8 @@
     "dhcp": "DHCP",
     "tools": "Outils",
     "troubleshoot": "Dépannage",
-    "maintenance": "Maintenance"
+    "maintenance": "Maintenance",
+    "about": "À propos"
   },
   "sidebar": {
     "switchToLight": "Passer en mode clair",
@@ -794,5 +795,29 @@
     "restartFailed": "Impossible de redémarrer le routeur",
     "loadFailed": "Impossible de lire cette information sur le routeur",
     "updatesNeedClock": "Corrigez d’abord l’horloge du routeur : la vérification des mises à jour a besoin de la bonne date."
+  },
+  "update": {
+    "available": "Pikro {version} est disponible.",
+    "download": "Télécharger",
+    "dismiss": "Masquer jusqu’à la prochaine version"
+  },
+  "about": {
+    "title": "À propos",
+    "tagline": "Gestionnaire de hotspots MikroTik gratuit et open source.",
+    "version": "Version {version}",
+    "devBuild": "Version de développement",
+    "upToDate": "À jour",
+    "updateAvailable": "{version} est disponible",
+    "checkFailed": "Impossible de vérifier les mises à jour",
+    "checkAgain": "Vérifier à nouveau",
+    "download": "Télécharger",
+    "linksTitle": "Liens",
+    "website": "Site de Pikro",
+    "source": "Code source sur GitHub",
+    "releases": "Nouveautés de chaque version",
+    "report": "Signaler un problème",
+    "privacyTitle": "Vos données",
+    "privacy": "Les mots de passe et réglages des routeurs restent sur cet ordinateur, dans ~/.pikro.json. Pikro n’envoie rien sur vous ni sur vos routeurs. Une fois par jour, il demande à GitHub si une nouvelle version existe.",
+    "license": "Licence Apache 2.0 · Créé par Gino Sotongbe"
   }
 }

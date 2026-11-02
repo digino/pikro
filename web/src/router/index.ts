@@ -17,6 +17,7 @@ import NetworkDhcp from '@/views/network/Dhcp.vue'
 import Troubleshoot from '@/views/tools/Troubleshoot.vue'
 import Maintenance from '@/views/tools/Maintenance.vue'
 import Routers from '@/views/Routers.vue'
+import About from '@/views/About.vue'
 
 export default createRouter({
   history: createWebHistory(),
@@ -62,5 +63,6 @@ export default createRouter({
     // The speed test now lives on the Troubleshoot page.
     { path: '/speedtest', redirect: '/tools/troubleshoot' },
     { path: '/routers',   component: Routers },
+    { path: '/about',     component: About },
   ],
 })

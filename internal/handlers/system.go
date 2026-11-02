@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/digino/pikro/internal/router"
+	"github.com/digino/pikro/internal/update"
 )
 
 // AppVersion is set by main via handlers.AppVersion = Version at startup.
@@ -11,6 +13,23 @@ var AppVersion = "dev"
 
 func GetAppVersion(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]string{"version": AppVersion})
+}
+
+// Created on first use, once main has set AppVersion.
+var updateChecker = sync.OnceValue(func() *update.Checker { return update.NewChecker(AppVersion) })
+
+// GetUpdate says whether a newer Pikro release is out. A failed check is not
+// an error for the page: it answers "nothing available" plus the reason.
+func GetUpdate(w http.ResponseWriter, r *http.Request) {
+	info, err := updateChecker().Check(r.Context(), r.URL.Query().Get("refresh") == "1")
+	resp := struct {
+		update.Info
+		Error string `json:"error,omitempty"`
+	}{Info: info}
+	if err != nil {
+		resp.Error = err.Error()
+	}
+	jsonOK(w, resp)
 }
 
 func GetSystemResource(w http.ResponseWriter, r *http.Request) {

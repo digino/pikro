@@ -15,8 +15,8 @@
       <span class="type-display text-2xl leading-none">pikro</span>
       <span
         class="ml-auto max-w-20 truncate rounded-full border-[1.5px] border-sidebar-text px-2 py-0.5 text-xs font-semibold"
-        :title="appVersion"
-        >{{ appVersion }}</span
+        :title="displayVersion(appVersion)"
+        >{{ displayVersion(appVersion) }}</span
       >
     </RouterLink>
 
@@ -91,6 +91,21 @@
           <SunIcon v-if="themeStore.theme === 'dark'" class="size-4.5" />
           <MoonIcon v-else class="size-4.5" />
         </button>
+        <RouterLink
+          to="/about"
+          class="relative w-11 h-11 inline-flex items-center justify-center rounded-control border-[1.5px] border-sidebar-line text-sidebar-text hover:bg-white/8 transition-colors"
+          :class="{ 'bg-primary text-primary-fg border-sidebar-text': isActive('/about') }"
+          :aria-label="t('nav.about')"
+          :title="t('nav.about')"
+        >
+          <InformationCircleIcon class="size-5" />
+          <!-- A newer version is out: About has the download. -->
+          <span
+            v-if="updates.status?.available"
+            aria-hidden="true"
+            class="absolute top-1.5 right-1.5 size-2.5 rounded-full bg-primary border-[1.5px] border-sidebar"
+          />
+        </RouterLink>
       </div>
     </div>
   </aside>
@@ -98,13 +113,15 @@
 
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import { SunIcon, MoonIcon } from "@heroicons/vue/24/outline";
+import { SunIcon, MoonIcon, InformationCircleIcon } from "@heroicons/vue/24/outline";
 import { useI18n } from "vue-i18n";
 import { useThemeStore } from "@/stores/theme";
 import { useLocaleStore } from "@/stores/locale";
+import { useUpdateStore, displayVersion } from "@/stores/update";
 import { inkIcon, type InkIcon } from "@/utils/inkIcons";
 
 const { t } = useI18n();
+const updates = useUpdateStore();
 const themeStore = useThemeStore();
 const localeStore = useLocaleStore();
 

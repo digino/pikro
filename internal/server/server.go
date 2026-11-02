@@ -43,6 +43,7 @@ func (sw *statusWriter) WriteHeader(code int) {
 
 func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/version", handlers.GetAppVersion)
+	mux.HandleFunc("GET /api/update", handlers.GetUpdate)
 	mux.HandleFunc("GET /api/discover", handlers.DiscoverRouters)
 
 	mux.HandleFunc("GET /api/routers", handlers.ListRouters)
