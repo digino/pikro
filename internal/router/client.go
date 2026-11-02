@@ -4,8 +4,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/netip"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -890,8 +888,8 @@ func ipv4Number(a netip.Addr) int {
 
 // BandwidthTest measures internet download speed from the router using /tool/fetch.
 // The target parameter selects the file size: "10", "50", or "100" (MB).
-// Downloads from Tele2's public speedtest CDN and computes throughput from the
-// duration reported by RouterOS.
+// Downloads from Cloudflare's speed test endpoint, which has servers in West
+// Africa, and computes throughput from the duration reported by RouterOS.
 func (c *Client) BandwidthTest(sizeMB string) (map[string]any, error) {
 	conn, err := c.connect()
 	if err != nil {
@@ -904,68 +902,46 @@ func (c *Client) BandwidthTest(sizeMB string) (map[string]any, error) {
 		size int64
 	}
 	files := map[string]testFile{
-		"10":  {"http://speedtest.tele2.net/10MB.zip", 10 * 1024 * 1024},
-		"50":  {"http://speedtest.tele2.net/50MB.zip", 50 * 1024 * 1024},
-		"100": {"http://speedtest.tele2.net/100MB.zip", 100 * 1024 * 1024},
+		"10":  {"https://speed.cloudflare.com/__down?bytes=10000000", 10_000_000},
+		"50":  {"https://speed.cloudflare.com/__down?bytes=50000000", 50_000_000},
+		"100": {"https://speed.cloudflare.com/__down?bytes=100000000", 100_000_000},
 	}
 	f, ok := files[sizeMB]
 	if !ok {
 		f = files["10"]
 	}
 
+	// Timed here: RouterOS reports the duration only to the whole second, and
+	// its replies include progress lines before the final one.
+	start := time.Now()
 	reply, err := conn.Run(
 		"/tool/fetch",
 		"=url="+f.url,
-		"=mode=http",
 		"=keep-result=no",
 	)
+	elapsed := time.Since(start)
 	if err != nil {
 		return nil, fmt.Errorf("fetch failed: %w", err)
 	}
-
-	var durationStr string
+	finished := false
 	for _, s := range reply.Re {
-		if d, ok := s.Map["duration"]; ok && d != "" {
-			durationStr = d
-			break
+		if s.Map["status"] == "finished" {
+			finished = true
 		}
+	}
+	if !finished {
+		return nil, fmt.Errorf("the download did not finish")
 	}
 
-	downloadBps := 0
-	if durationStr != "" {
-		dur := parseROSDuration(durationStr)
-		if dur > 0 {
-			downloadBps = int(float64(f.size) / dur.Seconds())
-		}
-	}
+	downloadBps := int(float64(f.size*8) / elapsed.Seconds())
 
 	return map[string]any{
 		"rx-speed":  fmt.Sprintf("%d", downloadBps),
 		"tx-speed":  "0",
-		"duration":  durationStr,
+		"duration":  elapsed.Round(time.Millisecond).String(),
 		"test-url":  f.url,
 		"file-size": fmt.Sprintf("%d", f.size),
 	}, nil
-}
-
-// parseROSDuration parses RouterOS duration strings like "2s430ms", "834ms", "1m2s".
-func parseROSDuration(s string) time.Duration {
-	var total time.Duration
-	re := regexp.MustCompile(`(\d+)(h|m|s|ms)`)
-	for _, m := range re.FindAllStringSubmatch(s, -1) {
-		n, _ := strconv.Atoi(m[1])
-		switch m[2] {
-		case "h":
-			total += time.Duration(n) * time.Hour
-		case "m":
-			total += time.Duration(n) * time.Minute
-		case "s":
-			total += time.Duration(n) * time.Second
-		case "ms":
-			total += time.Duration(n) * time.Millisecond
-		}
-	}
-	return total
 }
 
 // sentenceToMap converts a proto.Sentence word map (all string values) to map[string]any.

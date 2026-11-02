@@ -738,6 +738,9 @@
       "dns": {
         "title": "Les sites sont introuvables par leur nom.",
         "advice": "Internet répond, mais le serveur DNS ({via}) ne répond pas. Pikro peut passer le routeur sur un DNS public (1.1.1.1 et 8.8.8.8)."
+      },
+      "unreachable": {
+        "title": "Pikro n’arrive pas à joindre le routeur."
       }
     },
     "speedTitle": "Test de débit",
@@ -750,7 +753,8 @@
     "runTest": "Lancer le test",
     "testing": "Test en cours…",
     "speedNote": "Mesuré depuis le routeur vers un serveur en Europe : le résultat peut être inférieur à votre abonnement. Vos clients le ressentiront pendant le test.",
-    "speedFailed": "Le test de débit a échoué"
+    "speedFailed": "Le test de débit a échoué",
+    "notChecked": "Non vérifié : Pikro n’arrive pas à joindre le routeur"
   },
   "maintenance": {
     "intro": "Gardez le routeur en bonne santé : à l’heure et à jour.",
@@ -788,6 +792,7 @@
     "restarting": "Redémarrage… Pikro se reconnecte dès que le routeur est revenu.",
     "backOnline": "Le routeur est de nouveau en ligne",
     "restartFailed": "Impossible de redémarrer le routeur",
-    "loadFailed": "Impossible de lire cette information sur le routeur"
+    "loadFailed": "Impossible de lire cette information sur le routeur",
+    "updatesNeedClock": "Corrigez d’abord l’horloge du routeur : la vérification des mises à jour a besoin de la bonne date."
   }
 }

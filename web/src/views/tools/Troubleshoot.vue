@@ -4,7 +4,7 @@
   </div>
 
   <PageLayout v-else :title="t('nav.tools')" :subtitle="t('nav.troubleshoot')" icon="troubleshoot">
-    <p class="-mt-3 text-[15px] text-text-secondary">{{ t('troubleshoot.intro') }}</p>
+    <p class="-mt-3 text-text-secondary">{{ t('troubleshoot.intro') }}</p>
 
     <section
       class="card p-6 flex flex-wrap gap-7"
@@ -22,12 +22,11 @@
               ? 'bg-danger shadow-[0_0_0_5px_color-mix(in_srgb,var(--color-danger)_18%,transparent)]'
               : 'bg-online shadow-[0_0_0_5px_color-mix(in_srgb,var(--color-online)_18%,transparent)]'"
           />
-          <p class="type-display m-0 text-[32px] leading-tight">
+          <p class="type-display m-0 text-3xl leading-tight">
             {{ verdict ? verdict.title : t('troubleshoot.checking') }}
           </p>
         </div>
-        <p v-if="verdict" class="m-0 text-[15px] leading-normal text-text-secondary">{{ verdict.advice }}</p>
-        <p v-if="checkError" role="alert" class="m-0 text-sm text-danger-text">{{ checkError }}</p>
+        <p v-if="verdict" class="m-0 leading-normal text-text-secondary">{{ verdict.advice }}</p>
         <div class="flex flex-wrap gap-2.5 mt-auto">
           <button type="button" class="btn btn-primary" :disabled="checking" @click="runCheck">
             <span v-if="checking" class="spinner spinner--sm" />
@@ -48,8 +47,9 @@
           {{ t('troubleshoot.checkedAt', { time: clockTime(new Date(check.checkedAt)) }) }}
         </span>
         <RouterLink
+          v-if="!checkError"
           to="/tools/maintenance"
-          class="inline-flex items-center gap-2 text-[13px] font-semibold text-ink"
+          class="inline-flex items-center gap-2 font-semibold text-ink"
         >
           <img :src="inkIcon('maintenance')" alt="" width="24" height="24" />
           {{ t('troubleshoot.stillStuck') }}
@@ -68,15 +68,15 @@
         >
           <span
             aria-hidden="true"
-            class="flex-none size-7.5 rounded-full border-2 border-ink inline-flex items-center justify-center font-extrabold text-[15px]"
+            class="flex-none size-7.5 rounded-full border-2 border-ink inline-flex items-center justify-center font-extrabold"
             :class="MARK[s.state].class"
           >
             <span v-if="s.state === 'pending'" class="spinner spinner--sm" />
             <template v-else>{{ MARK[s.state].glyph }}</template>
           </span>
           <span class="flex flex-col gap-0.5 flex-1 min-w-0">
-            <span class="font-bold text-[15px]">{{ t(`troubleshoot.steps.${s.key}.title`) }}</span>
-            <span class="text-[13px] text-text-secondary">{{ s.detail }}</span>
+            <span class="font-bold">{{ t(`troubleshoot.steps.${s.key}.title`) }}</span>
+            <span class="text-sm text-text-secondary">{{ s.detail }}</span>
           </span>
           <span class="chip" :class="MARK[s.state].chip">{{ t(`troubleshoot.state.${s.state}`) }}</span>
         </li>
@@ -90,7 +90,7 @@
         <span class="type-display text-[52px] leading-none">
           {{ speed ? speed.mbps : '—' }} <span class="text-xl">Mbps</span>
         </span>
-        <span class="text-[13px] text-text-muted">
+        <span class="text-text-muted">
           {{ speed ? t('troubleshoot.ranAt', { time: speed.at, size: speed.size }) : t('troubleshoot.notRun') }}
         </span>
       </div>
@@ -113,14 +113,14 @@
             {{ n }} MB
           </button>
         </div>
-        <span class="text-[13px] text-text-secondary">{{ t(`troubleshoot.sizeHint${size}`) }}</span>
+        <span class="text-text-secondary">{{ t(`troubleshoot.sizeHint${size}`) }}</span>
       </div>
       <button type="button" class="btn btn-ink self-start" :disabled="testing" @click="runSpeed">
         <span v-if="testing" class="spinner spinner--sm" />
         {{ testing ? t('troubleshoot.testing') : t('troubleshoot.runTest') }}
       </button>
       <p v-if="speedError" role="alert" class="m-0 text-sm text-danger-text">{{ speedError }}</p>
-      <p class="m-0 text-[13px] leading-normal text-text-muted">{{ t('troubleshoot.speedNote') }}</p>
+      <p class="leading-normal text-text-muted">{{ t('troubleshoot.speedNote') }}</p>
     </section>
   </PageLayout>
 </template>
@@ -165,10 +165,15 @@ const checkError = ref('')
 const fixing = ref(false)
 
 const failedStep = computed(() => check.value?.steps.find(s => s.state === 'fail'))
-const problem = computed(() => !!failedStep.value)
+const problem = computed(() => !!failedStep.value || !!checkError.value)
 
 const verdict = computed(() => {
-  if (!check.value || checking.value) return null
+  if (checking.value) return null
+  // Pikro itself can't reach the router: that is the answer, not a side error.
+  if (checkError.value) {
+    return { title: t('troubleshoot.verdict.unreachable.title'), advice: checkError.value }
+  }
+  if (!check.value) return null
   const f = failedStep.value
   const key = !f ? 'ok' : f.key === 'cable' ? (f.reason ?? 'noLink') : f.key
   const named = { wan: f?.target, gw: f?.target, via: f?.via }
@@ -179,7 +184,7 @@ const verdict = computed(() => {
 })
 
 function detail(s: CheckStep) {
-  const named = { target: s.target, ms: s.rttMs ?? 0, via: s.via || '—' }
+  const named = { target: s.target, ms: s.rttMs ?? 0, via: s.via?.replace(/,/g, ', ') || '—' }
   if (s.state === 'skip') return t('troubleshoot.skipped')
   if (s.key === 'cable') {
     return t(`troubleshoot.steps.cable.${s.state === 'ok' ? 'ok' : (s.reason ?? 'noLink')}`, named)
@@ -191,7 +196,12 @@ function detail(s: CheckStep) {
 
 const rows = computed(() =>
   checking.value || !check.value
-    ? STEP_KEYS.map(key => ({ key, state: 'pending' as RowState, detail: '' }))
+    ? STEP_KEYS.map(key => ({
+        key,
+        // Nothing was checked when the router can't be reached.
+        state: (checkError.value && !checking.value ? 'skip' : 'pending') as RowState,
+        detail: checkError.value && !checking.value ? t('troubleshoot.notChecked') : '',
+      }))
     : check.value.steps.map(s => ({ key: s.key, state: s.state as RowState, detail: detail(s) })),
 )
 

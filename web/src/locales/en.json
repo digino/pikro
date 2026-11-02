@@ -738,6 +738,9 @@
       "dns": {
         "title": "Websites can’t be found by name.",
         "advice": "The internet answers, but the DNS server ({via}) does not. Pikro can switch the router to public DNS (1.1.1.1 and 8.8.8.8)."
+      },
+      "unreachable": {
+        "title": "Pikro can’t reach the router."
       }
     },
     "speedTitle": "Speed test",
@@ -750,7 +753,8 @@
     "runTest": "Run test",
     "testing": "Testing…",
     "speedNote": "Measured from the router to a server in Europe, so it can read lower than your plan. Guests will feel it while it runs.",
-    "speedFailed": "Speed test failed"
+    "speedFailed": "Speed test failed",
+    "notChecked": "Not checked: Pikro can’t reach the router"
   },
   "maintenance": {
     "intro": "Keep the router healthy: right time and up to date.",
@@ -788,6 +792,7 @@
     "restarting": "Restarting… Pikro reconnects when the router is back.",
     "backOnline": "The router is back online",
     "restartFailed": "Couldn’t restart the router",
-    "loadFailed": "Couldn’t read this from the router"
+    "loadFailed": "Couldn’t read this from the router",
+    "updatesNeedClock": "Fix the router clock first: the update check needs the right date."
   }
 }
