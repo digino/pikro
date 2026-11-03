@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/digino/pikro/internal/config"
@@ -76,11 +77,24 @@ func ListHotspotHosts(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, hosts)
 }
 
+// scriptsRefreshed holds the router ids whose Pikro scripts were brought up to
+// date since this Pikro started.
+var scriptsRefreshed sync.Map
+
 func ListHotspotProfiles(w http.ResponseWriter, r *http.Request) {
 	client, err := clientFromRequest(r)
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusNotFound)
 		return
+	}
+	id := r.PathValue("id")
+	if _, done := scriptsRefreshed.LoadOrStore(id, true); !done {
+		if n, err := client.RefreshPikroScripts(); err != nil {
+			log.Printf("router %s: refresh Pikro scripts: %v", id, err)
+			scriptsRefreshed.Delete(id)
+		} else if n > 0 {
+			log.Printf("router %s: rewrote %d outdated Pikro script(s)", id, n)
+		}
 	}
 	profiles, err := client.HotspotProfiles()
 	if err != nil {

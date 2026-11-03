@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -269,7 +270,7 @@ func TestCleanupScripts_defineDurationToSecsOnce(t *testing.T) {
 // afterward. Skips gracefully if python3 or the linter script is unavailable so this
 // suite doesn't become flaky in environments without them.
 func TestCleanupScripts_lintClean(t *testing.T) {
-	linter := "/Users/gino/Projects/web/pikro/.agents/skills/mikrotik-routeros-rsc/scripts/lint_rsc.py"
+	linter := filepath.Join("..", "..", ".agents", "skills", "mikrotik-routeros-rsc", "scripts", "lint_rsc.py")
 	if _, err := os.Stat(linter); err != nil {
 		t.Skipf("lint_rsc.py not found at %s: %v", linter, err)
 	}
@@ -299,5 +300,49 @@ func TestCleanupScripts_lintClean(t *testing.T) {
 				t.Errorf("lint_rsc.py --strict flagged %s:\n%s", s.name, out)
 			}
 		})
+	}
+}
+
+// RouterOS 6 only understands space-separated command paths inside scripts
+// ("/ip hotspot user find"); the slash form ("/ip/hotspot/user/find") is
+// RouterOS 7 syntax, and 6.49 stops the whole script with "expected command
+// name". Found on a CHR 6.49.23: no voucher was stamped or cleaned up.
+func TestPreV712ScriptsUseSpacedCommandPaths(t *testing.T) {
+	// A command starts a line or follows "[" (comments may mention "mmm/dd/yyyy").
+	slashPath := regexp.MustCompile(`(?m)(^\s*|\[)/[a-z-]+/[a-z-]+`)
+	scripts := []struct {
+		name, body string
+	}{
+		{"on-login, RouterOS 6", buildOnLoginScript(3600, "6.49.23 (stable)")},
+		{"on-login, RouterOS 7.11", buildOnLoginScript(3600, "7.11.2 (stable)")},
+		{"cleanup, RouterOS 6", cleanupScriptBody("6.49.23 (stable)")},
+		{"cleanup, RouterOS 7.11", cleanupScriptBody("7.11.2 (stable)")},
+	}
+	for _, s := range scripts {
+		t.Run(s.name, func(t *testing.T) {
+			if m := slashPath.FindAllString(s.body, -1); len(m) > 0 {
+				t.Errorf("slash command paths RouterOS 6 rejects: %v", m)
+			}
+		})
+	}
+}
+
+// Routers set up by an older Pikro keep its old scripts until they are
+// rewritten, which needs each plan's validity read back from its script.
+func TestPikroOnLoginValiditySecs(t *testing.T) {
+	for _, version := range []string{"7.25 (stable)", "7.11.2 (stable)", "6.49.23 (stable)"} {
+		for _, secs := range []int64{120, 3600, 2592000} {
+			t.Run(version, func(t *testing.T) {
+				got, ok := pikroOnLoginValiditySecs(buildOnLoginScript(secs, version))
+				if !ok || got != secs {
+					t.Errorf("validity = %d, %v, want %d", got, ok, secs)
+				}
+			})
+		}
+	}
+	for _, script := range []string{"", `:put (",rem,500,1d,500,,Disable,")`} {
+		if _, ok := pikroOnLoginValiditySecs(script); ok {
+			t.Errorf("%q read as a Pikro script", script)
+		}
 	}
 }

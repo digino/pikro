@@ -523,12 +523,12 @@
     },
     "migration": {
       "heading": "Vous venez de Mikhmon ?",
-      "intro": "Pikro convertit vos tickets et profils Mikhmon v3 pour qu'ils continuent de fonctionner et expirent correctement. Rien qui a encore de la valeur n'est supprimé.",
+      "intro": "Pikro convertit vos tickets et profils Mikhmon v3 pour qu'ils continuent de fonctionner et expirent correctement. Le rapport de ventes de Mikhmon est supprimé du routeur : imprimez-le ou enregistrez-le dans Mikhmon avant.",
       "steps": [
         "Les tickets inutilisés sont nettoyés et se comportent comme des tickets Pikro neufs",
         "Les utilisateurs actifs gardent leur temps ; leur expiration est convertie au format Pikro",
         "Les profils reçoivent le script on-login de Pikro pour les prochaines connexions",
-        "Les planificateurs et scripts laissés par Mikhmon pour chaque utilisateur sont supprimés",
+        "Les moniteurs de forfait de Mikhmon, ses restes par utilisateur et son rapport de ventes sont supprimés",
         "Le nettoyage automatique de Pikro est installé pour retirer les tickets expirés",
         "Tout ce que Pikro ne reconnaît pas reste intact"
       ],
@@ -537,7 +537,7 @@
       "running": "Migration…",
       "runAgain": "Relancer",
       "confirmTitle": "Lancer la migration ?",
-      "confirmBody": "Pikro va réécrire les commentaires des utilisateurs hotspot et les scripts on-login des profils, supprimer les restes de Mikhmon et installer le nettoyage automatique de Pikro sur ce routeur.",
+      "confirmBody": "Pikro va réécrire les commentaires des utilisateurs hotspot et les scripts on-login des profils, supprimer les restes de Mikhmon, dont son rapport de ventes, et installer le nettoyage automatique de Pikro sur ce routeur.",
       "cancel": "Annuler",
       "actionTitle": "Convertir ce routeur",
       "actionBody": "Lancez-la une fois sur chaque routeur géré par Mikhmon.",
