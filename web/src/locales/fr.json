@@ -753,7 +753,7 @@
     "sizeHint50": "Utilise environ 50 Mo de données. Plus précis sur les lignes rapides ; plus cher en prépayé.",
     "runTest": "Lancer le test",
     "testing": "Test en cours…",
-    "speedNote": "Mesuré depuis le routeur vers un serveur en Europe : le résultat peut être inférieur à votre abonnement. Vos clients le ressentiront pendant le test.",
+    "speedNote": "Mesuré depuis le routeur vers le serveur Cloudflare le plus proche : il mesure votre ligne Internet, pas votre Wi-Fi. Vos clients le ressentiront pendant le test.",
     "speedFailed": "Le test de débit a échoué",
     "notChecked": "Non vérifié : Pikro n’arrive pas à joindre le routeur"
   },
