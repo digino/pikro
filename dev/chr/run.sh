@@ -12,16 +12,19 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 QEMU_SHARE="$(brew --prefix qemu)/share/qemu"
+# Router disks live outside the repo, so no git tool (stash, clean, branch
+# switch) can take them along with the code. Override with CHR_IMAGES.
+IMAGES="${CHR_IMAGES:-$HOME/.pikro-chr}"
 
 case "${1:-}" in
   v7)
-    ZIP=images/v7/chr-7.25-arm64.img.zip
-    IMG=images/v7/chr-7.25-arm64.img
+    ZIP=$IMAGES/v7/chr-7.25-arm64.img.zip
+    IMG=$IMAGES/v7/chr-7.25-arm64.img
     API_PORT=18728 WINBOX_PORT=18291 GUEST_PORT=18080
     ;;
   v6)
-    ZIP=images/v6/chr-6.49.23.img.zip
-    IMG=images/v6/chr-6.49.23.img
+    ZIP=$IMAGES/v6/chr-6.49.23.img.zip
+    IMG=$IMAGES/v6/chr-6.49.23.img
     API_PORT=28728 WINBOX_PORT=28291 GUEST_PORT=28080
     ;;
   *)
