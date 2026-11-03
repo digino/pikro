@@ -3,8 +3,7 @@ package router
 import (
 	"crypto/tls"
 	"fmt"
-	"regexp"
-	"strconv"
+	"net/netip"
 	"strings"
 	"time"
 
@@ -49,6 +48,55 @@ func (c *Client) Ping() error {
 	defer conn.Close()
 	_, err = conn.Run("/system/identity/print")
 	return err
+}
+
+// MACAddress returns the MAC of the interface Pikro reaches the router on,
+// the same one neighbour discovery reports.
+func (c *Client) MACAddress() (string, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+	addrs, err := conn.Run("/ip/address/print")
+	if err != nil {
+		return "", err
+	}
+	ifaces, err := conn.Run("/interface/print")
+	if err != nil {
+		return "", err
+	}
+	var addrMaps, ifaceMaps []map[string]string
+	for _, s := range addrs.Re {
+		addrMaps = append(addrMaps, s.Map)
+	}
+	for _, s := range ifaces.Re {
+		ifaceMaps = append(ifaceMaps, s.Map)
+	}
+	return pickMAC(c.host, addrMaps, ifaceMaps), nil
+}
+
+// pickMAC finds the interface holding host's IP. When the host isn't one of
+// the router's own addresses (NAT, DNS name) it falls back to the first
+// ethernet port.
+func pickMAC(host string, addrs, ifaces []map[string]string) string {
+	macByName := map[string]string{}
+	for _, i := range ifaces {
+		macByName[i["name"]] = i["mac-address"]
+	}
+	for _, a := range addrs {
+		if addressIP(a["address"]) == host {
+			if mac := macByName[a["interface"]]; mac != "" {
+				return mac
+			}
+		}
+	}
+	for _, i := range ifaces {
+		if i["type"] == "ether" && i["mac-address"] != "" {
+			return i["mac-address"]
+		}
+	}
+	return ""
 }
 
 // SystemResource returns CPU load, free memory, total memory, and uptime.
@@ -301,14 +349,8 @@ type HotspotUserParams struct {
 	Comment         string
 }
 
-// CreateHotspotUser creates a new hotspot user with optional limits.
-func (c *Client) CreateHotspotUser(p HotspotUserParams) (map[string]any, error) {
-	conn, err := c.connect()
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
+// hotspotUserAddArgs builds the /ip/hotspot/user/add arguments, omitting empty optional fields.
+func hotspotUserAddArgs(p HotspotUserParams) []string {
 	args := []string{
 		"/ip/hotspot/user/add",
 		"=name=" + p.Name,
@@ -329,6 +371,45 @@ func (c *Client) CreateHotspotUser(p HotspotUserParams) (map[string]any, error) 
 	if p.Comment != "" {
 		args = append(args, "=comment="+p.Comment)
 	}
+	return args
+}
+
+// CreateResult is the outcome of creating one user in a batch.
+type CreateResult struct {
+	Name  string `json:"name"`
+	OK    bool   `json:"ok"`
+	Error string `json:"error,omitempty"`
+}
+
+// CreateHotspotUsers creates several hotspot users over one connection.
+// Failures are reported per user; the error is returned only if connecting fails.
+func (c *Client) CreateHotspotUsers(params []HotspotUserParams) ([]CreateResult, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	results := make([]CreateResult, 0, len(params))
+	for _, p := range params {
+		r := CreateResult{Name: p.Name, OK: true}
+		if _, err := conn.RunArgs(hotspotUserAddArgs(p)); err != nil {
+			r.OK, r.Error = false, err.Error()
+		}
+		results = append(results, r)
+	}
+	return results, nil
+}
+
+// CreateHotspotUser creates a new hotspot user with optional limits.
+func (c *Client) CreateHotspotUser(p HotspotUserParams) (map[string]any, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	args := hotspotUserAddArgs(p)
 	reply, err := conn.RunArgs(args)
 	if err != nil {
 		return nil, err
@@ -453,6 +534,39 @@ type PollSnapshot struct {
 	Addresses  []map[string]string `json:"addresses"`
 	Clock      map[string]string   `json:"clock"`
 	Interfaces []map[string]string `json:"interfaces"`
+	// What each interface is for, shown on the Monitor page.
+	WANInterface      string            `json:"wanInterface"`
+	HotspotInterfaces []string          `json:"hotspotInterfaces"`
+	BridgePorts       map[string]string `json:"bridgePorts"` // port name -> bridge name
+}
+
+// wanInterface returns the interface the active default route leaves
+// through. RouterOS 7 names it in immediate-gw ("10.0.2.2%ether1"),
+// RouterOS 6 in gateway-status ("10.0.2.2 reachable via  ether1"); with
+// PPPoE the gateway is the interface itself.
+func wanInterface(routes []map[string]string) string {
+	for _, r := range routes {
+		if r["active"] != "true" {
+			continue
+		}
+		if gw := r["immediate-gw"]; gw != "" {
+			_, after, found := strings.Cut(gw, "%")
+			if found {
+				return after
+			}
+			return gw
+		}
+		status, _, _ := strings.Cut(r["gateway-status"], ",")
+		fields := strings.Fields(status)
+		if len(fields) == 0 {
+			continue
+		}
+		if len(fields) >= 4 && fields[len(fields)-2] == "via" {
+			return fields[len(fields)-1]
+		}
+		return fields[0]
+	}
+	return ""
 }
 
 // Poll opens one connection and fetches resource, interface traffic, and clock together.
@@ -470,6 +584,9 @@ func (c *Client) Poll() (*PollSnapshot, error) {
 		Addresses:  []map[string]string{},
 		Clock:      map[string]string{},
 		Interfaces: []map[string]string{},
+		// Empty, not null, in the JSON when the router has none.
+		HotspotInterfaces: []string{},
+		BridgePorts:       map[string]string{},
 	}
 
 	// Resource
@@ -511,6 +628,24 @@ func (c *Client) Poll() (*PollSnapshot, error) {
 	// Clock
 	if r, err := conn.Run("/system/clock/print"); err == nil && len(r.Re) > 0 {
 		snap.Clock = r.Re[0].Map
+	}
+
+	if r, err := conn.Run("/ip/route/print", "?dst-address=0.0.0.0/0"); err == nil {
+		routes := make([]map[string]string, 0, len(r.Re))
+		for _, s := range r.Re {
+			routes = append(routes, s.Map)
+		}
+		snap.WANInterface = wanInterface(routes)
+	}
+	if r, err := conn.Run("/ip/hotspot/print"); err == nil {
+		for _, s := range r.Re {
+			snap.HotspotInterfaces = append(snap.HotspotInterfaces, s.Map["interface"])
+		}
+	}
+	if r, err := conn.Run("/interface/bridge/port/print"); err == nil {
+		for _, s := range r.Re {
+			snap.BridgePorts[s.Map["interface"]] = s.Map["bridge"]
+		}
 	}
 
 	return snap, nil
@@ -618,9 +753,19 @@ func (c *Client) SystemClock() (map[string]string, error) {
 	return reply.Re[0].Map, nil
 }
 
-// SystemLogs returns log entries, newest first. If topic is non-empty, only
-// entries whose topics field contains it are returned.
-func (c *Client) SystemLogs(topic string) ([]map[string]any, error) {
+// IsHotspotLog reports whether a log entry belongs on the hotspot Logs screen:
+// RouterOS hotspot events, plus the lines Pikro's own scripts write (the
+// cleanup scheduler and on-login stamping), which RouterOS files under "script".
+func IsHotspotLog(e map[string]any) bool {
+	topics, _ := e["topics"].(string)
+	message, _ := e["message"].(string)
+	return strings.Contains(topics, "hotspot") ||
+		(strings.Contains(topics, "script") && strings.HasPrefix(message, "pikro-"))
+}
+
+// SystemLogs returns log entries, newest first. If keep is non-nil, only
+// entries it accepts are returned.
+func (c *Client) SystemLogs(keep func(map[string]any) bool) ([]map[string]any, error) {
 	conn, err := c.connect()
 	if err != nil {
 		return nil, err
@@ -632,10 +777,10 @@ func (c *Client) SystemLogs(topic string) ([]map[string]any, error) {
 		return nil, err
 	}
 	entries := replyToList(reply)
-	if topic != "" {
+	if keep != nil {
 		filtered := entries[:0]
 		for _, e := range entries {
-			if topics, _ := e["topics"].(string); strings.Contains(topics, topic) {
+			if keep(e) {
 				filtered = append(filtered, e)
 			}
 		}
@@ -663,10 +808,88 @@ func (c *Client) DHCPLeases() ([]map[string]any, error) {
 	return replyToList(reply), nil
 }
 
+// DHCPServer is one DHCP server with the address pool it hands out from.
+type DHCPServer struct {
+	Name      string `json:"name"`
+	Interface string `json:"interface"`
+	LeaseTime string `json:"leaseTime"`
+	Disabled  bool   `json:"disabled"`
+	Ranges    string `json:"ranges"` // as RouterOS writes them; empty for static-only servers
+	Size      int    `json:"size"`   // addresses in Ranges
+}
+
+func (c *Client) DHCPServers() ([]DHCPServer, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	servers, err := conn.Run("/ip/dhcp-server/print")
+	if err != nil {
+		return nil, err
+	}
+	pools, err := conn.Run("/ip/pool/print")
+	if err != nil {
+		return nil, err
+	}
+	rangesByPool := map[string]string{}
+	for _, p := range pools.Re {
+		rangesByPool[p.Map["name"]] = p.Map["ranges"]
+	}
+
+	out := make([]DHCPServer, 0, len(servers.Re))
+	for _, s := range servers.Re {
+		ranges := rangesByPool[s.Map["address-pool"]]
+		out = append(out, DHCPServer{
+			Name:      s.Map["name"],
+			Interface: s.Map["interface"],
+			LeaseTime: s.Map["lease-time"],
+			Disabled:  s.Map["disabled"] == "true",
+			Ranges:    ranges,
+			Size:      poolSize(ranges),
+		})
+	}
+	return out, nil
+}
+
+// poolSize counts the IPv4 addresses in a RouterOS pool's ranges, which mix
+// "a-b" ranges, single addresses and CIDR prefixes, separated by commas.
+func poolSize(ranges string) int {
+	total := 0
+	for _, part := range strings.Split(ranges, ",") {
+		part = strings.TrimSpace(part)
+		if prefix, err := netip.ParsePrefix(part); err == nil {
+			if prefix.Addr().Is4() {
+				total += 1 << (32 - prefix.Bits())
+			}
+			continue
+		}
+		from, to, isRange := strings.Cut(part, "-")
+		if !isRange {
+			to = from
+		}
+		a, errA := netip.ParseAddr(from)
+		b, errB := netip.ParseAddr(to)
+		if errA != nil || errB != nil || !a.Is4() || !b.Is4() {
+			continue
+		}
+		if n := ipv4Number(b) - ipv4Number(a) + 1; n > 0 {
+			total += n
+		}
+	}
+	return total
+}
+
+func ipv4Number(a netip.Addr) int {
+	b := a.As4()
+	return int(b[0])<<24 | int(b[1])<<16 | int(b[2])<<8 | int(b[3])
+}
+
 // BandwidthTest measures internet download speed from the router using /tool/fetch.
 // The target parameter selects the file size: "10", "50", or "100" (MB).
-// Downloads from Tele2's public speedtest CDN and computes throughput from the
-// duration reported by RouterOS.
+// Downloads from Cloudflare's speed test endpoint, which has servers in West
+// Africa, and computes throughput from the duration reported by RouterOS.
 func (c *Client) BandwidthTest(sizeMB string) (map[string]any, error) {
 	conn, err := c.connect()
 	if err != nil {
@@ -679,68 +902,46 @@ func (c *Client) BandwidthTest(sizeMB string) (map[string]any, error) {
 		size int64
 	}
 	files := map[string]testFile{
-		"10":  {"http://speedtest.tele2.net/10MB.zip", 10 * 1024 * 1024},
-		"50":  {"http://speedtest.tele2.net/50MB.zip", 50 * 1024 * 1024},
-		"100": {"http://speedtest.tele2.net/100MB.zip", 100 * 1024 * 1024},
+		"10":  {"https://speed.cloudflare.com/__down?bytes=10000000", 10_000_000},
+		"50":  {"https://speed.cloudflare.com/__down?bytes=50000000", 50_000_000},
+		"100": {"https://speed.cloudflare.com/__down?bytes=100000000", 100_000_000},
 	}
 	f, ok := files[sizeMB]
 	if !ok {
 		f = files["10"]
 	}
 
+	// Timed here: RouterOS reports the duration only to the whole second, and
+	// its replies include progress lines before the final one.
+	start := time.Now()
 	reply, err := conn.Run(
 		"/tool/fetch",
 		"=url="+f.url,
-		"=mode=http",
 		"=keep-result=no",
 	)
+	elapsed := time.Since(start)
 	if err != nil {
 		return nil, fmt.Errorf("fetch failed: %w", err)
 	}
-
-	var durationStr string
+	finished := false
 	for _, s := range reply.Re {
-		if d, ok := s.Map["duration"]; ok && d != "" {
-			durationStr = d
-			break
+		if s.Map["status"] == "finished" {
+			finished = true
 		}
+	}
+	if !finished {
+		return nil, fmt.Errorf("the download did not finish")
 	}
 
-	downloadBps := 0
-	if durationStr != "" {
-		dur := parseROSDuration(durationStr)
-		if dur > 0 {
-			downloadBps = int(float64(f.size) / dur.Seconds())
-		}
-	}
+	downloadBps := int(float64(f.size*8) / elapsed.Seconds())
 
 	return map[string]any{
 		"rx-speed":  fmt.Sprintf("%d", downloadBps),
 		"tx-speed":  "0",
-		"duration":  durationStr,
+		"duration":  elapsed.Round(time.Millisecond).String(),
 		"test-url":  f.url,
 		"file-size": fmt.Sprintf("%d", f.size),
 	}, nil
-}
-
-// parseROSDuration parses RouterOS duration strings like "2s430ms", "834ms", "1m2s".
-func parseROSDuration(s string) time.Duration {
-	var total time.Duration
-	re := regexp.MustCompile(`(\d+)(h|m|s|ms)`)
-	for _, m := range re.FindAllStringSubmatch(s, -1) {
-		n, _ := strconv.Atoi(m[1])
-		switch m[2] {
-		case "h":
-			total += time.Duration(n) * time.Hour
-		case "m":
-			total += time.Duration(n) * time.Minute
-		case "s":
-			total += time.Duration(n) * time.Second
-		case "ms":
-			total += time.Duration(n) * time.Millisecond
-		}
-	}
-	return total
 }
 
 // sentenceToMap converts a proto.Sentence word map (all string values) to map[string]any.

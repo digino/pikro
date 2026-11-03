@@ -44,6 +44,9 @@ func UploadLoginPage(w http.ResponseWriter, r *http.Request) {
 		LogoutHTML   string `json:"logoutHtml"`
 		StatusHTML   string `json:"statusHtml"`
 		RedirectHTML string `json:"redirectHtml"`
+		AloginHTML   string `json:"aloginHtml"`
+		CSS          string `json:"css"`
+		MD5JS        string `json:"md5Js"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		jsonError(w, "invalid body", http.StatusBadRequest)
@@ -63,6 +66,9 @@ func UploadLoginPage(w http.ResponseWriter, r *http.Request) {
 		Logout:   input.LogoutHTML,
 		Status:   input.StatusHTML,
 		Redirect: input.RedirectHTML,
+		Alogin:   input.AloginHTML,
+		Style:    input.CSS,
+		MD5:      input.MD5JS,
 	}); err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return

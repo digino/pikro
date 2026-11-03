@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Troubleshoot</title>
+  <defs><filter id="troubleshoot-ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter></defs>
+  <g filter="url(#troubleshoot-ink)">
+    <circle cx="58" cy="59" r="34" fill="#111111"/>
+    <path d="M90 91 108 109" stroke="#111111" stroke-width="20"/>
+    <path d="M86 86 104 104" stroke="#111111" stroke-width="20"/>
+    <path d="M86 86 104 104" stroke="#FFFFFF" stroke-width="14"/>
+    <circle cx="54" cy="54" r="34" fill="#FFBF00" stroke="#111111" stroke-width="3"/>
+    <circle cx="54" cy="54" r="27" stroke="#111111" stroke-width="2.25"/>
+    <path d="M39.85 51.15a22 22 0 0 1 28.3 0M45 57.28a14 14 0 0 1 18 0M50.14 63.4a6 6 0 0 1 7.72 0" stroke="#111111" stroke-width="3"/>
+    <circle cx="54" cy="69" r="3.5" fill="#111111"/>
+    <path d="M33 45a23 23 0 0 1 9-11" stroke="#FFFFFF" stroke-width="2.5"/>
+    <path d="M92 20l6-6M100 33l9-2M83 12l2-8" stroke="#111111" stroke-width="3"/>
+  </g>
+</svg>

@@ -5,12 +5,23 @@ import type {
   ProfileMeta, HotspotSettings, LoginPageSettings,
   CleanupSchedulerStatus, HotspotProfileParams,
   PreflightResult, SetupResult, TeardownResult,
-  DiscoveredDevice, SaleEntry,
+  DiscoveredDevice, SalesData, NewHotspotUsersBatch, BatchCreateResult,
 } from './types'
 
 export type * from './types'
 
 const api = axios.create({ baseURL: '/api' })
+
+export interface UpdateStatus {
+  current: string
+  latest: string
+  available: boolean
+  error?: string
+}
+
+/** Whether a newer Pikro release is out; `refresh` skips the day-long cache. */
+export const getUpdateStatus = (refresh = false) =>
+  api.get<UpdateStatus>('/update', { params: refresh ? { refresh: 1 } : {} }).then(r => r.data)
 
 export const getAppVersion = () =>
   api.get<{ version: string }>('/version').then(r => r.data.version)
@@ -31,7 +42,6 @@ export interface UpdateRouterProfile {
   useTls: boolean
   hotspotSettings?: {
     hotspotName: string
-    dnsName: string
     currency: string
   }
 }
@@ -64,6 +74,9 @@ export interface PollSnapshot {
   addresses: Record<string, string>[]
   clock: Record<string, string>
   interfaces: Record<string, string>[]
+  wanInterface: string
+  hotspotInterfaces: string[]
+  bridgePorts: Record<string, string>
 }
 
 export const getPollSnapshot = (id: string) =>
@@ -74,6 +87,18 @@ export const getSystemLogs = (id: string) =>
 
 export const getDHCPLeases = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/system/dhcp-leases`).then(r => r.data)
+
+export interface DHCPServer {
+  name: string
+  interface: string
+  leaseTime: string
+  disabled: boolean
+  ranges: string
+  size: number
+}
+
+export const getDHCPServers = (id: string) =>
+  api.get<DHCPServer[]>(`/routers/${id}/system/dhcp-servers`).then(r => r.data)
 
 export interface MikhmonMigrationResult {
   usersScanned: number
@@ -106,6 +131,10 @@ export const listHotspotProfiles = (id: string) =>
 export const listAddressPools = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/address-pools`).then(r => r.data)
 
+// Creates a chunk of vouchers in one call and records them as one sales batch.
+export const createHotspotUsersBatch = (id: string, batch: NewHotspotUsersBatch) =>
+  api.post<{ results: BatchCreateResult[] }>(`/routers/${id}/hotspot/users/batch`, batch).then(r => r.data.results)
+
 export const createHotspotUser = (id: string, user: NewHotspotUser) =>
   api.post(`/routers/${id}/hotspot/users`, user).then(r => r.data)
 
@@ -136,6 +165,9 @@ export interface UploadLoginPagePayload extends LoginPageSettings {
   logoutHtml?: string
   statusHtml?: string
   redirectHtml?: string
+  aloginHtml?: string
+  css?: string
+  md5Js?: string
 }
 
 export const uploadLoginPage = (id: string, p: UploadLoginPagePayload) =>
@@ -190,12 +222,59 @@ export const teardownHotspot = (id: string) =>
 
 // Sales ledger
 export const getSalesLedger = (id: string, year: number) =>
-  api.get<SaleEntry[]>(`/routers/${id}/sales`, { params: { year } }).then(r => r.data)
+  api.get<SalesData>(`/routers/${id}/sales`, { params: { year } }).then(r => r.data)
 
 // Discovery
 export const discoverRouters = () =>
   api.get<DiscoveredDevice[]>('/discover').then(r => r.data)
 
 // Speed test
+export interface CheckStep {
+  key: 'cable' | 'gateway' | 'internet' | 'dns'
+  state: 'ok' | 'fail' | 'skip'
+  target: string
+  reason?: 'noRoute' | 'noLink'
+  rttMs?: number
+  via?: string
+}
+
+export interface InternetCheck {
+  checkedAt: string
+  steps: CheckStep[]
+}
+
+export const getInternetCheck = (id: string) =>
+  api.get<InternetCheck>(`/routers/${id}/tools/internet-check`).then(r => r.data)
+
+export const switchToPublicDNS = (id: string) =>
+  api.post(`/routers/${id}/tools/public-dns`).then(r => r.data)
+
+export interface RouterClock {
+  utc: string
+  local: string
+  ntpEnabled: boolean
+  ntpServers: string
+}
+
+export const getRouterClock = (id: string) =>
+  api.get<RouterClock>(`/routers/${id}/tools/clock`).then(r => r.data)
+
+export const enableAutoTime = (id: string) =>
+  api.post(`/routers/${id}/tools/clock/auto`).then(r => r.data)
+
+export interface UpdateInfo {
+  installed: string
+  latest: string
+  channel: string
+  status: string
+  available: boolean
+}
+
+export const checkUpdates = (id: string) =>
+  api.get<UpdateInfo>(`/routers/${id}/tools/updates`).then(r => r.data)
+
+export const rebootRouter = (id: string) =>
+  api.post(`/routers/${id}/tools/reboot`).then(r => r.data)
+
 export const runSpeedTest = (id: string, target = '10') =>
   api.post<Record<string, string>>(`/routers/${id}/speedtest`, { target }).then(r => r.data)

@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"time"
 )
 
 // ProfileMeta stores Pikro-only metadata for a hotspot user profile.
@@ -14,28 +17,55 @@ type ProfileMeta struct {
 	Price    string `json:"price"`
 }
 
+var validityPartRe = regexp.MustCompile(`(\d+)([wdhm])`)
+
+// ValiditySecs converts a shorthand validity string (e.g. "1d", "2h30m", "1w")
+// to seconds. Returns 0 if blank or unparseable.
+func ValiditySecs(s string) int64 {
+	var total int64
+	for _, m := range validityPartRe.FindAllStringSubmatch(s, -1) {
+		n, _ := strconv.ParseInt(m[1], 10, 64)
+		switch m[2] {
+		case "w":
+			total += n * 7 * 86400
+		case "d":
+			total += n * 86400
+		case "h":
+			total += n * 3600
+		case "m":
+			total += n * 60
+		}
+	}
+	return total
+}
+
 type LoginPageSettings struct {
-	Title    string `json:"title,omitempty"`
-	Subtitle string `json:"subtitle,omitempty"`
-	Template string `json:"template,omitempty"` // "minimal" | "voucher" | "card"
+	Title      string     `json:"title,omitempty"`
+	Subtitle   string     `json:"subtitle,omitempty"`
+	Template   string     `json:"template,omitempty"`  // legacy "minimal" | "voucher" | "card", superseded by LoginMode
+	LoginMode  string     `json:"loginMode,omitempty"` // "code" | "password"
+	Language   string     `json:"language,omitempty"`  // "en" | "fr"
+	ShowPrices bool       `json:"showPrices,omitempty"`
+	Contact    string     `json:"contact,omitempty"` // phone number guests call to buy a ticket
+	UploadedAt *time.Time `json:"uploadedAt,omitempty"`
 }
 
 type HotspotSettings struct {
 	HotspotName  string                 `json:"hotspotName"`
-	DNSName      string                 `json:"dnsName"`
 	Currency     string                 `json:"currency"`
 	ProfileMetas map[string]ProfileMeta `json:"profileMetas,omitempty"`
 	LoginPage    *LoginPageSettings     `json:"loginPage,omitempty"`
 }
 
 type RouterProfile struct {
-	ID              string          `json:"id"`
-	Name            string          `json:"name"`
-	Host            string          `json:"host"`
-	Port            int             `json:"port"`
-	Username        string          `json:"username"`
-	Password        string          `json:"password"`
-	UseTLS          bool            `json:"useTls"`
+	ID              string           `json:"id"`
+	Name            string           `json:"name"`
+	Host            string           `json:"host"`
+	Port            int              `json:"port"`
+	Username        string           `json:"username"`
+	Password        string           `json:"password"`
+	UseTLS          bool             `json:"useTls"`
+	MAC             string           `json:"mac,omitempty"` // filled from discovery or the first connection
 	HotspotSettings *HotspotSettings `json:"hotspotSettings,omitempty"`
 }
 

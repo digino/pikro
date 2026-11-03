@@ -28,3 +28,6 @@ web/.env.local
 *.pem
 *.key
 .pikro.json
+
+# Local RouterOS CHR test VMs (see dev/chr/README.md)
+dev/chr/images/

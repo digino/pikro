@@ -10,7 +10,7 @@ RELEASE_LDFLAGS := -ldflags "-s -w -X main.Version=$(VERSION)"
 RELEASE_WIN_LDFLAGS := -ldflags "-s -w -X main.Version=$(VERSION) -H windowsgui"
 RSRC_VERSION := v0.10.2
 
-.PHONY: dev backend build release clean _win_rsrc
+.PHONY: dev backend build release clean _win_rsrc chr7 chr6 chr7-guest chr6-guest
 
 # Run Go backend + Vite dev server side by side.
 # Ctrl+C kills both via the trap.
@@ -34,7 +34,7 @@ build:
 	@cd web && npm run build
 	@echo "Building binary ($(VERSION))..."
 	@/usr/local/go/bin/go build $(LDFLAGS) -o $(BINARY) .
-	@echo "Done → ./$(BINARY) ($(shell du -sh $(BINARY) | cut -f1))"
+	@echo "Done → ./$(BINARY) ($$(du -sh $(BINARY) | cut -f1))"
 
 # Cross-compile for macOS (Apple Silicon only) and Windows.
 release: _win_rsrc
@@ -89,6 +89,20 @@ _bundle_app:
 	 ln -s /Applications "$$STAGE/Applications"; \
 	 hdiutil create -volname "Pikro" -srcfolder "$$STAGE" -ov -format UDZO "$(OUT)" -quiet; \
 	 rm -rf "$$APP" "$$STAGE"
+
+# Local RouterOS test VMs — see dev/chr/README.md
+chr7:
+	@dev/chr/run.sh v7
+
+chr6:
+	@dev/chr/run.sh v6
+
+# Same VMs with a guest device on the hotspot, for testing the login pages
+chr7-guest:
+	@dev/chr/run.sh v7 guest
+
+chr6-guest:
+	@dev/chr/run.sh v6 guest
 
 clean:
 	rm -f $(BINARY)

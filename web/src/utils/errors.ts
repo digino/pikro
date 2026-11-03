@@ -1,3 +1,13 @@
+import i18n from '@/locales'
+
+// Message for a failed router scan. The backend tags a macOS Local Network
+// privacy denial with a code, because the raw error tells users nothing useful.
+export function scanErrorMessage(e: any): string {
+  const { t } = i18n.global
+  if (e?.response?.data?.code === 'local_network_denied') return t('scan.localNetworkDenied')
+  return e?.response?.data?.error ?? t('scan.failed')
+}
+
 export function friendlyError(e: any, fallback = 'An unexpected error occurred'): string {
   const raw: string = e?.response?.data?.error ?? e?.message ?? fallback
 
