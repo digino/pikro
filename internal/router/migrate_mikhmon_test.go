@@ -63,6 +63,21 @@ func TestMikhmonExpiryToEpoch(t *testing.T) {
 			wantOK:    true,
 		},
 		{
+			// What Mikhmon v3 really writes on RouterOS 6 (seen on a CHR 6.49.23).
+			name:      "RouterOS 6 date form",
+			comment:   "nov/04/2026 11:15:21",
+			gmtOffset: 0,
+			wantEpoch: 1793790921,
+			wantOK:    true,
+		},
+		{
+			name:      "RouterOS 6 date form, next year",
+			comment:   "jan/02/2027 00:00:00",
+			gmtOffset: 0,
+			wantEpoch: 1798848000,
+			wantOK:    true,
+		},
+		{
 			name:      "Mikhmon unused-voucher format is not an expiry timestamp",
 			comment:   "up-541-06.23.26-",
 			gmtOffset: 0,
@@ -224,6 +239,72 @@ func TestParseGMTOffset(t *testing.T) {
 			got := parseGMTOffset(tc.input)
 			if got != tc.want {
 				t.Errorf("parseGMTOffset(%q) = %v, want %v", tc.input, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestMikhmonUnusedComment(t *testing.T) {
+	tests := []struct {
+		comment string
+		want    bool
+	}{
+		{"up-541-06.23.26-", true},         // username + password mode
+		{"vc-988-11.03.26-lot-1day", true}, // voucher-code mode, with the operator's batch note
+		{"vc-", false},                     // no batch number
+		{"nov/04/2026 11:15:21", false},    // used: an expiry date
+		{"", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.comment, func(t *testing.T) {
+			if got := mikhmonUnusedRe.MatchString(tc.comment); got != tc.want {
+				t.Errorf("unused(%q) = %v, want %v", tc.comment, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIsMikhmonMonitor(t *testing.T) {
+	profiles := map[string]bool{"1day": true, "2min": true}
+	tests := []struct {
+		name, sched, comment string
+		want                 bool
+	}{
+		{"plan monitor", "1day", "Monitor Profile 1day", true},
+		{"comment names another plan", "1day", "Monitor Profile 2min", false},
+		{"admin's own scheduler named like a plan", "1day", "", false},
+		{"monitor of a plan that no longer exists", "old", "Monitor Profile old", false},
+		{"Pikro's own cleanup", "pikro-cleanup", "Auto-cleanup expired hotspot users (by Pikro)", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isMikhmonMonitor(tc.sched, tc.comment, profiles); got != tc.want {
+				t.Errorf("isMikhmonMonitor(%q, %q) = %v, want %v", tc.sched, tc.comment, got, tc.want)
+			}
+		})
+	}
+}
+
+// The stamp has to be the one the router's own cleanup script reads:
+// Unix seconds on RouterOS 7.12+, local "YYYY-MM-DD HH:MM:SS" before.
+func TestPikroExpComment(t *testing.T) {
+	const epoch = 1793790921 // 2026-11-04 11:15:21 UTC
+	tests := []struct {
+		name       string
+		rosVersion string
+		gmtOffset  time.Duration
+		want       string
+	}{
+		{"RouterOS 7.25", "7.25 (stable)", 0, "exp:1793790921"},
+		{"RouterOS 7.12", "7.12 (stable)", time.Hour, "exp:1793790921"},
+		{"RouterOS 6, UTC", "6.49.23 (stable)", 0, "exp:2026-11-04 11:15:21"},
+		{"RouterOS 6, local time", "6.49.23 (stable)", time.Hour, "exp:2026-11-04 12:15:21"},
+		{"RouterOS 7.11", "7.11.2 (stable)", 0, "exp:2026-11-04 11:15:21"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := pikroExpComment(epoch, tc.gmtOffset, tc.rosVersion); got != tc.want {
+				t.Errorf("pikroExpComment = %q, want %q", got, tc.want)
 			}
 		})
 	}

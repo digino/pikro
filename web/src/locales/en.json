@@ -523,12 +523,12 @@
     },
     "migration": {
       "heading": "Coming from Mikhmon?",
-      "intro": "Pikro converts your existing Mikhmon v3 vouchers and profiles so they keep working and expire properly from now on. Nothing that still has value is deleted.",
+      "intro": "Pikro converts your existing Mikhmon v3 vouchers and profiles so they keep working and expire properly from now on. Mikhmon's sales report is deleted from the router: print or save it in Mikhmon first.",
       "steps": [
         "Unused vouchers are cleaned up so they behave like fresh Pikro vouchers",
         "Active users keep their time; their expiry is converted to the Pikro format",
         "Profiles get the Pikro on-login script for future logins",
-        "Mikhmon leftover per-user schedulers and scripts are removed",
+        "Mikhmon's plan monitors, per-user leftovers and sales report are removed",
         "The Pikro cleanup scheduler is installed so expired vouchers keep being removed",
         "Anything Pikro does not recognise is left untouched"
       ],
@@ -537,7 +537,7 @@
       "running": "Migrating…",
       "runAgain": "Run again",
       "confirmTitle": "Run the migration?",
-      "confirmBody": "Pikro will rewrite hotspot user comments and profile on-login scripts, remove Mikhmon leftovers and install the Pikro cleanup scheduler on this router.",
+      "confirmBody": "Pikro will rewrite hotspot user comments and profile on-login scripts, remove Mikhmon leftovers including its sales report, and install the Pikro cleanup scheduler on this router.",
       "cancel": "Cancel",
       "actionTitle": "Convert this router",
       "actionBody": "Run it once on each router that Mikhmon managed.",

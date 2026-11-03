@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/netip"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -217,9 +219,7 @@ type HotspotProfileParams struct {
 // On ROS 7.12+ it uses Unix epoch seconds; on v6/early v7 it uses
 // "YYYY-MM-DD HH:MM:SS" which the v6 cleanup script parses as an integer.
 func buildOnLoginScript(validitySecs int64, rosVersion string) string {
-	major, minor := 7, 0
-	fmt.Sscanf(rosVersion, "%d.%d", &major, &minor)
-	if major > 7 || (major == 7 && minor >= 12) {
+	if hasTimestamp(rosVersion) {
 		return fmt.Sprintf(
 			`:local nowEpoch ([:tonsec [:timestamp]] / 1000000000)
 :local expEpoch ($nowEpoch + %d)
@@ -238,33 +238,62 @@ func buildOnLoginScript(validitySecs int64, rosVersion string) string {
 	// as a RouterOS date string, then normalise it to YYYY-MM-DD HH:MM:SS.
 	// A temporary scheduler named after the user is created with interval=validity,
 	// its next-run field gives us the exact expiry datetime, then we remove it.
+	// Command paths are space-separated: RouterOS 6 rejects "/ip/hotspot/user".
 	return fmt.Sprintf(
-		`:local uid [/ip/hotspot/user/find where name=$user]
+		`:local uid [/ip hotspot user find where name=$user]
 :if ([:len $uid] > 0) do={
-  :local c [:tostr [/ip/hotspot/user/get $uid comment]]
+  :local c [:tostr [/ip hotspot user get $uid comment]]
   :if ([:len $c] < 5 || [:pick $c 0 4] != "exp:") do={
+    :local months {jan="01";feb="02";mar="03";apr="04";may="05";jun="06";jul="07";aug="08";sep="09";oct="10";nov="11";dec="12"}
     :local nd [/system clock get date]
-    :local year [:pick $nd 7 11]
+    # Today as YYYY-MM-DD: the clock reads "nov/03/2026" on RouterOS 6, "2026-11-03" on 7.10+.
+    :local today $nd
+    :if ([:pick $nd 3 4] = "/") do={
+      :local m0 [:pick $nd 0 3]
+      :set today ([:pick $nd 7 11] . "-" . ($months->$m0) . "-" . [:pick $nd 4 6])
+    }
     /system scheduler add name=$user disabled=no start-date=$nd interval="%ds"
     :delay 1s
     :local exp [/system scheduler get [/system scheduler find where name=$user] next-run]
     :local xlen [:len $exp]
     :local expStr ""
+    # next-run reads "HH:MM:SS" when it falls today, "mmm/dd HH:MM:SS" later this
+    # year, "mmm/dd/yyyy HH:MM:SS" in another year, or YYYY-MM-DD HH:MM:SS on 7.10+.
+    # Month names are already lowercase, and RouterOS 6 has no :tolower.
+    :if ($xlen = 8) do={ :set expStr ($today . " " . $exp) }
     :if ($xlen = 15) do={
-      :local mo [:tolower [:pick $exp 0 3]]
-      :local months {jan="01";feb="02";mar="03";apr="04";may="05";jun="06";jul="07";aug="08";sep="09";oct="10";nov="11";dec="12"}
-      :set expStr ($year."-".($months->$mo)."-".[:pick $exp 4 6]." ".[:pick $exp 7 15])
+      :local mo [:pick $exp 0 3]
+      :set expStr ([:pick $today 0 4] . "-" . ($months->$mo) . "-" . [:pick $exp 4 6] . " " . [:pick $exp 7 15])
     }
-    :if ($xlen > 15) do={ :set expStr $exp }
+    :if ($xlen = 20) do={
+      :local mo [:pick $exp 0 3]
+      :set expStr ([:pick $exp 7 11] . "-" . ($months->$mo) . "-" . [:pick $exp 4 6] . " " . [:pick $exp 12 20])
+    }
+    :if ($xlen = 19) do={ :set expStr $exp }
     :if ($expStr != "") do={
       :local newComment ("exp:" . $expStr)
       :if ([:len $c] > 0) do={ :set newComment ($newComment . " " . $c) }
       :log info ("pikro-on-login: stamping $user (exp=$expStr)")
-      /ip/hotspot/user/set $uid comment=$newComment
+      /ip hotspot user set $uid comment=$newComment
     }
     /system scheduler remove [find where name=$user]
   }
 }`, validitySecs)
+}
+
+// pikroOnLoginValidityRe reads the validity back out of a buildOnLoginScript
+// script: "($nowEpoch + 3600)" on 7.12+, interval="3600s" before.
+var pikroOnLoginValidityRe = regexp.MustCompile(`\$nowEpoch \+ (\d+)\)|interval="(\d+)s"`)
+
+// pikroOnLoginValiditySecs reports the validity of an on-login script written
+// by any Pikro version, or false when Pikro did not write it.
+func pikroOnLoginValiditySecs(onLogin string) (int64, bool) {
+	m := pikroOnLoginValidityRe.FindStringSubmatch(onLogin)
+	if m == nil || !strings.Contains(onLogin, "pikro-on-login:") {
+		return 0, false
+	}
+	secs, err := strconv.ParseInt(m[1]+m[2], 10, 64)
+	return secs, err == nil
 }
 
 func (c *Client) rosVersion(conn *ros.Client) string {
@@ -1072,6 +1101,7 @@ var cleanupScriptV7 = `:local nowEpoch ([:tonsec [:timestamp]] / 1000000000)
 // cleanupScriptV6 is the fallback for RouterOS 6 / early v7 without [:tonsec].
 // exp: comments store "YYYY-MM-DD HH:MM:SS" (ISO, written by our on-login script).
 // Uses Mikhmon-style dateint/timeint functions for proven v6 compatibility.
+// Command paths are space-separated: RouterOS 6 rejects "/ip/hotspot/user".
 // Also removes any user whose uptime quota is exhausted (uptime >= limit-uptime),
 // independent of the exp: comment — see cleanupScriptV7 for rationale.
 var cleanupScriptV6 = `:local dateint do={
@@ -1088,11 +1118,17 @@ var cleanupScriptV6 = `:local dateint do={
 ` + durationToSecsFn + `
 :local date [/system clock get date]
 :local time [/system clock get time]
+# exp: stamps are YYYY-MM-DD, but the clock reads "nov/03/2026" on RouterOS 6.
+:if ([:pick $date 3 4] = "/") do={
+  :local months {jan="01";feb="02";mar="03";apr="04";may="05";jun="06";jul="07";aug="08";sep="09";oct="10";nov="11";dec="12"}
+  :local m0 [:pick $date 0 3]
+  :set date ([:pick $date 7 11] . "-" . ($months->$m0) . "-" . [:pick $date 4 6])
+}
 :local today [$dateint d=$date]
 :local curtime [$timeint t=$time]
-:foreach u in=[/ip/hotspot/user/find] do={
-  :local uname [:tostr [/ip/hotspot/user/get $u name]]
-  :local comment [:tostr [/ip/hotspot/user/get $u comment]]
+:foreach u in=[/ip hotspot user find] do={
+  :local uname [:tostr [/ip hotspot user get $u name]]
+  :local comment [:tostr [/ip hotspot user get $u comment]]
   :local removed false
   :if ([:len $comment] > 18 && [:pick $comment 0 4] = "exp:") do={
     :local s [:pick $comment 4 23]
@@ -1101,18 +1137,18 @@ var cleanupScriptV6 = `:local dateint do={
       :local expt [$timeint t=[:pick $s 11 19]]
       :if (($expd < $today) || ($expd = $today && $expt < $curtime)) do={
         :log info ("pikro-cleanup: removing $uname (exp: comment expired, exp=$s now=$date $time)")
-        /ip/hotspot/user/remove $u
+        /ip hotspot user remove $u
         :set removed true
       }
     }
   }
   :if (!$removed) do={
-    :local limit [:tostr [/ip/hotspot/user/get $u limit-uptime]]
-    :local used [:tostr [/ip/hotspot/user/get $u uptime]]
+    :local limit [:tostr [/ip hotspot user get $u limit-uptime]]
+    :local used [:tostr [/ip hotspot user get $u uptime]]
     :if ([:len $limit] > 0 && [:len $used] > 0) do={
       :if ([$durationToSecs $used] >= [$durationToSecs $limit]) do={
         :log info ("pikro-cleanup: removing $uname (uptime quota exhausted, uptime=$used limit=$limit)")
-        /ip/hotspot/user/remove $u
+        /ip hotspot user remove $u
       }
     }
   }
@@ -1121,13 +1157,18 @@ var cleanupScriptV6 = `:local dateint do={
 // cleanupScriptBody returns the appropriate script for the detected RouterOS version.
 // rosVersion should be the string from /system/resource get version, e.g. "7.19.6 (stable)".
 func cleanupScriptBody(rosVersion string) string {
-	// Extract major.minor version number
-	major, minor := 7, 0
-	fmt.Sscanf(rosVersion, "%d.%d", &major, &minor)
-	if major > 7 || (major == 7 && minor >= 12) {
+	if hasTimestamp(rosVersion) {
 		return cleanupScriptV7
 	}
 	return cleanupScriptV6
+}
+
+// hasTimestamp reports whether a RouterOS version ("7.19.6 (stable)") has
+// [:timestamp], from 7.12 on. An unreadable version counts as 7.0.
+func hasTimestamp(rosVersion string) bool {
+	major, minor := 7, 0
+	fmt.Sscanf(rosVersion, "%d.%d", &major, &minor)
+	return major > 7 || (major == 7 && minor >= 12)
 }
 
 // CleanupSchedulerStatus returns whether the cleanup scheduler is installed and its interval.
@@ -1202,4 +1243,50 @@ func (c *Client) RemoveCleanupScheduler() error {
 	id := existing.Re[0].Map[".id"]
 	_, err = conn.Run("/system/scheduler/remove", "=.id="+id)
 	return err
+}
+
+// RefreshPikroScripts rewrites the plan on-login scripts and the cleanup
+// scheduler an older Pikro installed when they differ from this version's,
+// so script fixes reach routers set up before them. Returns how many it rewrote.
+func (c *Client) RefreshPikroScripts() (int, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return 0, err
+	}
+	defer conn.Close()
+
+	rosVersion := c.rosVersion(conn)
+	rewritten := 0
+
+	profiles, err := conn.Run("/ip/hotspot/user/profile/print")
+	if err != nil {
+		return 0, err
+	}
+	for _, s := range profiles.Re {
+		onLogin := s.Map["on-login"]
+		secs, ok := pikroOnLoginValiditySecs(onLogin)
+		if !ok {
+			continue
+		}
+		if want := buildOnLoginScript(secs, rosVersion); want != onLogin {
+			if _, err := conn.Run("/ip/hotspot/user/profile/set", "=.id="+s.Map[".id"], "=on-login="+want); err != nil {
+				return rewritten, err
+			}
+			rewritten++
+		}
+	}
+
+	sched, err := conn.Run("/system/scheduler/print", "?name="+cleanupScriptName)
+	if err != nil {
+		return rewritten, err
+	}
+	if len(sched.Re) > 0 {
+		if want := cleanupScriptBody(rosVersion); sched.Re[0].Map["on-event"] != want {
+			if _, err := conn.Run("/system/scheduler/set", "=.id="+sched.Re[0].Map[".id"], "=on-event="+want); err != nil {
+				return rewritten, err
+			}
+			rewritten++
+		}
+	}
+	return rewritten, nil
 }

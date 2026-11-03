@@ -20,8 +20,11 @@ import (
 // profile's on-login script with Pikro's equivalent, so future logins stamp
 // exp: instead of the Mikhmon formats.
 var (
-	mikhmonUnusedRe = regexp.MustCompile(`^up-\d+-`)
+	// "up-" (username + password vouchers) or "vc-" (voucher-code vouchers).
+	mikhmonUnusedRe = regexp.MustCompile(`^(up|vc)-\d+-`)
 	mikhmonExpiryRe = regexp.MustCompile(`^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$`)
+	// On RouterOS 6, Mikhmon writes the expiry in the router's own date form.
+	mikhmonV6ExpiryRe        = regexp.MustCompile(`^([a-z]{3})/(\d{2})/(\d{4}) (\d{2}):(\d{2}):(\d{2})$`)
 	mikhmonOnLoginValidityRe = regexp.MustCompile(`:put \(",[^,]*,\d+,(\w+),`)
 )
 
@@ -89,7 +92,7 @@ func (c *Client) MigrateFromMikhmon() (*MigrationResult, error) {
 		}
 
 		if epoch, ok := mikhmonExpiryToEpoch(comment, gmtOffset); ok {
-			newComment := fmt.Sprintf("exp:%d", epoch)
+			newComment := pikroExpComment(epoch, gmtOffset, rosVersion)
 			if _, err := conn.Run("/ip/hotspot/user/set", "=.id="+id, "=comment="+newComment); err != nil {
 				return result, fmt.Errorf("converting comment for user %s: %w", id, err)
 			}
@@ -106,7 +109,9 @@ func (c *Client) MigrateFromMikhmon() (*MigrationResult, error) {
 	}
 	result.ProfilesScanned = len(profileReply.Re)
 
+	profileNames := make(map[string]bool, len(profileReply.Re))
 	for _, s := range profileReply.Re {
+		profileNames[s.Map["name"]] = true
 		id := s.Map[".id"]
 		onLogin := s.Map["on-login"]
 
@@ -125,7 +130,7 @@ func (c *Client) MigrateFromMikhmon() (*MigrationResult, error) {
 		result.ProfilesConverted++
 	}
 
-	if err := removeMikhmonArtifacts(conn, usernames, result); err != nil {
+	if err := removeMikhmonArtifacts(conn, usernames, profileNames, result); err != nil {
 		return result, fmt.Errorf("removing Mikhmon scheduler/script leftovers: %w", err)
 	}
 
@@ -149,14 +154,17 @@ func (c *Client) MigrateFromMikhmon() (*MigrationResult, error) {
 // /system script named "<date>-|-<time>-|-<user>-|-<price>" tagged
 // comment=mikhmon (a literal, Mikhmon-specific marker) — those are matched
 // on that comment instead, since their names aren't usernames.
-func removeMikhmonArtifacts(conn *ros.Client, usernames map[string]bool, result *MigrationResult) error {
+//
+// Each Mikhmon plan also has a monitor scheduler that expires its vouchers;
+// Pikro's cleanup does that job now (see isMikhmonMonitor).
+func removeMikhmonArtifacts(conn *ros.Client, usernames, profileNames map[string]bool, result *MigrationResult) error {
 	schedReply, err := conn.Run("/system/scheduler/print")
 	if err != nil {
 		return fmt.Errorf("listing schedulers: %w", err)
 	}
 	for _, s := range schedReply.Re {
 		name := s.Map["name"]
-		if !usernames[name] {
+		if !usernames[name] && !isMikhmonMonitor(name, s.Map["comment"], profileNames) {
 			continue
 		}
 		if _, err := conn.Run("/system/scheduler/remove", "=.id="+s.Map[".id"]); err != nil {
@@ -185,23 +193,47 @@ func removeMikhmonArtifacts(conn *ros.Client, usernames map[string]bool, result 
 	return nil
 }
 
+// isMikhmonMonitor reports whether a scheduler is the monitor Mikhmon adds for
+// each plan: named after the plan, commented "Monitor Profile <plan>"
+// (mikhmon/hotspot/adduserprofile.php).
+func isMikhmonMonitor(name, comment string, profileNames map[string]bool) bool {
+	return profileNames[name] && comment == "Monitor Profile "+name
+}
+
 // mikhmonExpiryToEpoch parses Mikhmon's "YYYY-MM-DD HH:MM:SS" expiry comment
 // (written in the router's local time) into a Unix epoch (UTC). gmtOffset is
 // the router's configured offset from /system/clock's gmt-offset field, used
 // to convert correctly regardless of the router's timezone.
 func mikhmonExpiryToEpoch(comment string, gmtOffset time.Duration) (epoch int64, ok bool) {
-	m := mikhmonExpiryRe.FindStringSubmatch(comment)
-	if m == nil {
+	var local time.Time
+	if m := mikhmonExpiryRe.FindStringSubmatch(comment); m != nil {
+		year, _ := strconv.Atoi(m[1])
+		month, _ := strconv.Atoi(m[2])
+		day, _ := strconv.Atoi(m[3])
+		hour, _ := strconv.Atoi(m[4])
+		min, _ := strconv.Atoi(m[5])
+		sec, _ := strconv.Atoi(m[6])
+		local = time.Date(year, time.Month(month), day, hour, min, sec, 0, time.UTC)
+	} else if mikhmonV6ExpiryRe.MatchString(comment) {
+		t, err := time.Parse("Jan/02/2006 15:04:05", comment)
+		if err != nil {
+			return 0, false
+		}
+		local = t
+	} else {
 		return 0, false
 	}
-	year, _ := strconv.Atoi(m[1])
-	month, _ := strconv.Atoi(m[2])
-	day, _ := strconv.Atoi(m[3])
-	hour, _ := strconv.Atoi(m[4])
-	min, _ := strconv.Atoi(m[5])
-	sec, _ := strconv.Atoi(m[6])
-	t := time.Date(year, time.Month(month), day, hour, min, sec, 0, time.UTC).Add(-gmtOffset)
-	return t.Unix(), true
+	return local.Add(-gmtOffset).Unix(), true
+}
+
+// pikroExpComment writes an expiry in the form the router's own cleanup
+// script reads: Unix seconds where RouterOS has :timestamp (7.12+), else the
+// router's local time as "YYYY-MM-DD HH:MM:SS" (see cleanupScriptV6).
+func pikroExpComment(epoch int64, gmtOffset time.Duration, rosVersion string) string {
+	if hasTimestamp(rosVersion) {
+		return fmt.Sprintf("exp:%d", epoch)
+	}
+	return "exp:" + time.Unix(epoch, 0).UTC().Add(gmtOffset).Format("2006-01-02 15:04:05")
 }
 
 // parseGMTOffset parses RouterOS's gmt-offset field, e.g. "+01:00" or "-05:30".
