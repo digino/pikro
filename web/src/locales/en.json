@@ -753,7 +753,7 @@
     "sizeHint50": "Uses about 50 MB of data. More accurate on fast lines; costs more on prepaid.",
     "runTest": "Run test",
     "testing": "Testing…",
-    "speedNote": "Measured from the router to a server in Europe, so it can read lower than your plan. Guests will feel it while it runs.",
+    "speedNote": "Measured from the router to the nearest Cloudflare server, so it shows your internet line, not your Wi-Fi. Guests will feel it while it runs.",
     "speedFailed": "Speed test failed",
     "notChecked": "Not checked: Pikro can’t reach the router"
   },

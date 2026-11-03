@@ -15,15 +15,17 @@ The console runs in the terminal; quit with **Ctrl-A then X**.
 
 ```sh
 brew install qemu
-mkdir -p dev/chr/images/v7 dev/chr/images/v6
-curl -fL -o dev/chr/images/v7/chr-7.25-arm64.img.zip \
+mkdir -p ~/.pikro-chr/v7 ~/.pikro-chr/v6
+curl -fL -o ~/.pikro-chr/v7/chr-7.25-arm64.img.zip \
   https://download.mikrotik.com/routeros/7.25/chr-7.25-arm64.img.zip
-curl -fL -o dev/chr/images/v6/chr-6.49.23.img.zip \
+curl -fL -o ~/.pikro-chr/v6/chr-6.49.23.img.zip \
   https://download.mikrotik.com/routeros/6.49.23/chr-6.49.23.img.zip
 ```
 
 Check each zip against MikroTik's published SHA256 (same URL plus `.sha256`).
-`dev/chr/images/` is gitignored.
+The router disks live in `~/.pikro-chr/`, outside the repo, so a git stash,
+clean or branch switch can't take them (one once did). Set `CHR_IMAGES` to use
+another folder.
 
 ## Use it from Pikro
 
@@ -56,7 +58,7 @@ All requests come from one guest device, so this tests one guest at a time.
 ## State and reset
 
 The VM writes to the unpacked `.img`, so router state survives restarts.
-Delete `dev/chr/images/v7/*.img` (or `v6`) to start from a factory-fresh router;
+Delete `~/.pikro-chr/v7/*.img` (or `v6`) to start from a factory-fresh router;
 the next run unpacks it again from the zip.
 
 ## Limits

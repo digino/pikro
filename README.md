@@ -15,11 +15,17 @@
 
 - **Hotspot voucher management** — generate, print, enable/disable, edit, and bulk-manage users and vouchers, no CLI required
 - **Vouchers that actually expire** — installs a cleanup scheduler on the router, fixing the well-known RouterOS v7 expiry bug (Mikhmonv3)
-- **Guided hotspot setup wizard** — provisions IP pool, DHCP, NAT, walled garden, DNS, login page, and cleanup in one flow (coming soon)
-- **Customizable login pages** — pick from several ready-made hotspot login page designs, set a title/subtitle, preview live, and upload straight to the router
+- **Customizable login page** — guests log in with a code only or a code + password, in English or French; show your prices and a number to call to buy a ticket, preview live, and upload straight to the router
 - **User & profile management** — create profiles with validity, price, bandwidth, and data-quota controls
-- **Live monitoring** — active sessions, bandwidth, WAN IP, and system resources, with one-click disconnect for active sessions
+- **Sales reports** — daily and monthly sales from the vouchers guests actually use, with CSV export
+- **Hotspot logs** — logins, logouts, failed logins and cleanup removals, searchable and exportable to CSV
+- **Live monitoring** — active sessions, bandwidth per interface, WAN status, hosts and DHCP leases, with one-click disconnect for active sessions
+- **Troubleshoot** — a one-click internet check from the router (cable, provider's box, internet, DNS) that says in plain words where the problem is, a one-click switch to public DNS, and a speed test
+- **Maintenance** — spots a wrong router clock and turns on automatic time, checks for RouterOS updates, and restarts the router
+- **Coming from Mikhmon?** — converts your existing Mikhmon v3 vouchers and profiles in one step (beta)
 - **Automatic router discovery** — finds MikroTik devices on your LAN via MNDP
+- **English and French** — the whole app, and the guest login pages
+- **Update notice** — tells you when a new Pikro version is out; it never updates itself
 - **Multi-platform** — single binary for Windows and macOS (Apple Silicon)
 - **Local-first** — runs on your machine, no telemetry, credentials never leave your computer
 
@@ -33,9 +39,9 @@ If you love this project, please consider giving it a ⭐.
 
 Pick from 3 printable templates, each with a live preview before you print:
 
-- **Classic** — dense ticket sheet, heavy borders, zero gap, ~60 vouchers per page
 - **Modern** — compact professional cards, light spacing, ~60 per page
 - **Business** — includes a scannable QR code that logs the user in directly, ~40 per page
+- **Voucher** — one code with a QR code, for the "Code only" login page
 
 The QR code is generated entirely client-side (no external service, no network
 call — the old "generate it via Mikhmon's website" workaround isn't needed).
@@ -49,21 +55,20 @@ away with no typing.
 
 <table>
   <tr>
-    <td><img src="assets/screenshots/user-management.png" alt="User management" /><br/><sub>User management</sub></td>
-    <td><img src="assets/screenshots/profile-management.png" alt="Hotspot profiles" /><br/><sub>Hotspot profiles</sub></td>
+    <td><img src="assets/screenshots/dashboard.png" alt="Dashboard with monthly sales, active sessions and auto-cleanup" /><br/><sub>Dashboard</sub></td>
+    <td><img src="assets/screenshots/vouchers.png" alt="Voucher generator with plans, ticket design and print preview" /><br/><sub>Voucher generator</sub></td>
   </tr>
   <tr>
-    <td><img src="assets/screenshots/profile-creation.png" alt="Creating a profile" /><br/><sub>Creating a profile</sub></td>
-    <td><img src="assets/screenshots/auto-cleanup setup.png" alt="Auto-cleanup scheduler" /><br/><sub>Auto-cleanup scheduler</sub></td>
+    <td><img src="assets/screenshots/users.png" alt="Users and vouchers list with status filters" /><br/><sub>Users &amp; vouchers</sub></td>
+    <td><img src="assets/screenshots/profiles.png" alt="Hotspot plans with prices" /><br/><sub>Plans &amp; prices</sub></td>
   </tr>
   <tr>
-    <td><img src="assets/screenshots/router-add.png" alt="Adding a router" /><br/><sub>Adding a router</sub></td>
-    <td><img src="assets/screenshots/router-auto-discovery.png" alt="Automatic router discovery" /><br/><sub>Automatic router discovery</sub></td>
+    <td><img src="assets/screenshots/routers.png" alt="Router discovery and saved routers" /><br/><sub>Routers</sub></td>
+    <td><img src="assets/screenshots/logs.png" alt="Hotspot logs with login, logout and failed-login filters" /><br/><sub>Hotspot logs</sub></td>
   </tr>
   <tr>
-    <td><img src="assets/screenshots/system-health.png" alt="System health and bandwidth" /><br/><sub>System health &amp; bandwidth</sub></td>
-        <td><img src="assets/screenshots/logs.png" alt="Hotspot logs" /><br/><sub>Hotspot logs</sub></td>
-
+    <td><img src="assets/screenshots/troubleshoot.png" alt="Internet check: cable, provider box, internet and DNS" /><br/><sub>Troubleshoot</sub></td>
+    <td><img src="assets/screenshots/maintenance.png" alt="Router clock, RouterOS update check and restart" /><br/><sub>Maintenance</sub></td>
   </tr>
 </table>
 
