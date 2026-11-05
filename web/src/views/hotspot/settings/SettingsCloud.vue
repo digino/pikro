@@ -1,0 +1,299 @@
+<template>
+  <div v-if="session && !session.configured" class="card p-6 text-sm text-text-secondary">
+    {{ t('settings.cloud.notConfigured') }}
+  </div>
+
+  <div v-else-if="session" class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-7 items-start">
+    <!-- This router -->
+    <section class="card p-7 flex flex-col gap-4.5">
+      <div class="flex flex-wrap items-center gap-3">
+        <h2 class="type-display m-0 text-3xl">{{ t('settings.cloud.heading') }}</h2>
+        <span class="chip bg-primary text-primary-fg">{{ t('settings.beta') }}</span>
+      </div>
+      <p class="leading-relaxed text-text-secondary">{{ t('settings.cloud.intro') }}</p>
+
+      <div v-if="loadingRouter" class="flex justify-center py-6"><span class="spinner" /></div>
+      <p v-else-if="routerError" role="alert" class="m-0 text-sm text-danger-text">{{ routerError }}</p>
+
+      <template v-else-if="routerCloud">
+        <!-- Connected: summary -->
+        <div v-if="routerCloud.status.connected && !editing" class="flex flex-col gap-3">
+          <div class="flex items-center gap-2.5 p-3.5 rounded-control border-2 border-ink bg-online-wash font-semibold">
+            <CheckIcon class="size-5 shrink-0 stroke-3 text-online" aria-hidden="true" />
+            <span>{{ t('settings.cloud.connected', { n: routerCloud.status.poolVouchers }) }}</span>
+          </div>
+          <p class="m-0 text-xs text-text-muted">{{ t('settings.cloud.routerId', { id: routerCloud.status.cloudRouterId }) }}</p>
+          <div class="flex flex-wrap gap-2.5">
+            <button type="button" class="btn" :disabled="!canSetUp" @click="editing = true">{{ t('settings.cloud.changePlans') }}</button>
+            <button type="button" class="btn" @click="confirmingDisconnect = true">{{ t('settings.cloud.disconnect') }}</button>
+          </div>
+        </div>
+
+        <!-- Setup form -->
+        <form v-else class="flex flex-col gap-4" @submit.prevent="connect">
+          <label class="flex flex-col gap-1">
+            <span class="font-medium">{{ t('settings.cloud.ownerPhone') }}</span>
+            <input v-model="ownerPhone" class="input" inputmode="tel" placeholder="+228 90 00 00 00" required />
+            <span class="text-xs text-text-muted">{{ t('settings.cloud.ownerPhoneHint') }}</span>
+          </label>
+
+          <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+            <legend class="font-medium mb-2">{{ t('settings.cloud.plans') }}</legend>
+            <label
+              v-for="p in routerCloud.plans" :key="p.profile"
+              class="flex items-center gap-2.5 select-none"
+              :class="p.price ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'"
+            >
+              <CheckboxRoot
+                :model-value="selected.includes(p.profile)"
+                :disabled="!p.price"
+                class="size-5 rounded-md border-2 border-ink bg-paper flex items-center justify-center cursor-pointer data-[state=checked]:bg-ink disabled:cursor-not-allowed"
+                @update:model-value="toggle(p.profile, $event === true)"
+              >
+                <CheckboxIndicator><CheckIcon class="size-3.5 text-paper" /></CheckboxIndicator>
+              </CheckboxRoot>
+              <span class="text-sm flex-1">{{ p.profile }}</span>
+              <span class="text-sm font-semibold">
+                {{ p.price ? `${p.price} ${routerCloud.currency}` : t('settings.cloud.noPrice') }}
+              </span>
+            </label>
+            <p class="m-0 text-xs text-text-muted">{{ t('settings.cloud.plansHint') }}</p>
+          </fieldset>
+
+          <p v-if="!routerCloud.currency" role="alert" class="m-0 text-sm text-danger-text">{{ t('settings.cloud.noCurrency') }}</p>
+          <p v-if="!canSetUp" class="m-0 text-sm text-text-secondary">{{ t('settings.cloud.signInFirst') }}</p>
+
+          <div class="flex flex-wrap gap-2.5">
+            <button
+              type="submit"
+              class="btn btn-primary min-h-12.5 text-[15px]"
+              :disabled="!canSetUp || connecting || !selected.length || !ownerPhone || !routerCloud.currency"
+            >
+              <span v-if="connecting" class="spinner spinner--sm" />
+              {{ connecting ? t('settings.cloud.connecting') : t('settings.cloud.connect') }}
+            </button>
+            <button v-if="editing" type="button" class="btn" :disabled="connecting" @click="editing = false">
+              {{ t('settings.cloud.cancel') }}
+            </button>
+          </div>
+        </form>
+
+        <!-- Result of the last connect -->
+        <ul v-if="result" class="m-0 p-0 list-none flex flex-col gap-2 text-sm">
+          <li v-for="s in result.steps" :key="s.name" class="flex items-start gap-2.5">
+            <CheckIcon v-if="s.ok" class="size-5 shrink-0 stroke-[2.75] text-online" aria-hidden="true" />
+            <XMarkIcon v-else class="size-5 shrink-0 stroke-[2.75] text-danger-text" aria-hidden="true" />
+            <span>
+              {{ s.name }}
+              <span v-if="s.skipped" class="text-text-muted">({{ t('settings.cloud.alreadyDone') }})</span>
+              <span v-if="s.error" class="block text-danger-text">{{ s.error }}</span>
+            </span>
+          </li>
+        </ul>
+        <p v-if="connectError" role="alert" class="m-0 text-sm text-danger-text">{{ connectError }}</p>
+      </template>
+    </section>
+
+    <!-- The technician -->
+    <section class="card p-6 flex flex-col gap-4">
+      <template v-if="session.signedIn">
+        <div>
+          <h3 class="m-0 font-bold">{{ t('settings.cloud.signedInAs', { name: session.name || session.email }) }}</h3>
+          <p class="m-0 mt-1 text-sm text-text-secondary">
+            {{ t('settings.cloud.sessionUntil', { date: formatDate(session.expiresAt) }) }}
+          </p>
+        </div>
+        <p v-if="session.revoked" role="alert" class="m-0 text-sm text-danger-text">{{ t('settings.cloud.revoked') }}</p>
+        <button type="button" class="btn self-start" @click="signOut">{{ t('settings.cloud.signOut') }}</button>
+      </template>
+
+      <form v-else class="flex flex-col gap-4" @submit.prevent="codeSent ? signIn() : sendCode()">
+        <div>
+          <h3 class="m-0 font-bold">{{ t('settings.cloud.signInTitle') }}</h3>
+          <p class="m-0 mt-1 text-sm text-text-secondary">{{ t('settings.cloud.signInBody') }}</p>
+        </div>
+        <label class="flex flex-col gap-1">
+          <span class="font-medium">{{ t('settings.cloud.email') }}</span>
+          <input v-model="email" type="email" class="input" autocomplete="email" placeholder="name@example.com" :disabled="codeSent" required />
+        </label>
+        <label v-if="codeSent" class="flex flex-col gap-1">
+          <span class="font-medium">{{ t('settings.cloud.code') }}</span>
+          <input v-model="code" class="input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required />
+          <span class="text-xs text-text-muted">{{ t('settings.cloud.codeHint') }}</span>
+        </label>
+        <p v-if="signInError" role="alert" class="m-0 text-sm text-danger-text">{{ signInError }}</p>
+        <div class="flex flex-wrap gap-2.5">
+          <button type="submit" class="btn btn-ink" :disabled="busy">
+            <span v-if="busy" class="spinner spinner--sm" />
+            {{ codeSent ? t('settings.cloud.signIn') : t('settings.cloud.sendCode') }}
+          </button>
+          <button v-if="codeSent" type="button" class="btn" :disabled="busy" @click="codeSent = false; code = ''">
+            {{ t('settings.cloud.otherNumber') }}
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <AppDialog v-model:open="confirmingDisconnect" :title="t('settings.cloud.disconnectTitle')">
+      <p class="m-0 text-sm leading-normal text-text-secondary">{{ t('settings.cloud.disconnectBody') }}</p>
+      <p v-if="disconnectError" role="alert" class="m-0 mt-3 text-sm text-danger-text">{{ disconnectError }}</p>
+      <div class="flex justify-end gap-2.5 mt-6">
+        <button type="button" class="btn" @click="confirmingDisconnect = false">{{ t('settings.cloud.cancel') }}</button>
+        <button type="button" class="btn btn-primary" :disabled="disconnecting" @click="disconnect">
+          <span v-if="disconnecting" class="spinner spinner--sm" />
+          {{ t('settings.cloud.disconnect') }}
+        </button>
+      </div>
+    </AppDialog>
+  </div>
+
+  <div v-else class="flex justify-center py-10"><span class="spinner" /></div>
+</template>
+
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
+import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { useRoutersStore } from '@/stores/routers'
+import {
+  getCloudSession, sendCloudCode, signInToCloud, signOutOfCloud,
+  getRouterCloud, connectRouterToCloud, disconnectRouterFromCloud,
+  type CloudSession, type RouterCloud, type CloudConnectResult,
+} from '@/api'
+import AppDialog from '@/components/AppDialog.vue'
+
+const { t, locale } = useI18n()
+const store = useRoutersStore()
+
+const errorText = (e: any, fallback: string) => e?.response?.data?.error ?? e?.message ?? fallback
+// "+228 90 00 00 00" -> "+22890000000", the form Cloud expects.
+const compactPhone = (s: string) => s.replace(/[\s.-]/g, '')
+const formatDate = (iso?: string) =>
+  iso ? new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium' }).format(new Date(iso)) : ''
+
+// Technician session
+const session = ref<CloudSession | null>(null)
+const email = ref('')
+const code = ref('')
+const codeSent = ref(false)
+const busy = ref(false)
+const signInError = ref('')
+
+async function loadSession() {
+  try {
+    session.value = await getCloudSession()
+  } catch (e: any) {
+    session.value = { configured: true, signedIn: false }
+    signInError.value = errorText(e, t('settings.cloud.failed'))
+  }
+}
+
+async function sendCode() {
+  busy.value = true
+  signInError.value = ''
+  try {
+    await sendCloudCode(email.value.trim())
+    codeSent.value = true
+  } catch (e: any) {
+    // 429: a code sent less than a minute ago is still valid — let them type it.
+    if (e?.response?.status === 429) codeSent.value = true
+    else signInError.value = errorText(e, t('settings.cloud.failed'))
+  } finally {
+    busy.value = false
+  }
+}
+
+async function signIn() {
+  busy.value = true
+  signInError.value = ''
+  try {
+    session.value = await signInToCloud(email.value.trim(), code.value)
+    codeSent.value = false
+    code.value = ''
+  } catch (e: any) {
+    signInError.value = errorText(e, t('settings.cloud.failed'))
+  } finally {
+    busy.value = false
+  }
+}
+
+async function signOut() {
+  session.value = await signOutOfCloud()
+}
+
+const canSetUp = computed(() => !!session.value?.signedIn && !session.value.revoked)
+
+// This router
+const routerCloud = ref<RouterCloud | null>(null)
+const loadingRouter = ref(false)
+const routerError = ref('')
+const editing = ref(false)
+const ownerPhone = ref('')
+const selected = ref<string[]>([])
+const connecting = ref(false)
+const connectError = ref('')
+const result = ref<CloudConnectResult | null>(null)
+
+function toggle(profile: string, on: boolean) {
+  selected.value = on ? [...selected.value, profile] : selected.value.filter(p => p !== profile)
+}
+
+async function loadRouter() {
+  if (!store.activeId) return
+  loadingRouter.value = true
+  routerError.value = ''
+  result.value = null
+  editing.value = false
+  try {
+    routerCloud.value = await getRouterCloud(store.activeId)
+    selected.value = routerCloud.value.plans.filter(p => p.price).map(p => p.profile)
+  } catch (e: any) {
+    routerError.value = errorText(e, t('settings.cloud.failed'))
+  } finally {
+    loadingRouter.value = false
+  }
+}
+
+async function connect() {
+  if (!store.activeId) return
+  connecting.value = true
+  connectError.value = ''
+  result.value = null
+  try {
+    result.value = await connectRouterToCloud(store.activeId, compactPhone(ownerPhone.value), selected.value)
+    if (result.value.steps.every(s => s.ok)) {
+      const kept = result.value
+      await loadRouter()
+      result.value = kept
+    }
+  } catch (e: any) {
+    connectError.value = errorText(e, t('settings.cloud.failed'))
+    if (e?.response?.status === 401) await loadSession()
+  } finally {
+    connecting.value = false
+  }
+}
+
+const confirmingDisconnect = ref(false)
+const disconnecting = ref(false)
+const disconnectError = ref('')
+
+async function disconnect() {
+  if (!store.activeId) return
+  disconnecting.value = true
+  disconnectError.value = ''
+  try {
+    await disconnectRouterFromCloud(store.activeId)
+    confirmingDisconnect.value = false
+    await loadRouter()
+  } catch (e: any) {
+    disconnectError.value = errorText(e, t('settings.cloud.failed'))
+  } finally {
+    disconnecting.value = false
+  }
+}
+
+loadSession()
+watch(() => store.activeId, loadRouter, { immediate: true })
+</script>

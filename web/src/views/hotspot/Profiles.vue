@@ -120,7 +120,9 @@
                 required
                 :disabled="!!editing"
                 :placeholder="t('profiles.namePlaceholder')"
+                :aria-invalid="!!nameError"
               />
+              <span v-if="nameError" class="text-xs text-red">{{ nameError }}</span>
             </label>
 
             <div class="flex flex-col gap-1.5">
@@ -171,7 +173,7 @@
             <label class="flex flex-col gap-1.5">
               <span class="eyebrow">{{ t('profiles.price') }}</span>
               <span class="join">
-                <input v-model="form.price" class="input min-w-0 flex-1 font-semibold" inputmode="decimal" placeholder="500" />
+                <input v-model="form.price" class="input min-w-0 flex-1 font-semibold" inputmode="decimal" placeholder="500" :aria-invalid="!!priceError" />
                 <span
                   v-if="currency"
                   class="inline-flex items-center px-3 border-2 border-ink rounded-control bg-primary text-primary-fg text-[13px] font-bold"
@@ -179,6 +181,7 @@
                   {{ currency }}
                 </span>
               </span>
+              <span v-if="priceError" class="text-xs text-red">{{ priceError }}</span>
             </label>
 
             <div class="flex flex-col gap-1.5">
@@ -271,6 +274,8 @@
                 class="btn btn-primary flex-1 min-h-12.5 text-[15px]"
                 :disabled="
                   submitting ||
+                  !!nameError ||
+                  !!priceError ||
                   (!!validityRaw && !validityPreview) ||
                   (!rosVersion && !!validityPreview)
                 "
@@ -466,6 +471,16 @@ function parseShorthand(
     m: parseInt(min || "0"),
   };
 }
+
+// Same rules as the Go handler (profileBody.validate). ; , and " would break
+// Pikro Cloud's sync format and the RouterOS command that creates vouchers.
+const nameError = computed(() =>
+  /[;,"]/.test(form.value.name) ? t("profiles.nameInvalid") : "",
+);
+const priceError = computed(() => {
+  const p = form.value.price.trim();
+  return p && !(/^\d+(\.\d{1,2})?$/.test(p) && parseFloat(p) > 0) ? t("profiles.priceInvalid") : "";
+});
 
 const validityPreview = computed(() => {
   const p = parseShorthand(validityRaw.value);

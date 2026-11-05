@@ -69,8 +69,18 @@ type RouterProfile struct {
 	HotspotSettings *HotspotSettings `json:"hotspotSettings,omitempty"`
 }
 
+// CloudSession is the certified technician signed in to Pikro Cloud from
+// this computer. Token is a bearer token for Cloud: keep it out of the browser.
+type CloudSession struct {
+	Token     string    `json:"token"`
+	Email     string    `json:"email"`
+	Name      string    `json:"name"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
 type Config struct {
 	Routers []RouterProfile `json:"routers"`
+	Cloud   *CloudSession   `json:"cloud,omitempty"`
 }
 
 func configPath() string {

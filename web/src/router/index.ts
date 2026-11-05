@@ -3,7 +3,6 @@ import { useRoutersStore } from '@/stores/routers'
 import Home from '@/views/Home.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import HotspotLayout from '@/views/Hotspot.vue'
-import HotspotSetup from '@/views/hotspot/Setup.vue'
 import HotspotUsers from '@/views/hotspot/Users.vue'
 import HotspotVouchers from '@/views/hotspot/Vouchers.vue'
 import HotspotProfiles from '@/views/hotspot/Profiles.vue'
@@ -38,7 +37,6 @@ export default createRouter({
       component: HotspotLayout,
       redirect: '/hotspot/users',
       children: [
-        { path: 'setup',    component: HotspotSetup },
         { path: 'users',    component: HotspotUsers },
         { path: 'vouchers', component: HotspotVouchers },
         { path: 'profiles', component: HotspotProfiles },

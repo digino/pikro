@@ -13,7 +13,7 @@
         >
           {{ t(`settings.tabs.${key}`) }}
           <span
-            v-if="key === 'migration'"
+            v-if="key !== 'login'"
             class="rounded-full border-[1.5px] border-current px-1.75 py-0.5 text-xs"
           >{{ t('settings.beta') }}</span>
         </button>
@@ -38,6 +38,8 @@
 
     <template v-else-if="settings">
       <SettingsLoginPage v-if="tab === 'login'" :settings="settings" @saved="settings = $event" />
+      <SettingsSetup v-else-if="tab === 'setup'" @open-login-page="tab = 'login'" />
+      <SettingsCloud v-else-if="tab === 'cloud'" />
       <SettingsMigration v-else />
     </template>
   </PageLayout>
@@ -53,11 +55,13 @@ import PageLayout from '@/components/PageLayout.vue'
 import NoRouterSelected from '@/components/NoRouterSelected.vue'
 import SettingsLoginPage from './settings/SettingsLoginPage.vue'
 import SettingsMigration from './settings/SettingsMigration.vue'
+import SettingsCloud from './settings/SettingsCloud.vue'
+import SettingsSetup from './settings/SettingsSetup.vue'
 
 const { t } = useI18n()
 const store = useRoutersStore()
 
-const TABS = ['login', 'migration'] as const
+const TABS = ['login', 'setup', 'cloud', 'migration'] as const
 const tab = ref<(typeof TABS)[number]>('login')
 
 const loading = ref(false)

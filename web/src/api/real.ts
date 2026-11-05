@@ -278,3 +278,53 @@ export const rebootRouter = (id: string) =>
 
 export const runSpeedTest = (id: string, target = '10') =>
   api.post<Record<string, string>>(`/routers/${id}/speedtest`, { target }).then(r => r.data)
+
+// Pikro Cloud (opt-in, certified technicians) — see pikro-cloud's docs/cloud-setup.md
+export interface CloudSession {
+  configured: boolean
+  signedIn: boolean
+  email?: string
+  name?: string
+  expiresAt?: string
+  revoked?: boolean
+}
+
+export const getCloudSession = () =>
+  api.get<CloudSession>('/cloud/session').then(r => r.data)
+
+export const sendCloudCode = (email: string) =>
+  api.post('/cloud/code', { email })
+
+export const signInToCloud = (email: string, code: string) =>
+  api.post<CloudSession>('/cloud/session', { email, code }).then(r => r.data)
+
+export const signOutOfCloud = () =>
+  api.delete<CloudSession>('/cloud/session').then(r => r.data)
+
+export interface RouterCloud {
+  status: {
+    connected: boolean
+    cloudRouterId: string
+    poolVouchers: number
+    hardwareId: string
+    routerOsVersion: string
+    hasHotspot: boolean
+  }
+  plans: { profile: string; price: number }[]
+  currency: string
+}
+
+export interface CloudConnectResult {
+  steps: { name: string; ok: boolean; error?: string; skipped?: boolean }[]
+  vouchers: number
+  cloudRouterId: string
+}
+
+export const getRouterCloud = (id: string) =>
+  api.get<RouterCloud>(`/routers/${id}/cloud`).then(r => r.data)
+
+export const connectRouterToCloud = (id: string, ownerPhone: string, profiles: string[]) =>
+  api.post<CloudConnectResult>(`/routers/${id}/cloud`, { ownerPhone, profiles }).then(r => r.data)
+
+export const disconnectRouterFromCloud = (id: string) =>
+  api.delete(`/routers/${id}/cloud`)

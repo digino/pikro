@@ -89,6 +89,14 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/routers/{id}/hotspot/profiles/{profileID}", handlers.DeleteHotspotProfile)
 	mux.HandleFunc("GET /api/routers/{id}/address-pools", handlers.ListAddressPools)
 
+	mux.HandleFunc("GET /api/cloud/session", handlers.GetCloudSession)
+	mux.HandleFunc("POST /api/cloud/code", handlers.PostCloudCode)
+	mux.HandleFunc("POST /api/cloud/session", handlers.PostCloudSession)
+	mux.HandleFunc("DELETE /api/cloud/session", handlers.DeleteCloudSession)
+	mux.HandleFunc("GET /api/routers/{id}/cloud", handlers.GetRouterCloud)
+	mux.HandleFunc("POST /api/routers/{id}/cloud", handlers.PostRouterCloud)
+	mux.HandleFunc("DELETE /api/routers/{id}/cloud", handlers.DeleteRouterCloud)
+
 	mux.HandleFunc("POST /api/routers/{id}/speedtest", handlers.RunSpeedTest)
 	mux.HandleFunc("GET /api/routers/{id}/tools/internet-check", handlers.GetInternetCheck)
 	mux.HandleFunc("POST /api/routers/{id}/tools/public-dns", handlers.PostPublicDNS)
