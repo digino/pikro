@@ -125,6 +125,11 @@ func (c *Client) CreateSession(ctx context.Context, email, code string) (*Sessio
 	return &s, err
 }
 
+// SignOut ends the session on Cloud.
+func (c *Client) SignOut(ctx context.Context, token string) error {
+	return c.call(ctx, http.MethodDelete, "/auth/session", token, nil, nil)
+}
+
 // Me tells who a session belongs to now (a technician may have been revoked).
 func (c *Client) Me(ctx context.Context, token string) (*Person, error) {
 	var p Person

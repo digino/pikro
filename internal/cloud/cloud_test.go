@@ -26,6 +26,13 @@ func fakeCloud(t *testing.T) *Client {
 		w.Write([]byte(`{"token":"TOK","expires_at":"2026-12-04T10:00:00Z","person":{"email":"` + req.Email +
 			`","admin":false,"technician":{"first_name":"Kossi","last_name":"Mensah"}}}`))
 	})
+	mux.HandleFunc("DELETE /auth/session", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer TOK" {
+			http.Error(w, `{"error":"not signed in"}`, http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
 	mux.HandleFunc("POST /routers", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer TOK" {
 			http.Error(w, `{"error":"not signed in"}`, http.StatusUnauthorized)
@@ -51,6 +58,10 @@ func TestSignIn(t *testing.T) {
 	}
 	if s.Token != "TOK" || s.Person.Technician == nil || s.Person.Technician.FirstName != "Kossi" || s.ExpiresAt.IsZero() {
 		t.Errorf("session %+v", s)
+	}
+
+	if err := c.SignOut(ctx, s.Token); err != nil {
+		t.Errorf("sign out: %v", err)
 	}
 
 	_, err = c.CreateSession(ctx, "kossi@pikro.test", "000000")

@@ -589,6 +589,128 @@
       "disconnectTitle": "Disconnect from Pikro Cloud?",
       "disconnectBody": "This removes the sync script and the unsold Cloud vouchers from the router. Customers can no longer buy online on this hotspot. Vouchers already sold keep working.",
       "failed": "Something went wrong. Try again."
+    },
+    "setup": {
+      "checking": "Checking router configuration…",
+      "blocked": {
+        "title": "Hotspot already configured",
+        "body": "A hotspot is active on this router. Reset it below to reconfigure, or go to Users to manage it.",
+        "detected": "Detected hotspot",
+        "serverName": "Server name",
+        "interface": "Interface",
+        "profile": "Profile",
+        "addressPool": "Address pool",
+        "dnsName": "DNS name",
+        "none": "(none)",
+        "addProfiles": "Add profiles",
+        "recheck": "Re-check"
+      },
+      "resetResult": "Reset result",
+      "steps": {
+        "bridge": "Bridge",
+        "network": "Network",
+        "subnet": "Subnet",
+        "review": "Review",
+        "cleanup": "Cleanup"
+      },
+      "preflightError": "Could not read interfaces: {error}. Enter interface names manually.",
+      "bridge": {
+        "notFound": "No bridge or wireless interface was found on this router. Create a bridge to use as the hotspot LAN.",
+        "name": "Bridge name",
+        "ports": "Ports to add",
+        "portsHint": "Select the physical ports clients will connect through. Leave your uplink port (usually ether1) unchecked."
+      },
+      "down": "down",
+      "newBridge": "{name} (new bridge)",
+      "network": {
+        "title": "Network configuration",
+        "lan": "LAN / Hotspot interface",
+        "lanHint": "The interface clients connect to (usually a bridge or wlan)",
+        "lanPlaceholder": "e.g. bridge1 or ether2",
+        "wan": "WAN interface",
+        "wanHint": "The interface connected to the internet (usually ether1)",
+        "wanPlaceholder": "e.g. ether1",
+        "selectInterface": "Select interface…",
+        "hotspotName": "Hotspot name",
+        "redirectedTo": "Clients are redirected to"
+      },
+      "subnet": {
+        "checkingDhcp": "Checking for an existing DHCP server on {iface}…",
+        "dhcpExists": "{iface} already has a DHCP server for {subnet} — reusing it instead of creating a new one, so the subnet is fixed to this network.",
+        "label": "Subnet (CIDR)",
+        "gateway": "Router IP (gateway)",
+        "dhcpPool": "DHCP pool",
+        "profileName": "Hotspot profile name",
+        "invalidCidr": "Enter a valid CIDR, e.g. 192.168.88.0/24",
+        "octets": "Octets must be 0-255",
+        "prefix": "Prefix must be between /16 and /30 (too small or too large for a hotspot LAN)",
+        "networkAddress": "Use the network address (last octet 0), e.g. 192.168.88.0/24",
+        "reserved": "That range is reserved and can't be used for a LAN"
+      },
+      "review": {
+        "warning": "Ensure no hotspot is already configured on this router. Running setup on an existing configuration may cause conflicts.",
+        "heading": "What will be configured",
+        "bridgeFallback": "(bridge)",
+        "lanFallback": "(LAN interface)",
+        "wanFallback": "(WAN interface)",
+        "createBridge": "Create bridge {name}",
+        "createBridgeWithPorts": "Create bridge {name} with ports {ports}",
+        "assign": "Assign {ip} to {iface}",
+        "createPool": "Create IP pool",
+        "createDhcp": "Create DHCP server + network",
+        "createProfile": "Create hotspot server profile with Pikro login page",
+        "enableHotspot": "Enable hotspot on {iface}",
+        "nat": "Add NAT masquerade on {iface}",
+        "dns": "Enable DNS remote requests"
+      },
+      "cleanup": {
+        "title": "Protect your vouchers",
+        "body": "RouterOS doesn't remove expired vouchers on its own — Pikro installs a cleanup scheduler on the router so expired and quota-exhausted vouchers get removed automatically, on the schedule you pick below.",
+        "runEvery": "Run every"
+      },
+      "recheckRouter": "Re-check router",
+      "back": "Back",
+      "next": "Next",
+      "run": "Run Setup",
+      "running": {
+        "title": "Configuring hotspot…",
+        "wait": "This takes a few seconds. Please wait."
+      },
+      "result": {
+        "success": "Hotspot configured successfully!",
+        "withErrors": "Setup completed with errors",
+        "alreadyConfigured": "already configured",
+        "nextHeading": "What's next",
+        "next1": "Create your first hotspot user with a time or data limit.",
+        "adminNote": "RouterOS added a default {admin} user with no password — delete or secure it from the Users page.",
+        "next2": "Connect a client device to the router's WiFi or LAN — it will be redirected to {target}.",
+        "loginPageFallback": "the login page",
+        "next3": "Share the credentials — or create multiple users in bulk for voucher-style access.",
+        "next4": "Configure your login page in {link}.",
+        "failedHeading": "Some steps failed",
+        "failedBody": "Steps marked as \"already configured\" are fine — they were skipped because the resource exists. Fix any red steps manually in RouterOS, then run setup again.",
+        "addUsers": "Add users",
+        "runAgain": "Run again"
+      },
+      "teardown": {
+        "title": "Reset hotspot config?",
+        "router": "Router",
+        "host": "Host",
+        "hotspotInterface": "Hotspot interface",
+        "willRemove": "This will remove:",
+        "server": "Hotspot server",
+        "serverProfile": "Hotspot server profile",
+        "nat": "NAT masquerade rule",
+        "walledGarden": "Walled garden rules",
+        "kept": "IP address, DHCP server, IP pool and DNS settings are kept.",
+        "cancel": "Cancel",
+        "confirm": "Reset config",
+        "step": "Teardown",
+        "failed": "Reset failed"
+      },
+      "connectionFailed": "Connection failed",
+      "requestFailed": "Request failed",
+      "setupRequest": "Setup request"
     }
   },
   "monitor": {

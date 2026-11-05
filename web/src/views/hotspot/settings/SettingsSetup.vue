@@ -5,7 +5,7 @@
       class="card max-w-3xl flex flex-col items-center py-16 gap-3"
     >
       <span class="spinner" />
-      <p class="m-0 text-sm text-text-secondary">Checking router configuration…</p>
+      <p class="m-0 text-sm text-text-secondary">{{ t('settings.setup.checking') }}</p>
     </div>
 
     <!-- ── Phase: blocked ─────────────────────────────────────────────────── -->
@@ -16,47 +16,46 @@
         >
           <ExclamationTriangleIcon class="size-5 shrink-0 mt-0.5" />
           <div class="flex-1 min-w-0">
-            <p class="m-0 font-semibold">Hotspot already configured</p>
+            <p class="m-0 font-semibold">{{ t('settings.setup.blocked.title') }}</p>
             <p class="m-0 mt-1 text-text-secondary">
-              A hotspot is active on this router. Reset it below to reconfigure,
-              or go to Users to manage it.
+              {{ t('settings.setup.blocked.body') }}
             </p>
           </div>
         </div>
 
         <div class="bg-ground rounded-control p-4 text-sm flex flex-col gap-3">
-          <p class="eyebrow m-0">Detected hotspot</p>
+          <p class="eyebrow m-0">{{ t('settings.setup.blocked.detected') }}</p>
           <div class="grid grid-cols-2 gap-x-4 gap-y-2">
-            <span class="text-text-secondary">Server name</span>
+            <span class="text-text-secondary">{{ t('settings.setup.blocked.serverName') }}</span>
             <span class="font-mono text-ink">{{
               preflight?.hotspotName || "—"
             }}</span>
-            <span class="text-text-secondary">Interface</span>
+            <span class="text-text-secondary">{{ t('settings.setup.blocked.interface') }}</span>
             <span class="font-mono text-ink">{{
               preflight?.hotspotOnIface || "—"
             }}</span>
-            <span class="text-text-secondary">Profile</span>
+            <span class="text-text-secondary">{{ t('settings.setup.blocked.profile') }}</span>
             <span class="font-mono text-ink">{{
               preflight?.hotspotProfile || "—"
             }}</span>
-            <span class="text-text-secondary">Address pool</span>
+            <span class="text-text-secondary">{{ t('settings.setup.blocked.addressPool') }}</span>
             <span class="font-mono text-ink">{{
               preflight?.hotspotAddressPool || "—"
             }}</span>
-            <span class="text-text-secondary">DNS name</span>
+            <span class="text-text-secondary">{{ t('settings.setup.blocked.dnsName') }}</span>
             <span class="font-mono text-ink">{{
-              preflight?.hotspotDnsName || "(none)"
+              preflight?.hotspotDnsName || t('settings.setup.blocked.none')
             }}</span>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
           <RouterLink to="/hotspot/profiles" class="btn btn-ink">
-            Add profiles
+            {{ t('settings.setup.blocked.addProfiles') }}
           </RouterLink>
           <button class="btn" @click="runPreflight">
             <ArrowPathIcon class="size-4" />
-            Re-check
+            {{ t('settings.setup.blocked.recheck') }}
           </button>
           <!-- <button
             class="btn border-danger-text text-danger-text"
@@ -70,7 +69,7 @@
       </div>
 
       <div v-if="teardownResult" class="card p-6 flex flex-col gap-3">
-        <p class="eyebrow m-0">Reset result</p>
+        <p class="eyebrow m-0">{{ t('settings.setup.resetResult') }}</p>
         <ul class="m-0 p-0 list-none flex flex-col gap-2">
           <li
             v-for="step in teardownResult.steps"
@@ -129,7 +128,7 @@
                       : 'text-text-muted font-medium'
                   "
                 >
-                  {{ label }}
+                  {{ t(`settings.setup.steps.${label.toLowerCase()}`) }}
                 </StepperTitle>
               </StepperTrigger>
               <StepperSeparator
@@ -146,10 +145,7 @@
           class="flex items-start gap-2 p-3 rounded-control border-2 border-danger-text bg-danger-wash text-sm text-danger-text"
         >
           <ExclamationTriangleIcon class="size-4 shrink-0 mt-0.5" />
-          <span
-            >Could not read interfaces: {{ preflightError }}. Enter interface
-            names manually.</span
-          >
+          <span>{{ t('settings.setup.preflightError', { error: preflightError }) }}</span>
         </div>
 
         <form @submit.prevent="onFormSubmit" class="flex flex-col gap-6">
@@ -162,14 +158,11 @@
               class="flex items-start gap-2 p-3 rounded-control border-2 border-ink bg-primary-wash text-sm"
             >
               <ExclamationTriangleIcon class="size-4 shrink-0 mt-0.5" />
-              <span
-                >No bridge or wireless interface was found on this router. Create
-                a bridge to use as the hotspot LAN.</span
-              >
+              <span>{{ t('settings.setup.bridge.notFound') }}</span>
             </div>
 
             <label class="flex flex-col gap-1">
-              <span class="font-medium">Bridge name</span>
+              <span class="font-medium">{{ t('settings.setup.bridge.name') }}</span>
               <input
                 v-model="bridge.name"
                 class="input"
@@ -179,10 +172,9 @@
             </label>
 
             <div class="flex flex-col gap-1.5">
-              <span class="font-medium">Ports to add</span>
+              <span class="font-medium">{{ t('settings.setup.bridge.ports') }}</span>
               <p class="m-0 text-xs text-text-muted">
-                Select the physical ports clients will connect through. Leave your
-                uplink port (usually ether1) unchecked.
+                {{ t('settings.setup.bridge.portsHint') }}
               </p>
               <div class="grid grid-cols-2 gap-2.5 mt-1">
                 <label
@@ -206,7 +198,7 @@
                     class="sr-only"
                   />
                   <span class="text-text-secondary"
-                    >{{ i.name }}{{ !i.running ? " — down" : "" }}</span
+                    >{{ i.name }}{{ !i.running ? " — " + t('settings.setup.down') : "" }}</span
                   >
                 </label>
               </div>
@@ -218,53 +210,53 @@
             v-else-if="STEPS[step - 1] === 'Network'"
             class="flex flex-col gap-5"
           >
-            <h2 class="type-display m-0 text-2xl">Network configuration</h2>
+            <h2 class="type-display m-0 text-2xl">{{ t('settings.setup.network.title') }}</h2>
 
             <label class="flex flex-col gap-1">
               <span class="font-medium"
-                >LAN / Hotspot interface <span class="text-danger-text">*</span></span
+                >{{ t('settings.setup.network.lan') }} <span class="text-danger-text">*</span></span
               >
               <AppSelect
                 v-if="lanOptions.length"
                 v-model="form.lanIface"
                 :options="lanOptions"
-                placeholder="Select interface…"
+                :placeholder="t('settings.setup.network.selectInterface')"
               />
               <input
                 v-else
                 v-model="form.lanIface"
                 class="input"
-                placeholder="e.g. bridge1 or ether2"
+                :placeholder="t('settings.setup.network.lanPlaceholder')"
               />
               <p class="m-0 text-xs text-text-muted">
-                The interface clients connect to (usually a bridge or wlan)
+                {{ t('settings.setup.network.lanHint') }}
               </p>
             </label>
 
             <label class="flex flex-col gap-1">
               <span class="font-medium"
-                >WAN interface <span class="text-danger-text">*</span></span
+                >{{ t('settings.setup.network.wan') }} <span class="text-danger-text">*</span></span
               >
               <AppSelect
                 v-if="wanOptions.length"
                 v-model="form.wanIface"
                 :options="wanOptions"
-                placeholder="Select interface…"
+                :placeholder="t('settings.setup.network.selectInterface')"
               />
               <input
                 v-else
                 v-model="form.wanIface"
                 class="input"
-                placeholder="e.g. ether1"
+                :placeholder="t('settings.setup.network.wanPlaceholder')"
               />
               <p class="m-0 text-xs text-text-muted">
-                The interface connected to the internet (usually ether1)
+                {{ t('settings.setup.network.wanHint') }}
               </p>
             </label>
 
             <label class="flex flex-col gap-1">
               <span class="font-medium"
-                >Hotspot name <span class="text-danger-text">*</span></span
+                >{{ t('settings.setup.network.hotspotName') }} <span class="text-danger-text">*</span></span
               >
               <div class="join">
                 <input
@@ -280,7 +272,7 @@
                 />
               </div>
               <p class="m-0 text-xs text-text-muted">
-                Clients are redirected to
+                {{ t('settings.setup.network.redirectedTo') }}
                 <span class="font-mono"
                   >{{ form.hotspotName || "myhotspot"
                   }}{{ form.hotspotExtension }}</span
@@ -299,24 +291,24 @@
               class="flex items-center gap-2.5 text-sm text-text-muted"
             >
               <span class="spinner spinner--sm" />
-              Checking for an existing DHCP server on {{ form.lanIface }}…
+              {{ t('settings.setup.subnet.checkingDhcp', { iface: form.lanIface }) }}
             </div>
             <div
               v-else-if="dhcpCheck?.exists"
               class="flex items-start gap-2 p-3 rounded-control border-2 border-ink bg-primary-wash text-sm"
             >
               <ExclamationTriangleIcon class="size-4 shrink-0 mt-0.5" />
-              <span
-                >{{ form.lanIface }} already has a DHCP server for
-                <span class="font-mono">{{ dhcpCheck.subnet }}</span> — reusing
-                it instead of creating a new one, so the subnet is fixed to
-                this network.</span
-              >
+              <i18n-t keypath="settings.setup.subnet.dhcpExists" tag="span">
+                <template #iface>{{ form.lanIface }}</template>
+                <template #subnet>
+                  <span class="font-mono">{{ dhcpCheck.subnet }}</span>
+                </template>
+              </i18n-t>
             </div>
 
             <label class="flex flex-col gap-1">
               <span class="font-medium"
-                >Subnet (CIDR) <span class="text-danger-text">*</span></span
+                >{{ t('settings.setup.subnet.label') }} <span class="text-danger-text">*</span></span
               >
               <input
                 v-model="form.subnet"
@@ -331,15 +323,15 @@
 
             <div v-if="derived" class="bg-ground rounded-control p-4 text-sm">
               <div class="grid grid-cols-2 gap-x-4 gap-y-2">
-                <span class="text-text-secondary">Router IP (gateway)</span>
+                <span class="text-text-secondary">{{ t('settings.setup.subnet.gateway') }}</span>
                 <span class="font-mono text-ink font-medium">{{
                   derived.gateway
                 }}</span>
-                <span class="text-text-secondary">DHCP pool</span>
+                <span class="text-text-secondary">{{ t('settings.setup.subnet.dhcpPool') }}</span>
                 <span class="font-mono text-ink font-medium"
                   >{{ derived.poolStart }} – {{ derived.poolEnd }}</span
                 >
-                <span class="text-text-secondary">Hotspot profile name</span>
+                <span class="text-text-secondary">{{ t('settings.setup.subnet.profileName') }}</span>
                 <span class="font-mono text-ink font-medium"
                   >pikro-profile</span
                 >
@@ -354,39 +346,48 @@
                 class="flex items-start gap-2 text-sm p-3 rounded-control border-2 border-ink bg-primary-wash"
               >
                 <ExclamationTriangleIcon class="size-5 shrink-0 mt-0.5" />
-                <span
-                  >Ensure no hotspot is already configured on this router. Running
-                  setup on an existing configuration may cause conflicts.</span
-                >
+                <span>{{ t('settings.setup.review.warning') }}</span>
               </div>
 
               <div class="bg-ground rounded-control p-4 flex flex-col gap-3">
-                <h2 class="m-0 font-bold">What will be configured</h2>
+                <h2 class="m-0 font-bold">{{ t('settings.setup.review.heading') }}</h2>
                 <ul class="m-0 p-0 list-none flex flex-col gap-1 text-sm text-text-secondary">
                   <li v-if="needsBridge">
-                    • Create bridge {{ bridge.name || "(bridge)"
-                    }}{{
+                    •
+                    {{
                       bridge.ports.length
-                        ? ` with ports ${bridge.ports.join(", ")}`
-                        : ""
+                        ? t("settings.setup.review.createBridgeWithPorts", {
+                            name: bridgeName,
+                            ports: bridge.ports.join(", "),
+                          })
+                        : t("settings.setup.review.createBridge", { name: bridgeName })
                     }}
                   </li>
                   <li>
-                    • Assign {{ derived?.gateway ?? "…" }} to
-                    {{ form.lanIface || "(LAN interface)" }}
+                    •
+                    {{
+                      t("settings.setup.review.assign", {
+                        ip: derived?.gateway ?? "…",
+                        iface: lanIfaceName,
+                      })
+                    }}
                   </li>
                   <li>
-                    • Create IP pool <span class="font-mono">hotspot-pool</span>
+                    • {{ t('settings.setup.review.createPool') }} <span class="font-mono">hotspot-pool</span>
                   </li>
-                  <li>• Create DHCP server + network</li>
-                  <li>• Create hotspot server profile with Pikro login page</li>
+                  <li>• {{ t('settings.setup.review.createDhcp') }}</li>
+                  <li>• {{ t('settings.setup.review.createProfile') }}</li>
                   <li>
-                    • Enable hotspot on {{ form.lanIface || "(LAN interface)" }}
+                    • {{ t('settings.setup.review.enableHotspot', { iface: lanIfaceName }) }}
                   </li>
                   <li>
-                    • Add NAT masquerade on {{ form.wanIface || "(WAN interface)" }}
+                    • {{
+                      t("settings.setup.review.nat", {
+                        iface: form.wanIface || t("settings.setup.review.wanFallback"),
+                      })
+                    }}
                   </li>
-                  <li>• Enable DNS remote requests</li>
+                  <li>• {{ t('settings.setup.review.dns') }}</li>
                 </ul>
               </div>
             </div>
@@ -395,14 +396,12 @@
           <!-- Step: Cleanup -->
           <template v-else-if="STEPS[step - 1] === 'Cleanup'">
             <div class="flex flex-col gap-4">
-              <h2 class="type-display m-0 text-2xl">Protect your vouchers</h2>
+              <h2 class="type-display m-0 text-2xl">{{ t('settings.setup.cleanup.title') }}</h2>
               <p class="m-0 text-sm leading-normal text-text-secondary">
-                RouterOS doesn't remove expired vouchers on its own — Pikro installs
-                a cleanup scheduler on the router so expired and quota-exhausted
-                vouchers get removed automatically, on the schedule you pick below.
+                {{ t('settings.setup.cleanup.body') }}
               </p>
               <label class="flex flex-col gap-1">
-                <span class="eyebrow">Run every</span>
+                <span class="eyebrow">{{ t('settings.setup.cleanup.runEvery') }}</span>
                 <AppSelect
                   v-model="form.cleanupInterval"
                   :options="CLEANUP_INTERVAL_OPTIONS"
@@ -413,7 +412,7 @@
 
           <div class="flex flex-wrap items-center gap-3">
             <button type="button" class="btn" @click="onBack">
-              {{ step === 1 ? "Re-check router" : "Back" }}
+              {{ step === 1 ? t('settings.setup.recheckRouter') : t('settings.setup.back') }}
             </button>
             <button
               v-if="step < STEPS.length"
@@ -422,7 +421,7 @@
               :disabled="!canAdvance"
               @click="step++"
             >
-              Next
+              {{ t('settings.setup.next') }}
             </button>
             <button
               v-else
@@ -430,7 +429,7 @@
               class="btn btn-primary"
               :disabled="!canSubmit"
             >
-              Run Setup
+              {{ t('settings.setup.run') }}
             </button>
             <!-- <button
               type="button"
@@ -446,7 +445,7 @@
       </div>
 
       <div v-if="teardownResult" class="card p-6 flex flex-col gap-3">
-        <p class="eyebrow m-0">Reset result</p>
+        <p class="eyebrow m-0">{{ t('settings.setup.resetResult') }}</p>
         <ul class="m-0 p-0 list-none flex flex-col gap-2">
           <li
             v-for="step in teardownResult.steps"
@@ -480,9 +479,9 @@
       class="card max-w-3xl flex flex-col items-center py-16 gap-3"
     >
       <span class="spinner" />
-      <p class="m-0 font-bold">Configuring hotspot…</p>
+      <p class="m-0 font-bold">{{ t('settings.setup.running.title') }}</p>
       <p class="m-0 text-sm text-text-muted">
-        This takes a few seconds. Please wait.
+        {{ t('settings.setup.running.wait') }}
       </p>
     </div>
 
@@ -501,8 +500,8 @@
           <ExclamationTriangleIcon v-else class="size-5 shrink-0" />
           {{
             result.success
-              ? "Hotspot configured successfully!"
-              : "Setup completed with errors"
+              ? t('settings.setup.result.success')
+              : t('settings.setup.result.withErrors')
           }}
         </div>
 
@@ -533,7 +532,7 @@
               >
                 {{ step.name }}
                 <span v-if="step.skipped" class="text-text-muted font-normal">
-                  — already configured</span
+                  — {{ t('settings.setup.result.alreadyConfigured') }}</span
                 >
               </span>
               <p v-if="step.error" class="m-0 font-mono mt-0.5 break-all text-danger-text">
@@ -545,7 +544,7 @@
       </div>
 
       <div v-if="result.success" class="card p-6 flex flex-col gap-4">
-        <h3 class="m-0 font-bold">What's next</h3>
+        <h3 class="m-0 font-bold">{{ t('settings.setup.result.nextHeading') }}</h3>
         <ol class="m-0 p-0 list-none flex flex-col gap-3 text-sm text-text-secondary">
           <li class="flex items-start gap-2.5">
             <span
@@ -553,13 +552,11 @@
               >1</span
             >
             <div>
-              <span
-                >Create your first hotspot user with a time or data limit.</span
-              >
+              <span>{{ t('settings.setup.result.next1') }}</span>
               <span class="block mt-1 p-2.5 rounded-control border-2 border-ink bg-primary-wash text-ink">
-                RouterOS added a default
-                <span class="font-mono">admin</span> user with no password —
-                delete or secure it from the Users page.
+                <i18n-t keypath="settings.setup.result.adminNote">
+                  <template #admin><span class="font-mono">admin</span></template>
+                </i18n-t>
               </span>
             </div>
           </li>
@@ -568,52 +565,46 @@
               class="size-6 shrink-0 rounded-full border-2 border-ink flex items-center justify-center text-xs font-bold bg-primary-wash text-ink"
               >2</span
             >
-            <span
-              >Connect a client device to the router's WiFi or LAN — it will be
-              redirected to
-              <span class="font-mono">{{
-                form.hotspotName
-                  ? form.hotspotName + form.hotspotExtension
-                  : "the login page"
-              }}</span
-              >.</span
-            >
+            <i18n-t keypath="settings.setup.result.next2" tag="span">
+              <template #target>
+                <span class="font-mono">{{
+                  form.hotspotName
+                    ? form.hotspotName + form.hotspotExtension
+                    : t('settings.setup.result.loginPageFallback')
+                }}</span>
+              </template>
+            </i18n-t>
           </li>
           <li class="flex items-start gap-2.5">
             <span
               class="size-6 shrink-0 rounded-full border-2 border-ink flex items-center justify-center text-xs font-bold bg-primary-wash text-ink"
               >3</span
             >
-            <span
-              >Share the credentials — or create multiple users in bulk for
-              voucher-style access.</span
-            >
+            <span>{{ t('settings.setup.result.next3') }}</span>
           </li>
           <li class="flex items-start gap-2.5">
             <span
               class="size-6 shrink-0 rounded-full border-2 border-ink flex items-center justify-center text-xs font-bold bg-primary-wash text-ink"
               >4</span
             >
-            <span>
-              Configure your login
-              page in
-              <button
-                type="button"
-                class="underline font-semibold text-ink hover:text-text-secondary transition-colors cursor-pointer"
-                @click="emit('openLoginPage')"
-                >Login page</button
-              >.
-            </span>
+            <i18n-t keypath="settings.setup.result.next4" tag="span">
+              <template #link>
+                <button
+                  type="button"
+                  class="underline font-semibold text-ink hover:text-text-secondary transition-colors cursor-pointer"
+                  @click="emit('openLoginPage')"
+                  >{{ t("settings.tabs.login") }}</button
+                >
+              </template>
+            </i18n-t>
           </li>
         </ol>
       </div>
 
       <div v-if="!result.success" class="card p-6 text-sm flex flex-col gap-1">
-        <p class="m-0 font-bold">Some steps failed</p>
+        <p class="m-0 font-bold">{{ t('settings.setup.result.failedHeading') }}</p>
         <p class="m-0 text-text-secondary">
-          Steps marked as "already configured" are fine — they were skipped
-          because the resource exists. Fix any red steps manually in RouterOS,
-          then run setup again.
+          {{ t('settings.setup.result.failedBody') }}
         </p>
       </div>
 
@@ -623,11 +614,11 @@
           to="/hotspot/users"
           class="btn btn-primary"
         >
-          Add users
+          {{ t('settings.setup.result.addUsers') }}
         </RouterLink>
         <button class="btn" @click="reset">
           <ArrowPathIcon class="size-4" />
-          Run again
+          {{ t('settings.setup.result.runAgain') }}
         </button>
       </div>
     </div>
@@ -635,25 +626,25 @@
     <!-- ── Teardown confirmation dialog ─────────────────────────────────── -->
     <AppDialog
       :open="showTeardownConfirm"
-      title="Reset hotspot config?"
+      :title="t('settings.setup.teardown.title')"
       @update:open="showTeardownConfirm = $event"
     >
       <div class="flex flex-col gap-4">
         <div class="bg-ground rounded-control p-3.5 text-sm flex flex-col gap-1.5">
           <div class="flex justify-between font-medium">
-            <span class="text-text-secondary">Router</span>
+            <span class="text-text-secondary">{{ t('settings.setup.teardown.router') }}</span>
             <span class="text-ink">{{
               store.routers.find((r) => r.id === store.activeId)?.name
             }}</span>
           </div>
           <div class="flex justify-between font-medium">
-            <span class="text-text-secondary">Host</span>
+            <span class="text-text-secondary">{{ t('settings.setup.teardown.host') }}</span>
             <span class="font-mono text-ink">{{
               store.routers.find((r) => r.id === store.activeId)?.host
             }}</span>
           </div>
           <div class="flex justify-between font-medium">
-            <span class="text-text-secondary">Hotspot interface</span>
+            <span class="text-text-secondary">{{ t('settings.setup.teardown.hotspotInterface') }}</span>
             <span class="font-mono text-ink">{{
               preflight?.hotspotOnIface || form.lanIface || "—"
             }}</span>
@@ -661,32 +652,32 @@
         </div>
 
         <div>
-          <p class="m-0 font-bold text-sm mb-1.5">This will remove:</p>
+          <p class="m-0 font-bold text-sm mb-1.5">{{ t('settings.setup.teardown.willRemove') }}</p>
           <ul class="m-0 p-0 list-none text-sm text-text-secondary flex flex-col gap-1">
             <li class="flex items-center gap-1.5 shrink-0 text-danger-text">
-              <TrashIcon class="size-4" /> Hotspot server
+              <TrashIcon class="size-4" /> {{ t('settings.setup.teardown.server') }}
             </li>
             <li class="flex items-center gap-1.5 shrink-0 text-danger-text">
-              <TrashIcon class="size-4" /> Hotspot server profile
+              <TrashIcon class="size-4" /> {{ t('settings.setup.teardown.serverProfile') }}
             </li>
             <li class="flex items-center gap-1.5 shrink-0 text-danger-text">
-              <TrashIcon class="size-4" /> NAT masquerade rule
+              <TrashIcon class="size-4" /> {{ t('settings.setup.teardown.nat') }}
             </li>
             <li class="flex items-center gap-1.5 shrink-0 text-danger-text">
-              <TrashIcon class="size-4" /> Walled garden rules
+              <TrashIcon class="size-4" /> {{ t('settings.setup.teardown.walledGarden') }}
             </li>
           </ul>
           <p class="m-0 text-sm text-text-secondary font-medium mt-2">
-            IP address, DHCP server, IP pool and DNS settings are kept.
+            {{ t('settings.setup.teardown.kept') }}
           </p>
         </div>
 
         <div class="flex justify-end gap-2.5 pt-1">
           <button class="btn" @click="showTeardownConfirm = false">
-            Cancel
+            {{ t('settings.setup.teardown.cancel') }}
           </button>
           <button class="btn btn-danger" @click="confirmTeardown">
-            Reset config
+            {{ t('settings.setup.teardown.confirm') }}
           </button>
         </div>
       </div>
@@ -696,6 +687,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   StepperRoot,
   StepperItem,
@@ -732,6 +724,8 @@ import { HOTSPOT_EXTENSION_OPTIONS } from "@/utils/hotspotExtensions";
 import { CLEANUP_INTERVAL_OPTIONS } from "@/utils/cleanupIntervals";
 import AppDialog from "@/components/AppDialog.vue";
 import AppSelect, { type SelectOption } from "@/components/AppSelect.vue";
+
+const { t } = useI18n();
 
 const emit = defineEmits<{ openLoginPage: [] }>();
 
@@ -771,6 +765,13 @@ const etherInterfaces = computed(() =>
 
 const needsBridge = ref(false);
 
+const bridgeName = computed(
+  () => bridge.value.name || t("settings.setup.review.bridgeFallback"),
+);
+const lanIfaceName = computed(
+  () => form.value.lanIface || t("settings.setup.review.lanFallback"),
+);
+
 const STEPS = ref<string[]>(["Network", "Subnet", "Review"]);
 const step = ref(1);
 
@@ -809,14 +810,14 @@ watch(
 );
 
 function ifaceLabel(i: InterfaceInfo): string {
-  return `${i.name} [${i.type}]${!i.running ? " — down" : ""}${i.comment ? ` (${i.comment})` : ""}`;
+  return `${i.name} [${i.type}]${!i.running ? " — " + t('settings.setup.down') : ""}${i.comment ? ` (${i.comment})` : ""}`;
 }
 
 const lanOptions = computed<SelectOption[]>(() => {
   if (!interfaces.value.length) return [];
   if (needsBridge.value && bridge.value.name) {
     return [
-      { value: bridge.value.name, label: `${bridge.value.name} (new bridge)` },
+      { value: bridge.value.name, label: t('settings.setup.newBridge', { name: bridge.value.name }) },
     ];
   }
   const preferred = bridgeAndWlan.value.map((i) => ({
@@ -839,18 +840,18 @@ const subnetError = computed(() => {
   const m = raw.match(
     /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/,
   );
-  if (!m) return "Enter a valid CIDR, e.g. 192.168.88.0/24";
+  if (!m) return t('settings.setup.subnet.invalidCidr');
   const octets = [m[1], m[2], m[3], m[4]].map(Number);
-  if (octets.some((o) => o > 255)) return "Octets must be 0-255";
+  if (octets.some((o) => o > 255)) return t('settings.setup.subnet.octets');
   const prefix = parseInt(m[5]);
   if (prefix < 16 || prefix > 30) {
-    return "Prefix must be between /16 and /30 (too small or too large for a hotspot LAN)";
+    return t('settings.setup.subnet.prefix');
   }
   if (octets[3] !== 0) {
-    return "Use the network address (last octet 0), e.g. 192.168.88.0/24";
+    return t('settings.setup.subnet.networkAddress');
   }
   if (octets[0] === 127 || (octets[0] === 169 && octets[1] === 254)) {
-    return "That range is reserved and can't be used for a LAN";
+    return t('settings.setup.subnet.reserved');
   }
   return "";
 });
@@ -923,7 +924,7 @@ async function runPreflight() {
     step.value = 1;
     phase.value = "form";
   } catch (e: any) {
-    preflightError.value = friendlyError(e, "Connection failed");
+    preflightError.value = friendlyError(e, t('settings.setup.connectionFailed'));
     phase.value = "form";
   }
 }
@@ -964,9 +965,9 @@ async function runSetup() {
       success: false,
       steps: [
         {
-          name: "Setup request",
+          name: t('settings.setup.setupRequest'),
           ok: false,
-          error: friendlyError(e, "Request failed"),
+          error: friendlyError(e, t('settings.setup.requestFailed')),
         },
       ],
     };
@@ -995,9 +996,9 @@ async function confirmTeardown() {
     teardownResult.value = {
       steps: [
         {
-          name: "Teardown",
+          name: t('settings.setup.teardown.step'),
           ok: false,
-          error: friendlyError(e, "Reset failed"),
+          error: friendlyError(e, t('settings.setup.teardown.failed')),
         },
       ],
     };

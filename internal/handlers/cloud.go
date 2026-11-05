@@ -120,7 +120,12 @@ func PostCloudSession(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, v)
 }
 
+// DeleteCloudSession signs the technician out: on Cloud when it can be
+// reached (best effort), and always on this computer.
 func DeleteCloudSession(w http.ResponseWriter, r *http.Request) {
+	if cfg, err := config.Load(); err == nil && cfg.Cloud != nil {
+		cloud.New().SignOut(r.Context(), cfg.Cloud.Token)
+	}
 	if err := saveCloudSession(nil); err != nil {
 		jsonError(w, err.Error(), http.StatusInternalServerError)
 		return

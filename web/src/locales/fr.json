@@ -589,6 +589,128 @@
       "disconnectTitle": "Déconnecter de Pikro Cloud ?",
       "disconnectBody": "Cela retire le script de synchronisation et les tickets Cloud non vendus du routeur. Les clients ne peuvent plus acheter en ligne sur ce hotspot. Les tickets déjà vendus continuent de fonctionner.",
       "failed": "Une erreur est survenue. Réessayez."
+    },
+    "setup": {
+      "checking": "Vérification de la configuration du routeur…",
+      "blocked": {
+        "title": "Hotspot déjà configuré",
+        "body": "Un hotspot est actif sur ce routeur. Réinitialisez-le ci-dessous pour le reconfigurer, ou rendez-vous dans Utilisateurs pour le gérer.",
+        "detected": "Hotspot détecté",
+        "serverName": "Nom du serveur",
+        "interface": "Interface",
+        "profile": "Profil",
+        "addressPool": "Pool d'adresses",
+        "dnsName": "Nom DNS",
+        "none": "(aucun)",
+        "addProfiles": "Ajouter des profils",
+        "recheck": "Revérifier"
+      },
+      "resetResult": "Résultat de la réinitialisation",
+      "steps": {
+        "bridge": "Pont",
+        "network": "Réseau",
+        "subnet": "Sous-réseau",
+        "review": "Récapitulatif",
+        "cleanup": "Nettoyage"
+      },
+      "preflightError": "Impossible de lire les interfaces : {error}. Saisissez les noms d'interface manuellement.",
+      "bridge": {
+        "notFound": "Aucun pont ni interface sans fil n'a été trouvé sur ce routeur. Créez un pont à utiliser comme réseau local du hotspot.",
+        "name": "Nom du pont",
+        "ports": "Ports à ajouter",
+        "portsHint": "Sélectionnez les ports physiques par lesquels les clients se connecteront. Laissez décoché votre port de liaison montante (généralement ether1)."
+      },
+      "down": "inactif",
+      "newBridge": "{name} (nouveau pont)",
+      "network": {
+        "title": "Configuration réseau",
+        "lan": "Interface LAN / hotspot",
+        "lanHint": "L'interface à laquelle les clients se connectent (généralement un pont ou wlan)",
+        "lanPlaceholder": "ex. bridge1 ou ether2",
+        "wan": "Interface WAN",
+        "wanHint": "L'interface connectée à Internet (généralement ether1)",
+        "wanPlaceholder": "ex. ether1",
+        "selectInterface": "Sélectionner une interface…",
+        "hotspotName": "Nom du hotspot",
+        "redirectedTo": "Les clients sont redirigés vers"
+      },
+      "subnet": {
+        "checkingDhcp": "Recherche d'un serveur DHCP existant sur {iface}…",
+        "dhcpExists": "{iface} a déjà un serveur DHCP pour {subnet} — il est réutilisé au lieu d'en créer un nouveau, le sous-réseau est donc fixé à ce réseau.",
+        "label": "Sous-réseau (CIDR)",
+        "gateway": "IP du routeur (passerelle)",
+        "dhcpPool": "Pool DHCP",
+        "profileName": "Nom du profil hotspot",
+        "invalidCidr": "Saisissez un CIDR valide, ex. 192.168.88.0/24",
+        "octets": "Les octets doivent être compris entre 0 et 255",
+        "prefix": "Le préfixe doit être compris entre /16 et /30 (trop petit ou trop grand pour un réseau local de hotspot)",
+        "networkAddress": "Utilisez l'adresse réseau (dernier octet à 0), ex. 192.168.88.0/24",
+        "reserved": "Cette plage est réservée et ne peut pas servir de réseau local"
+      },
+      "review": {
+        "warning": "Assurez-vous qu'aucun hotspot n'est déjà configuré sur ce routeur. Lancer la configuration sur une configuration existante peut provoquer des conflits.",
+        "heading": "Ce qui sera configuré",
+        "bridgeFallback": "(pont)",
+        "lanFallback": "(interface LAN)",
+        "wanFallback": "(interface WAN)",
+        "createBridge": "Créer le pont {name}",
+        "createBridgeWithPorts": "Créer le pont {name} avec les ports {ports}",
+        "assign": "Attribuer {ip} à {iface}",
+        "createPool": "Créer le pool d'adresses",
+        "createDhcp": "Créer le serveur DHCP + réseau",
+        "createProfile": "Créer le profil de serveur hotspot avec la page de connexion Pikro",
+        "enableHotspot": "Activer le hotspot sur {iface}",
+        "nat": "Ajouter le masquerade NAT sur {iface}",
+        "dns": "Activer les requêtes DNS distantes"
+      },
+      "cleanup": {
+        "title": "Protégez vos tickets",
+        "body": "RouterOS ne supprime pas seul les tickets expirés — Pikro installe un planificateur de nettoyage sur le routeur pour retirer automatiquement les tickets expirés ou dont le quota est épuisé, selon la fréquence choisie ci-dessous.",
+        "runEvery": "Exécuter toutes les"
+      },
+      "recheckRouter": "Revérifier le routeur",
+      "back": "Retour",
+      "next": "Suivant",
+      "run": "Lancer la configuration",
+      "running": {
+        "title": "Configuration du hotspot…",
+        "wait": "Cela prend quelques secondes. Veuillez patienter."
+      },
+      "result": {
+        "success": "Hotspot configuré avec succès !",
+        "withErrors": "Configuration terminée avec des erreurs",
+        "alreadyConfigured": "déjà configuré",
+        "nextHeading": "Et ensuite",
+        "next1": "Créez votre premier utilisateur hotspot avec une limite de temps ou de données.",
+        "adminNote": "RouterOS a ajouté un utilisateur {admin} par défaut sans mot de passe — supprimez-le ou sécurisez-le depuis la page Utilisateurs.",
+        "next2": "Connectez un appareil client au WiFi ou au réseau local du routeur — il sera redirigé vers {target}.",
+        "loginPageFallback": "la page de connexion",
+        "next3": "Partagez les identifiants — ou créez plusieurs utilisateurs en lot pour un accès par tickets.",
+        "next4": "Configurez votre page de connexion dans {link}.",
+        "failedHeading": "Certaines étapes ont échoué",
+        "failedBody": "Les étapes marquées « déjà configuré » sont normales — elles ont été ignorées car la ressource existe. Corrigez manuellement les étapes en rouge dans RouterOS, puis relancez la configuration.",
+        "addUsers": "Ajouter des utilisateurs",
+        "runAgain": "Relancer"
+      },
+      "teardown": {
+        "title": "Réinitialiser la configuration du hotspot ?",
+        "router": "Routeur",
+        "host": "Hôte",
+        "hotspotInterface": "Interface du hotspot",
+        "willRemove": "Cela supprimera :",
+        "server": "Serveur hotspot",
+        "serverProfile": "Profil de serveur hotspot",
+        "nat": "Règle de masquerade NAT",
+        "walledGarden": "Règles du walled garden",
+        "kept": "L'adresse IP, le serveur DHCP, le pool d'adresses et les paramètres DNS sont conservés.",
+        "cancel": "Annuler",
+        "confirm": "Réinitialiser la configuration",
+        "step": "Réinitialisation",
+        "failed": "Échec de la réinitialisation"
+      },
+      "connectionFailed": "Échec de la connexion",
+      "requestFailed": "Échec de la requête",
+      "setupRequest": "Requête de configuration"
     }
   },
   "monitor": {
