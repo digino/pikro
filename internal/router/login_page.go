@@ -102,6 +102,10 @@ type LoginPageContent struct {
 	Alogin   string // shown right after a successful login
 	Style    string // stylesheet the pages link, kept out of them for size
 	MD5      string // CHAP hash script the login page links
+
+	// CloudURL is Pikro Cloud's base URL. When set and the router is connected
+	// to Cloud, the login page gets the buy button; see withCloudBuyButton.
+	CloudURL string
 }
 
 // UploadLoginPage uploads the given (or default, if empty) rendered hotspot
@@ -119,6 +123,10 @@ func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) e
 		return err
 	}
 	defer conn.Close()
+
+	// A page uploaded over a connected router keeps its buy button.
+	routerID := cloudRouterID(firstMap(conn, "/system/script/print", "?name="+cloudScriptName)["source"])
+	files[0].content = withCloudBuyButton(files[0].content, cloudBuyURL(content.CloudURL, routerID))
 
 	// List all files once to build a name → id/index map.
 	idByName := map[string]string{}

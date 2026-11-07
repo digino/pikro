@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"math/rand/v2"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -217,6 +218,82 @@ func (c *Client) CloudInstall(script, cloudHost string) SetupStepResult {
 		if _, err := conn.RunArgs(args); err != nil {
 			return fail(fmt.Errorf("%s: %w", args[0], err))
 		}
+	}
+	return SetupStepResult{Name: name, OK: true}
+}
+
+// The buy button and voucher auto-login that a connected router's login page
+// carries, between these markers so they can be replaced or removed. Works
+// with every template: a "code" page has login.code, the others
+// login.username and login.password. It submits through the form's own
+// onsubmit, so CHAP hashing still applies. Skipped when the page is showing
+// a login error, so a wrong voucher can't loop.
+const (
+	cloudLoginStart = "<!-- pikro-cloud -->"
+	cloudLoginEnd   = "<!-- /pikro-cloud -->"
+	cloudLoginHTML  = cloudLoginStart + `
+<div style="text-align:center;margin:16px"><a href="%s" style="display:inline-block;padding:12px 20px;background:#111;color:#fff;border-radius:8px;font:600 15px sans-serif;text-decoration:none">Acheter avec mobile money</a></div>
+<script>
+(function(){var e=$(if error)1$(else)0$(endif),m=/[?&]voucher=([^&#]+)/.exec(location.search),f=document.login;
+if(e||!m||!f)return;var v=decodeURIComponent(m[1].replace(/\+/g," "));
+if(f.code)f.code.value=v;else{f.username.value=v;f.password.value=v}
+if(!f.onsubmit||f.onsubmit()!==false)f.submit()})();
+</script>
+` + cloudLoginEnd
+)
+
+var (
+	cloudLoginRe = regexp.MustCompile(`(?s)` + regexp.QuoteMeta(cloudLoginStart) + `.*?` + regexp.QuoteMeta(cloudLoginEnd) + `\n?`)
+	bodyEndRe    = regexp.MustCompile(`(?i)</body>`)
+)
+
+// cloudBuyURL is the Cloud buy page for a router; the router fills in its own
+// login URL. "" when Cloud's URL or the router id is unknown.
+func cloudBuyURL(cloudURL, routerID string) string {
+	if cloudURL == "" || routerID == "" {
+		return ""
+	}
+	return cloudURL + "/r/" + url.PathEscape(routerID) + "?login=$(link-login-only-esc)"
+}
+
+// withCloudBuyButton returns the login page with the Cloud buy button and
+// auto-login for buyURL, replacing any earlier one; with "" it returns the
+// page without them.
+func withCloudBuyButton(html, buyURL string) string {
+	html = cloudLoginRe.ReplaceAllString(html, "")
+	if buyURL == "" {
+		return html
+	}
+	snippet := fmt.Sprintf(cloudLoginHTML, buyURL) + "\n"
+	if loc := bodyEndRe.FindAllStringIndex(html, -1); len(loc) > 0 {
+		at := loc[len(loc)-1][0]
+		return html[:at] + snippet + html[at:]
+	}
+	return html + snippet
+}
+
+// CloudLoginPage puts the Cloud buy button on the router's login page when
+// cloudURL is set, and takes it off when it is "".
+func (c *Client) CloudLoginPage(cloudURL string) SetupStepResult {
+	name := "Add the buy button to the login page"
+	fail := func(err error) SetupStepResult { return SetupStepResult{Name: name, Error: err.Error()} }
+	conn, err := c.connect()
+	if err != nil {
+		return fail(err)
+	}
+	defer conn.Close()
+
+	routerID := cloudRouterID(firstMap(conn, "/system/script/print", "?name="+cloudScriptName)["source"])
+	page := firstMap(conn, "/file/print", "?name=hotspot/login.html", "=.proplist=.id,contents")
+	if page[".id"] == "" {
+		return fail(fmt.Errorf("hotspot/login.html not found: run hotspot setup first"))
+	}
+	html := withCloudBuyButton(page["contents"], cloudBuyURL(cloudURL, routerID))
+	if html == page["contents"] {
+		return SetupStepResult{Name: name, OK: true, Skipped: true}
+	}
+	if _, err := conn.RunArgs([]string{"/file/set", "=.id=" + page[".id"], "=contents=" + html}); err != nil {
+		return fail(err)
 	}
 	return SetupStepResult{Name: name, OK: true}
 }

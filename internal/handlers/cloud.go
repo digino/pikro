@@ -191,7 +191,8 @@ func GetRouterCloud(w http.ResponseWriter, r *http.Request) {
 }
 
 // PostRouterCloud connects the router to Cloud: automatic time, Let's Encrypt
-// root, registration, sync script + scheduler + walled garden, first sync.
+// root, registration, sync script + scheduler + walled garden, buy button on
+// the login page, first sync.
 // Stops at the first failed step; every step is reported.
 func PostRouterCloud(w http.ResponseWriter, r *http.Request) {
 	var body struct {
@@ -276,7 +277,7 @@ func PostRouterCloud(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cloudURL, _ := url.Parse(cloud.URL())
-	if !step(client.CloudInstall(registered.Script, cloudURL.Hostname())) {
+	if !step(client.CloudInstall(registered.Script, cloudURL.Hostname())) || !step(client.CloudLoginPage(cloud.URL())) {
 		done(0, registered.RouterID)
 		return
 	}
@@ -314,6 +315,10 @@ func DeleteRouterCloud(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := client.CloudRemove(); err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	if s := client.CloudLoginPage(""); s.Error != "" {
+		jsonError(w, s.Error, http.StatusBadGateway)
 		return
 	}
 	jsonOK(w, map[string]bool{"cloudNotified": notified})
