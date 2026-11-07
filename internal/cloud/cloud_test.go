@@ -33,6 +33,13 @@ func fakeCloud(t *testing.T) *Client {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
+	mux.HandleFunc("POST /routers/disconnect", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Router-Token") != "R1.S" {
+			http.Error(w, `{"error":"invalid router token"}`, http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
 	mux.HandleFunc("POST /routers", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer TOK" {
 			http.Error(w, `{"error":"not signed in"}`, http.StatusUnauthorized)
@@ -84,5 +91,12 @@ func TestRegisterRouter(t *testing.T) {
 	var e *Error
 	if _, err := c.RegisterRouter(ctx, "expired", reg); !errors.As(err, &e) || e.Status != http.StatusUnauthorized {
 		t.Errorf("expired session: err = %v, want 401", err)
+	}
+
+	if err := c.Disconnect(ctx, "R1.S"); err != nil {
+		t.Errorf("disconnect: %v", err)
+	}
+	if err := c.Disconnect(ctx, "R1.wrong"); !errors.As(err, &e) || e.Status != http.StatusUnauthorized {
+		t.Errorf("disconnect with a wrong token: err = %v, want 401", err)
 	}
 }

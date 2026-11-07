@@ -284,9 +284,10 @@ async function disconnect() {
   disconnecting.value = true
   disconnectError.value = ''
   try {
-    await disconnectRouterFromCloud(store.activeId)
+    const { cloudNotified } = await disconnectRouterFromCloud(store.activeId)
     confirmingDisconnect.value = false
     await loadRouter()
+    if (!cloudNotified) connectError.value = t('settings.cloud.disconnectNotNotified')
   } catch (e: any) {
     disconnectError.value = errorText(e, t('settings.cloud.failed'))
   } finally {

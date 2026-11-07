@@ -74,8 +74,17 @@ type Registered struct {
 	Script   string `json:"script"`
 }
 
-// call sends body (if any) as JSON and decodes a 2xx answer into out (if any).
+// call sends body (if any) as JSON with a technician's session token (if
+// any), and decodes a 2xx answer into out (if any).
 func (c *Client) call(ctx context.Context, method, path, token string, body, out any) error {
+	header := map[string]string{}
+	if token != "" {
+		header["Authorization"] = "Bearer " + token
+	}
+	return c.send(ctx, method, path, header, body, out)
+}
+
+func (c *Client) send(ctx context.Context, method, path string, header map[string]string, body, out any) error {
 	if c.BaseURL == "" {
 		return &Error{Status: 0, Message: "not configured (set PIKRO_CLOUD_URL)"}
 	}
@@ -90,8 +99,8 @@ func (c *Client) call(ctx context.Context, method, path, token string, body, out
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+	for k, v := range header {
+		req.Header.Set(k, v)
 	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
@@ -128,6 +137,12 @@ func (c *Client) CreateSession(ctx context.Context, email, code string) (*Sessio
 // SignOut ends the session on Cloud.
 func (c *Client) SignOut(ctx context.Context, token string) error {
 	return c.call(ctx, http.MethodDelete, "/auth/session", token, nil, nil)
+}
+
+// Disconnect tells Cloud to stop selling for a router, authenticated by the
+// router's own token ("<router-id>.<secret>", from its sync script).
+func (c *Client) Disconnect(ctx context.Context, routerToken string) error {
+	return c.send(ctx, http.MethodPost, "/routers/disconnect", map[string]string{"X-Router-Token": routerToken}, nil, nil)
 }
 
 // Me tells who a session belongs to now (a technician may have been revoked).

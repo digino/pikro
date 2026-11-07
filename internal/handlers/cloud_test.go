@@ -26,3 +26,20 @@ func TestCloudPlanOptions(t *testing.T) {
 		t.Errorf("cloudPlanOptions =\n %+v\nwant\n %+v", got, want)
 	}
 }
+
+func TestWithoutCloudVouchers(t *testing.T) {
+	users := []map[string]any{
+		{"name": "abc12", "comment": "pikro-cloud"},                         // unsold pool voucher
+		{"name": "fhp67", "comment": "exp:2026-11-06 10:00:00"},             // a normal voucher, in use
+		{"name": "def34", "comment": "exp:2026-11-06 10:00:00 pikro-cloud"}, // a pool voucher sold and used: shown
+		{"name": "admin"},
+	}
+	shown, hidden := withoutCloudVouchers(users)
+	var names []string
+	for _, u := range shown {
+		names = append(names, u["name"].(string))
+	}
+	if hidden != 1 || !reflect.DeepEqual(names, []string{"fhp67", "def34", "admin"}) {
+		t.Errorf("shown %v, hidden %d; want fhp67 def34 admin, 1 hidden", names, hidden)
+	}
+}

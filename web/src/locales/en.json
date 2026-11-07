@@ -210,7 +210,8 @@
     "colUp": "Up",
     "colLeft": "Left",
     "noSessions": "No one is online",
-    "disconnect": "Disconnect"
+    "disconnect": "Disconnect",
+    "cloudVouchersHidden": "{n} Pikro Cloud vouchers are not shown: they are sold online and managed by Pikro Cloud."
   },
   "logs": {
     "breadcrumb": "Hotspot",
@@ -588,7 +589,8 @@
       "otherNumber": "Use another number",
       "disconnectTitle": "Disconnect from Pikro Cloud?",
       "disconnectBody": "This removes the sync script and the unsold Cloud vouchers from the router. Customers can no longer buy online on this hotspot. Vouchers already sold keep working.",
-      "failed": "Something went wrong. Try again."
+      "failed": "Something went wrong. Try again.",
+      "disconnectNotNotified": "Disconnected on the router, but Pikro Cloud couldn't be reached to stop selling its vouchers. Cloud will stop on its own once it notices the router no longer syncs."
     },
     "setup": {
       "checking": "Checking router configuration…",

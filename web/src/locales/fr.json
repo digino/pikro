@@ -210,7 +210,8 @@
     "colUp": "Envoyé",
     "colLeft": "Restant",
     "noSessions": "Personne n'est en ligne",
-    "disconnect": "Déconnecter"
+    "disconnect": "Déconnecter",
+    "cloudVouchersHidden": "{n} tickets Pikro Cloud ne sont pas affichés : ils sont vendus en ligne et gérés par Pikro Cloud."
   },
   "logs": {
     "breadcrumb": "Hotspot",
@@ -588,7 +589,8 @@
       "otherNumber": "Utiliser un autre numéro",
       "disconnectTitle": "Déconnecter de Pikro Cloud ?",
       "disconnectBody": "Cela retire le script de synchronisation et les tickets Cloud non vendus du routeur. Les clients ne peuvent plus acheter en ligne sur ce hotspot. Les tickets déjà vendus continuent de fonctionner.",
-      "failed": "Une erreur est survenue. Réessayez."
+      "failed": "Une erreur est survenue. Réessayez.",
+      "disconnectNotNotified": "Déconnecté sur le routeur, mais Pikro Cloud n'a pas pu être joint pour arrêter la vente de ses tickets. Cloud arrêtera de lui-même dès qu'il verra que le routeur ne se synchronise plus."
     },
     "setup": {
       "checking": "Vérification de la configuration du routeur…",

@@ -150,6 +150,10 @@
         </div>
       </div>
 
+      <p v-if="cloudVouchers > 0" class="m-0 -mt-2 text-sm text-text-secondary">
+        {{ t('users.cloudVouchersHidden', { n: cloudVouchers }) }}
+      </p>
+
       <section class="card overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full min-w-215 text-sm">
@@ -747,7 +751,7 @@ import { RouterLink, useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useRoutersStore } from "@/stores/routers";
 import {
-  listHotspotUsers,
+  listHotspotUsersWithCloudCount,
   listHotspotActive,
   listHotspotProfiles,
   createHotspotUser,
@@ -806,6 +810,8 @@ const tabs = [
   { key: "active" as const, label: "users.tabActive" },
 ];
 const users = ref<Record<string, string>[]>([]);
+// Unsold Pikro Cloud vouchers: hidden from this list by the backend.
+const cloudVouchers = ref(0);
 const active = ref<Record<string, string>[]>([]);
 
 // Active sessions are keyed by username, not the user record's .id — this
@@ -1161,7 +1167,7 @@ async function loadUsers() {
   error.value = "";
   try {
     const [u, p, m, s] = await Promise.all([
-      listHotspotUsers(store.activeId),
+      listHotspotUsersWithCloudCount(store.activeId),
       listHotspotProfiles(store.activeId),
       getProfileMetas(store.activeId).catch(
         () => ({}) as Record<string, ProfileMeta>,
@@ -1171,7 +1177,8 @@ async function loadUsers() {
           ({ hotspotName: "", currency: "" }) as HotspotSettings,
       ),
     ]);
-    users.value = u;
+    users.value = u.users;
+    cloudVouchers.value = u.cloudVouchers;
     profiles.value = p;
     profileMetas.value = m;
     hotspotSettings.value = s;

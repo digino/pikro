@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -28,6 +29,8 @@ func ListHotspotUsers(w http.ResponseWriter, r *http.Request) {
 	if err := sales.SyncActivations(r.PathValue("id"), users, profileValidities(r.PathValue("id")), time.Now()); err != nil {
 		log.Printf("sales: sync activations: %v", err)
 	}
+	users, hidden := withoutCloudVouchers(users)
+	w.Header().Set("X-Pikro-Cloud-Vouchers", strconv.Itoa(hidden))
 	jsonOK(w, users)
 }
 
@@ -177,6 +180,9 @@ func ToggleHotspotUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userID := r.PathValue("userID")
+	if refuseCloudVoucher(w, client, userID) {
+		return
+	}
 	var body struct {
 		Disabled bool `json:"disabled"`
 	}
@@ -198,6 +204,9 @@ func UpdateHotspotUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userID := r.PathValue("userID")
+	if refuseCloudVoucher(w, client, userID) {
+		return
+	}
 	var body struct {
 		Password        string `json:"password"`
 		Profile         string `json:"profile"`
@@ -227,6 +236,9 @@ func DeleteHotspotUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userID := r.PathValue("userID")
+	if refuseCloudVoucher(w, client, userID) {
+		return
+	}
 	if err := client.DeleteHotspotUser(userID); err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return

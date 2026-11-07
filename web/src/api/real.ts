@@ -119,6 +119,13 @@ export const migrateFromMikhmon = (id: string) =>
 export const listHotspotUsers = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/hotspot/users`).then(r => r.data)
 
+/** Users plus how many unsold Pikro Cloud vouchers the backend left out. */
+export const listHotspotUsersWithCloudCount = (id: string) =>
+  api.get<Record<string, string>[]>(`/routers/${id}/hotspot/users`).then(r => ({
+    users: r.data,
+    cloudVouchers: Number(r.headers['x-pikro-cloud-vouchers'] ?? 0),
+  }))
+
 export const listHotspotActive = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/hotspot/active`).then(r => r.data)
 
@@ -326,5 +333,6 @@ export const getRouterCloud = (id: string) =>
 export const connectRouterToCloud = (id: string, ownerPhone: string, profiles: string[]) =>
   api.post<CloudConnectResult>(`/routers/${id}/cloud`, { ownerPhone, profiles }).then(r => r.data)
 
+/** cloudNotified is false when Cloud couldn't be reached: the router is clean, but Cloud keeps selling its vouchers until it notices the router stopped syncing. */
 export const disconnectRouterFromCloud = (id: string) =>
-  api.delete(`/routers/${id}/cloud`)
+  api.delete<{ cloudNotified: boolean }>(`/routers/${id}/cloud`).then(r => r.data)

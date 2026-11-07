@@ -18,7 +18,7 @@ import (
 // works on its own. See pikro-cloud's docs/cloud-setup.md.
 const (
 	cloudScriptName = "pikro-cloud-sync"
-	cloudComment    = "pikro-cloud" // on pool vouchers and walled-garden entries
+	CloudComment    = "pikro-cloud" // on unsold pool vouchers and walled-garden entries
 	cloudInterval   = 10 * time.Minute
 	cloudCertName   = "ISRG Root X1"
 )
@@ -30,14 +30,32 @@ const (
 //go:embed isrgrootx1.pem
 var isrgRootX1 string
 
-var cloudTokenRe = regexp.MustCompile(`:local token "([^".]+)\.[^"]+"`)
+var cloudTokenRe = regexp.MustCompile(`:local token "([^".]+\.[^"]+)"`)
 
-// cloudRouterID reads the Cloud router id from an installed sync script.
-func cloudRouterID(source string) string {
+// cloudToken reads "<router-id>.<secret>" from an installed sync script.
+func cloudToken(source string) string {
 	if m := cloudTokenRe.FindStringSubmatch(source); m != nil {
 		return m[1]
 	}
 	return ""
+}
+
+// cloudRouterID reads the Cloud router id from an installed sync script.
+func cloudRouterID(source string) string {
+	id, _, _ := strings.Cut(cloudToken(source), ".")
+	return id
+}
+
+// CloudToken is the router's Cloud token, from its sync script; "" when the
+// script isn't installed. It authenticates the router to Cloud: keep it out
+// of the browser.
+func (c *Client) CloudToken() (string, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+	return cloudToken(firstMap(conn, "/system/script/print", "?name="+cloudScriptName)["source"]), nil
 }
 
 // pickHardwareID is what identifies a router to Cloud across re-setups: the
@@ -98,7 +116,7 @@ func (c *Client) CloudStatus() (*CloudStatus, error) {
 }
 
 func poolVouchers(conn *ros.Client) (int, error) {
-	r, err := conn.RunArgs([]string{"/ip/hotspot/user/print", "?comment=" + cloudComment, "=count-only="})
+	r, err := conn.RunArgs([]string{"/ip/hotspot/user/print", "?comment=" + CloudComment, "=count-only="})
 	if err != nil {
 		return 0, err
 	}
@@ -182,7 +200,7 @@ func (c *Client) CloudInstall(script, cloudHost string) SetupStepResult {
 			return fail(err)
 		}
 	}
-	if err := removeAll(conn, "/ip/hotspot/walled-garden", "?comment="+cloudComment); err != nil {
+	if err := removeAll(conn, "/ip/hotspot/walled-garden", "?comment="+CloudComment); err != nil {
 		return fail(err)
 	}
 	steps := [][]string{
@@ -193,7 +211,7 @@ func (c *Client) CloudInstall(script, cloudHost string) SetupStepResult {
 			"=on-event=/system script run " + cloudScriptName,
 			"=comment=Pikro Cloud voucher sync every 10 minutes (by Pikro)"},
 		// The buy page lives on Cloud: guests open it before they have a voucher.
-		{"/ip/hotspot/walled-garden/add", "=dst-host=" + cloudHost, "=comment=" + cloudComment},
+		{"/ip/hotspot/walled-garden/add", "=dst-host=" + cloudHost, "=comment=" + CloudComment},
 	}
 	for _, args := range steps {
 		if _, err := conn.RunArgs(args); err != nil {
@@ -239,8 +257,8 @@ func (c *Client) CloudRemove() error {
 	for _, rm := range [][2]string{
 		{"/system/scheduler", "?name=" + cloudScriptName},
 		{"/system/script", "?name=" + cloudScriptName},
-		{"/ip/hotspot/walled-garden", "?comment=" + cloudComment},
-		{"/ip/hotspot/user", "?comment=" + cloudComment},
+		{"/ip/hotspot/walled-garden", "?comment=" + CloudComment},
+		{"/ip/hotspot/user", "?comment=" + CloudComment},
 		{"/file", "?name=" + cloudScriptName + ".txt"},
 	} {
 		if err := removeAll(conn, rm[0], rm[1]); err != nil {
@@ -248,4 +266,18 @@ func (c *Client) CloudRemove() error {
 		}
 	}
 	return nil
+}
+
+// IsCloudVoucher reports whether a hotspot user is an unsold Cloud pool voucher.
+func (c *Client) IsCloudVoucher(id string) (bool, error) {
+	conn, err := c.connect()
+	if err != nil {
+		return false, err
+	}
+	defer conn.Close()
+	r, err := conn.RunArgs([]string{"/ip/hotspot/user/print", "?.id=" + id, "=.proplist=comment"})
+	if err != nil {
+		return false, err
+	}
+	return len(r.Re) > 0 && r.Re[0].Map["comment"] == CloudComment, nil
 }

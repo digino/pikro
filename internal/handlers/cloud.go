@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"net/url"
 	"slices"
@@ -284,18 +285,65 @@ func PostRouterCloud(w http.ResponseWriter, r *http.Request) {
 	done(vouchers, registered.RouterID)
 }
 
-// DeleteRouterCloud takes the router off Cloud on the router side. Telling
-// Cloud to stop selling it needs Cloud's "disconnect" endpoint (not built
-// yet); until then Cloud sees the router stop syncing and turns "Buy" off.
+// DeleteRouterCloud takes the router off Cloud: first tells Cloud to stop
+// selling for it (with the router's token, read from its script before the
+// script goes), then cleans the router. If Cloud can't be reached the router
+// is cleaned anyway and cloudNotified is false: its codes stay on sale until
+// Cloud notices the router stopped syncing.
 func DeleteRouterCloud(w http.ResponseWriter, r *http.Request) {
 	client, err := clientFromRequest(r)
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusNotFound)
 		return
 	}
+	token, err := client.CloudToken()
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	notified := true
+	if token != "" {
+		err := cloud.New().Disconnect(r.Context(), token)
+		var e *cloud.Error
+		// 401: Cloud already doesn't accept this token (disconnected before, or
+		// set up again elsewhere) — nothing left to stop.
+		if err != nil && !(errors.As(err, &e) && e.Status == http.StatusUnauthorized) {
+			log.Printf("cloud: disconnect: %v", err)
+			notified = false
+		}
+	}
 	if err := client.CloudRemove(); err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	jsonOK(w, map[string]bool{"cloudNotified": notified})
+}
+
+// withoutCloudVouchers drops unsold Pikro Cloud pool vouchers from a user
+// list: they belong to Cloud's stock, so they aren't counted, edited or
+// printed in Pikro. Once sold and used, the on-login script prefixes the
+// comment, so the voucher shows like any other. Returns how many it hid.
+func withoutCloudVouchers(users []map[string]any) ([]map[string]any, int) {
+	shown := make([]map[string]any, 0, len(users))
+	for _, u := range users {
+		if c, _ := u["comment"].(string); c == router.CloudComment {
+			continue
+		}
+		shown = append(shown, u)
+	}
+	return shown, len(users) - len(shown)
+}
+
+// refuseCloudVoucher answers 409 when userID is an unsold Pikro Cloud voucher.
+func refuseCloudVoucher(w http.ResponseWriter, client *router.Client, userID string) bool {
+	pool, err := client.IsCloudVoucher(userID)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadGateway)
+		return true
+	}
+	if pool {
+		jsonError(w, "this voucher is sold online by Pikro Cloud and can't be changed here", http.StatusConflict)
+		return true
+	}
+	return false
 }

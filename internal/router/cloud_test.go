@@ -23,6 +23,21 @@ func TestCloudRouterID(t *testing.T) {
 	}
 }
 
+func TestCloudToken(t *testing.T) {
+	tests := []struct{ name, source, want string }{
+		{"installed script", ":local token \"b9c9-44.SECRET\"\n", "b9c9-44.SECRET"},
+		{"no token line", ":local url \"https://cloud.test/sync\"\n", ""},
+		{"token without secret", ":local token \"b9c9-44\"\n", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := cloudToken(tt.source); got != tt.want {
+				t.Errorf("cloudToken = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestPickHardwareID(t *testing.T) {
 	tests := []struct {
 		name             string
