@@ -282,7 +282,10 @@ const ownerCountry = ref<CountryCode>('TG')
 // typed with its own +code is kept as typed.
 const ownerPhone = ref('')
 const parsedPhone = computed(() => parsePhoneNumberFromString(ownerPhone.value, ownerCountry.value))
-const phoneExample = computed(() => getExampleNumber(ownerCountry.value, examples)?.formatNational() ?? '')
+const phoneExample = computed(() => fakeNumber(getExampleNumber(ownerCountry.value, examples)?.formatNational() ?? ''))
+// "90 11 23 45" -> "90 00 00 00": the library's examples may be real numbers,
+// so only the first group (the prefix) is kept.
+const fakeNumber = (s: string) => s.replace(/(\s.*)/, rest => rest.replace(/\d/g, '0'))
 
 // Pikro Cloud's payment markets first, then every other country by name.
 const MAIN_COUNTRIES: CountryCode[] = ['TG', 'BJ', 'BF', 'CI', 'SN', 'ML', 'NE', 'GN', 'GH', 'NG', 'CM']

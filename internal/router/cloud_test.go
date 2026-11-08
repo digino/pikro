@@ -197,8 +197,10 @@ func TestCompletePageReadsInChunksOf4000(t *testing.T) {
 }
 
 func TestCloudSnippetIsSmall(t *testing.T) {
-	if n := len(fmt.Sprintf(cloudLoginHTML, "")); n > 500 {
-		t.Errorf("snippet without its url is %d bytes, want <= 500", n)
+	// RouterOS 6 refuses a login page over 4095 bytes. Pikro's largest page
+	// (about 3.2 KB) plus this and its url (about 95 bytes) must still fit.
+	if n := len(fmt.Sprintf(cloudLoginHTML, "")); n > 580 {
+		t.Errorf("snippet without its url is %d bytes, want <= 580", n)
 	}
 }
 
@@ -210,8 +212,11 @@ func TestCloudButtonPlacementAndRemoval(t *testing.T) {
 	}{
 		{"marker", "<html><body>a<!-- pikro-buy -->b</body></html>", "<!-- pikro-buy -->"},
 		{"marker wins over the closing body tag", "</body><!-- pikro-buy --></body>", "<!-- pikro-buy -->"},
-		{"before the last body tag", "<html><body>a</body></html>", "a"},
-		{"no body tag", "<form></form>", "<form></form>"},
+		{"marker wins over the form", "<form></form><!-- pikro-buy --></body>", "<!-- pikro-buy -->"},
+		{"after the last form, inside its container", "<body><main><form name=sendin></form><form name=login></form><p>hint</p></main></body>", "<form name=login></form>"},
+		{"form closing tag in any case", "<body><div><FORM></FORM></div></body>", "<FORM></FORM>"},
+		{"no form: before the last body tag", "<html><body>a</body></html>", "a"},
+		{"no form, no body tag", "<p>a</p>", "<p>a</p>"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

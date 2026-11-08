@@ -442,7 +442,6 @@
     "code": "Ticket code",
     "connect": "Connect",
     "hint": "The code is printed on your ticket.",
-    "hintPassword": "Your username and password are printed on your ticket.",
     "prices": "Prices",
     "buy": "Buy a ticket",
     "poweredBy": "Powered by Pikro",

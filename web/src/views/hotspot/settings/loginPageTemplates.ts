@@ -198,7 +198,6 @@ export function renderGuestPages(o: GuestPageOptions): GuestPages {
     header,
     '$(if error)<p class="err" id="err" role="alert">$(error)<\/p>$(endif)',
     form,
-    `<p class="hint">${t(o.mode === "code" ? "guestPage.hint" : "guestPage.hintPassword")}<\/p>`,
     prices,
     contact,
     foot,

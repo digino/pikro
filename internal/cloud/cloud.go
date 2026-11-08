@@ -66,7 +66,8 @@ type Registration struct {
 	HardwareID      string `json:"hardware_id"`
 	RouterOSVersion string `json:"routeros_version"`
 	OwnerPhone      string `json:"owner_phone"`
-	Plans           []Plan `json:"plans"`
+	Name            string `json:"name"` // the hotspot's name, shown on the buy page
+	Plans          []Plan `json:"plans"`
 }
 
 type Registered struct {

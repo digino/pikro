@@ -244,11 +244,11 @@ func (c *Client) CloudInstall(script, cloudHost string) SetupStepResult {
 const (
 	cloudLoginStart = "<!-- pikro-cloud -->"
 	cloudLoginEnd   = "<!-- /pikro-cloud -->"
-	cloudLoginHTML  = cloudLoginStart + `<a href="%s" style="display:table;margin:16px auto;padding:12px;background:#111;color:#fff;font:600 15px Arial;text-decoration:none">Acheter avec mobile money</a>` +
+	cloudLoginHTML  = cloudLoginStart + `<a href="%s" style="display:table;margin:16px auto;padding:12px 18px;background:#ffbf00;color:#111;border:2px solid #111;box-shadow:3px 3px 0 #111;font:700 15px system-ui,sans-serif;text-decoration:none">Acheter avec mobile money</a>` +
 		`<script>!function(){var m=/[?&]voucher=([^&#]+)/.exec(location),f=document.login;` +
 		`if($(if error)1$(else)0$(endif)||!m||!f)return;m=decodeURIComponent(m[1].replace(/\+/g," "));` +
-		`if(f.code)f.code.value=m;else f.username.value=f.password.value=m;` +
-		`f.onsubmit&&f.onsubmit()===false||f.submit()}()</script>` + cloudLoginEnd
+		`f.code?f.code.value=m:f.username.value=f.password.value=m;` +
+		`f.onsubmit&&f.onsubmit()==0||f.submit()}()</script>` + cloudLoginEnd
 
 	// A page that holds this comment gets the snippet right after it, wherever
 	// the owner wants the button. Removal leaves the marker, so the page comes
@@ -259,6 +259,10 @@ const (
 var (
 	cloudLoginRe = regexp.MustCompile(`(?s)` + regexp.QuoteMeta(cloudLoginStart) + `.*?` + regexp.QuoteMeta(cloudLoginEnd) + `\n?`)
 	bodyEndRe    = regexp.MustCompile(`(?i)</body>`)
+	// The login form is the page's last form, both in MikroTik's default page
+	// and in Pikro's. Right after it the button sits in the form's own column,
+	// where before </body> a flex body would put it beside the page.
+	formEndRe = regexp.MustCompile(`(?i)</form>`)
 )
 
 // cloudLoginParam is how the router tells the buy page where to log in.
@@ -284,6 +288,10 @@ func withCloudBuyButton(html, buyURL string) string {
 	snippet := fmt.Sprintf(cloudLoginHTML, buyURL) + "\n"
 	if at := strings.Index(html, cloudBuyMarker); at >= 0 {
 		at += len(cloudBuyMarker)
+		return html[:at] + snippet + html[at:]
+	}
+	if loc := formEndRe.FindAllStringIndex(html, -1); len(loc) > 0 {
+		at := loc[len(loc)-1][1]
 		return html[:at] + snippet + html[at:]
 	}
 	if loc := bodyEndRe.FindAllStringIndex(html, -1); len(loc) > 0 {

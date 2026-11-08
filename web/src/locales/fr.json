@@ -442,7 +442,6 @@
     "code": "Code du ticket",
     "connect": "Se connecter",
     "hint": "Le code est imprimé sur votre ticket.",
-    "hintPassword": "Votre identifiant et votre mot de passe sont imprimés sur votre ticket.",
     "prices": "Tarifs",
     "buy": "Acheter un ticket",
     "poweredBy": "Propulsé par Pikro",

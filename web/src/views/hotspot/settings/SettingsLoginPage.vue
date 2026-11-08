@@ -190,7 +190,7 @@
         {{ t("settings.loginPage.livePreview") }}
       </div>
       <div
-        class="w-75 h-145 p-2.5 rounded-[40px] border-[3px] border-black bg-black shadow-[8px_8px_0_var(--color-shadow)]"
+        class="w-80 h-150 p-2.5 rounded-[40px] border-[3px] border-black bg-black shadow-[8px_8px_0_var(--color-shadow)]"
       >
         <iframe
           :srcdoc="previewHtml(showingLive ? liveHTML : pages[previewPage])"

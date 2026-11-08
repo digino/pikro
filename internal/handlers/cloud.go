@@ -218,7 +218,7 @@ func PostRouterCloud(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
 	}
-	reg := cloud.Registration{OwnerPhone: body.OwnerPhone}
+	reg := cloud.Registration{OwnerPhone: body.OwnerPhone, Name: settings.HotspotName}
 	for _, o := range options {
 		if !slices.Contains(body.Profiles, o.Profile) {
 			continue
