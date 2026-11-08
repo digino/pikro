@@ -56,6 +56,7 @@ type SetupStepResult struct {
 	OK      bool   `json:"ok"`
 	Error   string `json:"error,omitempty"`
 	Skipped bool   `json:"skipped,omitempty"`
+	Warning string `json:"warning,omitempty"` // OK, but something the user should know
 }
 
 type SetupResult struct {

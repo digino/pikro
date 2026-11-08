@@ -96,6 +96,7 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/routers/{id}/cloud", handlers.GetRouterCloud)
 	mux.HandleFunc("POST /api/routers/{id}/cloud", handlers.PostRouterCloud)
 	mux.HandleFunc("DELETE /api/routers/{id}/cloud", handlers.DeleteRouterCloud)
+	mux.HandleFunc("POST /api/routers/{id}/cloud/button", handlers.PostRouterCloudButton)
 
 	mux.HandleFunc("POST /api/routers/{id}/speedtest", handlers.RunSpeedTest)
 	mux.HandleFunc("GET /api/routers/{id}/tools/internet-check", handlers.GetInternetCheck)

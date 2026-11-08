@@ -190,11 +190,11 @@
         {{ t("settings.loginPage.livePreview") }}
       </div>
       <div
-        class="w-[300px] h-[580px] p-2.5 rounded-[40px] border-[3px] border-black bg-black shadow-[8px_8px_0_var(--color-shadow)]"
+        class="w-75 h-145 p-2.5 rounded-[40px] border-[3px] border-black bg-black shadow-[8px_8px_0_var(--color-shadow)]"
       >
         <iframe
           :srcdoc="previewHtml(showingLive ? liveHTML : pages[previewPage])"
-          class="w-full h-full rounded-[30px] border-0 bg-white"
+          class="size-full rounded-[30px] border-0 bg-white"
           sandbox=""
           :title="t('settings.loginPage.preview')"
         />

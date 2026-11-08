@@ -23,6 +23,34 @@
             <span>{{ t('settings.cloud.connected', { n: routerCloud.status.poolVouchers }) }}</span>
           </div>
           <p class="m-0 text-xs text-text-muted">{{ t('settings.cloud.routerId', { id: routerCloud.status.cloudRouterId }) }}</p>
+
+          <div v-if="routerCloud.status.buyButton !== 'present'" role="status" class="flex flex-col gap-3 p-3.5 rounded-control border-2 border-ink bg-amber/10 text-sm">
+            <div class="flex items-start gap-2.5">
+              <ExclamationTriangleIcon class="size-5 shrink-0 text-amber" aria-hidden="true" />
+              <span>{{ t('settings.cloud.noButton') }}</span>
+            </div>
+            <div class="flex flex-wrap gap-2.5">
+              <button type="button" class="btn" @click="emit('openLoginPage')">{{ t('settings.cloud.usePikroPage') }}</button>
+              <button type="button" class="btn" :disabled="retryingButton" @click="retryButton">
+                <span v-if="retryingButton" class="spinner spinner--sm" />
+                {{ t('settings.cloud.tryAgain') }}
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-start gap-4">
+            <div v-if="qr" class="size-32 shrink-0 p-2 bg-white rounded-control border-2 border-ink [&>svg]:size-full" v-html="qr" />
+            <div class="flex flex-col gap-2 min-w-0 flex-1">
+              <span class="font-medium">{{ t('settings.cloud.buyLink') }}</span>
+              <div class="flex items-center gap-2.5">
+                <code class="text-xs break-all flex-1">{{ routerCloud.status.buyUrl }}</code>
+                <button type="button" class="btn shrink-0" @click="copyBuyUrl">
+                  {{ copied ? t('settings.cloud.copied') : t('settings.cloud.copy') }}
+                </button>
+              </div>
+              <p class="m-0 text-xs text-text-muted">{{ t('settings.cloud.buyLinkHint') }}</p>
+            </div>
+          </div>
           <div class="flex flex-wrap gap-2.5">
             <button type="button" class="btn" :disabled="!canSetUp" @click="editing = true">{{ t('settings.cloud.changePlans') }}</button>
             <button type="button" class="btn" @click="confirmingDisconnect = true">{{ t('settings.cloud.disconnect') }}</button>
@@ -81,11 +109,13 @@
         <!-- Result of the last connect -->
         <ul v-if="result" class="m-0 p-0 list-none flex flex-col gap-2 text-sm">
           <li v-for="s in result.steps" :key="s.name" class="flex items-start gap-2.5">
-            <CheckIcon v-if="s.ok" class="size-5 shrink-0 stroke-[2.75] text-online" aria-hidden="true" />
+            <ExclamationTriangleIcon v-if="s.warning" class="size-5 shrink-0 stroke-[2.75] text-amber" aria-hidden="true" />
+            <CheckIcon v-else-if="s.ok" class="size-5 shrink-0 stroke-[2.75] text-online" aria-hidden="true" />
             <XMarkIcon v-else class="size-5 shrink-0 stroke-[2.75] text-danger-text" aria-hidden="true" />
             <span>
               {{ s.name }}
               <span v-if="s.skipped" class="text-text-muted">({{ t('settings.cloud.alreadyDone') }})</span>
+              <span v-if="s.warning" class="block text-amber">{{ s.warning }}</span>
               <span v-if="s.error" class="block text-danger-text">{{ s.error }}</span>
             </span>
           </li>
@@ -154,14 +184,17 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
-import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { CheckIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { useRoutersStore } from '@/stores/routers'
 import {
   getCloudSession, sendCloudCode, signInToCloud, signOutOfCloud,
-  getRouterCloud, connectRouterToCloud, disconnectRouterFromCloud,
+  getRouterCloud, connectRouterToCloud, addCloudBuyButton, disconnectRouterFromCloud,
   type CloudSession, type RouterCloud, type CloudConnectResult,
 } from '@/api'
 import AppDialog from '@/components/AppDialog.vue'
+import { qrSvg } from '@/utils/voucherTemplates/qr'
+
+const emit = defineEmits<{ openLoginPage: [] }>()
 
 const { t, locale } = useI18n()
 const store = useRoutersStore()
@@ -252,6 +285,33 @@ async function loadRouter() {
     routerError.value = errorText(e, t('settings.cloud.failed'))
   } finally {
     loadingRouter.value = false
+  }
+}
+
+const qr = ref('')
+watch(() => routerCloud.value?.status.buyUrl, async url => {
+  qr.value = url ? await qrSvg(url, 256) : ''
+})
+
+const copied = ref(false)
+async function copyBuyUrl() {
+  await navigator.clipboard.writeText(routerCloud.value!.status.buyUrl)
+  copied.value = true
+  setTimeout(() => (copied.value = false), 2000)
+}
+
+const retryingButton = ref(false)
+async function retryButton() {
+  if (!store.activeId) return
+  retryingButton.value = true
+  try {
+    const step = await addCloudBuyButton(store.activeId)
+    await loadRouter()
+    result.value = { steps: [step], vouchers: 0, cloudRouterId: '' }
+  } catch (e: any) {
+    connectError.value = errorText(e, t('settings.cloud.failed'))
+  } finally {
+    retryingButton.value = false
   }
 }
 

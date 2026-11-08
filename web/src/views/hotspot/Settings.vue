@@ -39,7 +39,7 @@
     <template v-else-if="settings">
       <SettingsLoginPage v-if="tab === 'login'" :settings="settings" @saved="settings = $event" />
       <SettingsSetup v-else-if="tab === 'setup'" @open-login-page="tab = 'login'" />
-      <SettingsCloud v-else-if="tab === 'cloud'" />
+      <SettingsCloud v-else-if="tab === 'cloud'" @open-login-page="tab = 'login'" />
       <SettingsMigration v-else />
     </template>
   </PageLayout>

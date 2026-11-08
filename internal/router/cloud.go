@@ -2,6 +2,7 @@ package router
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"net/url"
@@ -84,6 +85,8 @@ type CloudStatus struct {
 	HardwareID      string `json:"hardwareId"`
 	RouterOSVersion string `json:"routerOsVersion"`
 	HasHotspot      bool   `json:"hasHotspot"`
+	BuyURL          string `json:"buyUrl"`    // guests open it before logging in; "" when not connected
+	BuyButton       string `json:"buyButton"` // login page: "present", "missing" or "unknown" (not readable completely)
 }
 
 func firstMap(conn *ros.Client, path string, args ...string) map[string]string {
@@ -96,7 +99,7 @@ func firstMap(conn *ros.Client, path string, args ...string) map[string]string {
 
 // CloudStatus reports whether the router is connected to Cloud, and what
 // setup needs to send for it.
-func (c *Client) CloudStatus() (*CloudStatus, error) {
+func (c *Client) CloudStatus(cloudURL string) (*CloudStatus, error) {
 	conn, err := c.connect()
 	if err != nil {
 		return nil, err
@@ -111,9 +114,22 @@ func (c *Client) CloudStatus() (*CloudStatus, error) {
 	if script := firstMap(conn, "/system/script/print", "?name="+cloudScriptName); len(script) > 0 {
 		s.Connected = true
 		s.CloudRouterID = cloudRouterID(script["source"])
+		s.BuyURL = strings.TrimSuffix(cloudBuyURL(cloudURL, s.CloudRouterID), cloudLoginParam)
+		s.BuyButton = buyButtonState(conn)
 	}
 	s.PoolVouchers, err = poolVouchers(conn)
 	return s, err
+}
+
+func buyButtonState(conn *ros.Client) string {
+	_, html, ok := readLoginPage(conn)
+	switch {
+	case !ok:
+		return "unknown"
+	case strings.Contains(html, cloudLoginStart):
+		return "present"
+	}
+	return "missing"
 }
 
 func poolVouchers(conn *ros.Client) (int, error) {
@@ -231,15 +247,16 @@ func (c *Client) CloudInstall(script, cloudHost string) SetupStepResult {
 const (
 	cloudLoginStart = "<!-- pikro-cloud -->"
 	cloudLoginEnd   = "<!-- /pikro-cloud -->"
-	cloudLoginHTML  = cloudLoginStart + `
-<div style="text-align:center;margin:16px"><a href="%s" style="display:inline-block;padding:12px 20px;background:#111;color:#fff;border-radius:8px;font:600 15px sans-serif;text-decoration:none">Acheter avec mobile money</a></div>
-<script>
-(function(){var e=$(if error)1$(else)0$(endif),m=/[?&]voucher=([^&#]+)/.exec(location.search),f=document.login;
-if(e||!m||!f)return;var v=decodeURIComponent(m[1].replace(/\+/g," "));
-if(f.code)f.code.value=v;else{f.username.value=v;f.password.value=v}
-if(!f.onsubmit||f.onsubmit()!==false)f.submit()})();
-</script>
-` + cloudLoginEnd
+	cloudLoginHTML  = cloudLoginStart + `<a href="%s" style="display:table;margin:16px auto;padding:12px;background:#111;color:#fff;font:600 15px Arial;text-decoration:none">Acheter avec mobile money</a>` +
+		`<script>!function(){var m=/[?&]voucher=([^&#]+)/.exec(location),f=document.login;` +
+		`if($(if error)1$(else)0$(endif)||!m||!f)return;m=decodeURIComponent(m[1].replace(/\+/g," "));` +
+		`if(f.code)f.code.value=m;else f.username.value=f.password.value=m;` +
+		`f.onsubmit&&f.onsubmit()===false||f.submit()}()</script>` + cloudLoginEnd
+
+	// A page that holds this comment gets the snippet right after it, wherever
+	// the owner wants the button. Removal leaves the marker, so the page comes
+	// back byte for byte.
+	cloudBuyMarker = "<!-- pikro-buy -->"
 )
 
 var (
@@ -247,13 +264,16 @@ var (
 	bodyEndRe    = regexp.MustCompile(`(?i)</body>`)
 )
 
+// cloudLoginParam is how the router tells the buy page where to log in.
+const cloudLoginParam = "?login=$(link-login-only-esc)"
+
 // cloudBuyURL is the Cloud buy page for a router; the router fills in its own
 // login URL. "" when Cloud's URL or the router id is unknown.
 func cloudBuyURL(cloudURL, routerID string) string {
 	if cloudURL == "" || routerID == "" {
 		return ""
 	}
-	return cloudURL + "/r/" + url.PathEscape(routerID) + "?login=$(link-login-only-esc)"
+	return cloudURL + "/r/" + url.PathEscape(routerID) + cloudLoginParam
 }
 
 // withCloudBuyButton returns the login page with the Cloud buy button and
@@ -265,6 +285,10 @@ func withCloudBuyButton(html, buyURL string) string {
 		return html
 	}
 	snippet := fmt.Sprintf(cloudLoginHTML, buyURL) + "\n"
+	if at := strings.Index(html, cloudBuyMarker); at >= 0 {
+		at += len(cloudBuyMarker)
+		return html[:at] + snippet + html[at:]
+	}
 	if loc := bodyEndRe.FindAllStringIndex(html, -1); len(loc) > 0 {
 		at := loc[len(loc)-1][0]
 		return html[:at] + snippet + html[at:]
@@ -272,8 +296,53 @@ func withCloudBuyButton(html, buyURL string) string {
 	return html + snippet
 }
 
+// loginPageChunk is how much /file/read returns per call.
+const loginPageChunk = 4000
+
+// completePage returns a file's whole content, or false when it can't be had.
+// RouterOS only prints a file's contents up to 4095 bytes; for bigger files
+// (RouterOS 7) read gets the rest in chunks, and RouterOS 6 has no read at all.
+func completePage(size int, printed string, read func(offset, n int) (string, error)) (string, bool) {
+	if len(printed) == size {
+		return printed, true
+	}
+	var page strings.Builder
+	for page.Len() < size {
+		chunk, err := read(page.Len(), min(loginPageChunk, size-page.Len()))
+		if err != nil || chunk == "" {
+			return "", false
+		}
+		page.WriteString(chunk)
+	}
+	if page.Len() != size {
+		return "", false
+	}
+	return page.String(), true
+}
+
+// readLoginPage returns the login page's /file id ("" when there is none) and
+// its content; ok is false when the content can't be read completely.
+func readLoginPage(conn *ros.Client) (id, html string, ok bool) {
+	const file = "hotspot/login.html"
+	page := firstMap(conn, "/file/print", "?name="+file, "=.proplist=.id,size,contents")
+	size, err := strconv.Atoi(page["size"])
+	if page[".id"] == "" || err != nil {
+		return page[".id"], "", false
+	}
+	html, ok = completePage(size, page["contents"], func(offset, n int) (string, error) {
+		r, err := conn.RunArgs([]string{"/file/read", "=file=" + file, "=offset=" + strconv.Itoa(offset), "=chunk-size=" + strconv.Itoa(n)})
+		if err != nil || len(r.Re) == 0 {
+			return "", errors.New("cannot read")
+		}
+		return r.Re[0].Map["data"], nil
+	})
+	return page[".id"], html, ok
+}
+
 // CloudLoginPage puts the Cloud buy button on the router's login page when
-// cloudURL is set, and takes it off when it is "".
+// cloudURL is set, and takes it off when it is "". The owner's page is never
+// written unless it was read completely; when the button can't be added the
+// step is OK with a Warning and the page stays as it is.
 func (c *Client) CloudLoginPage(cloudURL string) SetupStepResult {
 	name := "Add the buy button to the login page"
 	fail := func(err error) SetupStepResult { return SetupStepResult{Name: name, Error: err.Error()} }
@@ -284,15 +353,21 @@ func (c *Client) CloudLoginPage(cloudURL string) SetupStepResult {
 	defer conn.Close()
 
 	routerID := cloudRouterID(firstMap(conn, "/system/script/print", "?name="+cloudScriptName)["source"])
-	page := firstMap(conn, "/file/print", "?name=hotspot/login.html", "=.proplist=.id,contents")
-	if page[".id"] == "" {
+	id, current, ok := readLoginPage(conn)
+	if id == "" {
 		return fail(fmt.Errorf("hotspot/login.html not found: run hotspot setup first"))
 	}
-	html := withCloudBuyButton(page["contents"], cloudBuyURL(cloudURL, routerID))
-	if html == page["contents"] {
+	if !ok {
+		return SetupStepResult{Name: name, OK: true, Warning: "The login page is a custom page that Pikro can't read completely on this router, so it was left as it is, without the buy button."}
+	}
+	html := withCloudBuyButton(current, cloudBuyURL(cloudURL, routerID))
+	if html == current {
 		return SetupStepResult{Name: name, OK: true, Skipped: true}
 	}
-	if _, err := conn.RunArgs([]string{"/file/set", "=.id=" + page[".id"], "=contents=" + html}); err != nil {
+	if _, err := conn.RunArgs([]string{"/file/set", "=.id=" + id, "=contents=" + html}); err != nil {
+		if strings.Contains(err.Error(), "too long") {
+			return SetupStepResult{Name: name, OK: true, Warning: "The login page is too large for this router to hold the buy button, so it was left as it is."}
+		}
 		return fail(err)
 	}
 	return SetupStepResult{Name: name, OK: true}

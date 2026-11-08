@@ -1,6 +1,8 @@
 package router
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -141,6 +143,87 @@ func TestCloudBuyURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := cloudBuyURL(tt.base, tt.id); got != tt.want {
 				t.Errorf("cloudBuyURL = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCompletePage(t *testing.T) {
+	page := strings.Repeat("0123456789", 900) // 9000 bytes
+	reader := func(src string) func(int, int) (string, error) {
+		return func(offset, n int) (string, error) { return src[offset : offset+n], nil }
+	}
+	tests := []struct {
+		name    string
+		size    int
+		printed string
+		read    func(int, int) (string, error)
+		want    string
+		wantOK  bool
+	}{
+		{"fits in print", 5, "hello", func(int, int) (string, error) { t.Fatal("read called"); return "", nil }, "hello", true},
+		{"empty page", 0, "", nil, "", true},
+		{"needs chunks (v7)", len(page), "", reader(page), page, true},
+		{"chunk reader errors (v6)", len(page), "", func(int, int) (string, error) { return "", errors.New("no such command") }, "", false},
+		{"empty chunk early", len(page), "", func(offset, n int) (string, error) {
+			if offset > 0 {
+				return "", nil
+			}
+			return page[:n], nil
+		}, "", false},
+		{"chunks longer than size", 10, "", func(int, int) (string, error) { return "0123456789abc", nil }, "", false},
+		{"print is partial and read is wrong", 6, "abc", func(int, int) (string, error) { return "xyzw", nil }, "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := completePage(tt.size, tt.printed, tt.read)
+			if ok != tt.wantOK || got != tt.want {
+				t.Errorf("completePage = (%d bytes, %v), want (%d bytes, %v)", len(got), ok, len(tt.want), tt.wantOK)
+			}
+		})
+	}
+}
+
+func TestCompletePageReadsInChunksOf4000(t *testing.T) {
+	var calls []string
+	page := strings.Repeat("x", 9000)
+	completePage(len(page), "", func(offset, n int) (string, error) {
+		calls = append(calls, fmt.Sprintf("%d+%d", offset, n))
+		return page[offset : offset+n], nil
+	})
+	if got, want := strings.Join(calls, " "), "0+4000 4000+4000 8000+1000"; got != want {
+		t.Errorf("reads = %s, want %s", got, want)
+	}
+}
+
+func TestCloudSnippetIsSmall(t *testing.T) {
+	if n := len(fmt.Sprintf(cloudLoginHTML, "")); n > 500 {
+		t.Errorf("snippet without its url is %d bytes, want <= 500", n)
+	}
+}
+
+func TestCloudButtonPlacementAndRemoval(t *testing.T) {
+	const buy = "https://c.test/r/1?login=$(x)"
+	tests := []struct {
+		name, page string
+		after      string // what must directly precede the snippet
+	}{
+		{"marker", "<html><body>a<!-- pikro-buy -->b</body></html>", "<!-- pikro-buy -->"},
+		{"marker wins over the closing body tag", "</body><!-- pikro-buy --></body>", "<!-- pikro-buy -->"},
+		{"before the last body tag", "<html><body>a</body></html>", "a"},
+		{"no body tag", "<form></form>", "<form></form>"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			added := withCloudBuyButton(tt.page, buy)
+			if !strings.Contains(added, tt.after+cloudLoginStart) {
+				t.Errorf("snippet not right after %q:\n%s", tt.after, added)
+			}
+			if got := withCloudBuyButton(added, ""); got != tt.page {
+				t.Errorf("removal = %q, want the original %q", got, tt.page)
+			}
+			if again := withCloudBuyButton(added, buy); again != added {
+				t.Errorf("re-adding changed the page:\n%s", again)
 			}
 		})
 	}

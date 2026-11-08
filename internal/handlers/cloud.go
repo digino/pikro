@@ -182,7 +182,7 @@ func GetRouterCloud(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
 	}
-	status, err := client.CloudStatus()
+	status, err := client.CloudStatus(cloud.URL())
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
@@ -252,7 +252,7 @@ func PostRouterCloud(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status, err := client.CloudStatus()
+	status, err := client.CloudStatus(cloud.URL())
 	if err == nil && status.HardwareID == "" {
 		err = errors.New("could not read the router's serial number")
 	}
@@ -277,6 +277,7 @@ func PostRouterCloud(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cloudURL, _ := url.Parse(cloud.URL())
+	// A warning on the buy button doesn't stop the connect: the page stays as it is.
 	if !step(client.CloudInstall(registered.Script, cloudURL.Hostname())) || !step(client.CloudLoginPage(cloud.URL())) {
 		done(0, registered.RouterID)
 		return
@@ -284,6 +285,16 @@ func PostRouterCloud(w http.ResponseWriter, r *http.Request) {
 	first, vouchers := client.CloudFirstSync()
 	step(first)
 	done(vouchers, registered.RouterID)
+}
+
+// PostRouterCloudButton (re-)adds the buy button to a connected router's login page.
+func PostRouterCloudButton(w http.ResponseWriter, r *http.Request) {
+	client, err := clientFromRequest(r)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	jsonOK(w, client.CloudLoginPage(cloud.URL()))
 }
 
 // DeleteRouterCloud takes the router off Cloud: first tells Cloud to stop

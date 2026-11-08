@@ -316,13 +316,19 @@ export interface RouterCloud {
     hardwareId: string
     routerOsVersion: string
     hasHotspot: boolean
+    /** The page guests open before logging in; "" when not connected. */
+    buyUrl: string
+    /** "unknown": the login page can't be read completely. */
+    buyButton: 'present' | 'missing' | 'unknown'
   }
   plans: { profile: string; price: number }[]
   currency: string
 }
 
+export interface CloudStep { name: string; ok: boolean; error?: string; skipped?: boolean; warning?: string }
+
 export interface CloudConnectResult {
-  steps: { name: string; ok: boolean; error?: string; skipped?: boolean }[]
+  steps: CloudStep[]
   vouchers: number
   cloudRouterId: string
 }
@@ -332,6 +338,9 @@ export const getRouterCloud = (id: string) =>
 
 export const connectRouterToCloud = (id: string, ownerPhone: string, profiles: string[]) =>
   api.post<CloudConnectResult>(`/routers/${id}/cloud`, { ownerPhone, profiles }).then(r => r.data)
+
+export const addCloudBuyButton = (id: string) =>
+  api.post<CloudStep>(`/routers/${id}/cloud/button`).then(r => r.data)
 
 /** cloudNotified is false when Cloud couldn't be reached: the router is clean, but Cloud keeps selling its vouchers until it notices the router stopped syncing. */
 export const disconnectRouterFromCloud = (id: string) =>
