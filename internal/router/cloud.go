@@ -14,10 +14,7 @@ import (
 	ros "github.com/go-routeros/routeros/v3"
 )
 
-// Pikro Cloud: the router keeps a pool of unsold vouchers that Cloud issued
-// and syncs them every 10 minutes with the pikro-cloud-sync script. The
-// script and its token come from Cloud; Pikro installs them, then the router
-// works on its own. See pikro-cloud's docs/cloud-setup.md.
+// Pikro Cloud
 const (
 	cloudScriptName = "pikro-cloud-sync"
 	CloudComment    = "pikro-cloud" // on unsold pool vouchers and walled-garden entries

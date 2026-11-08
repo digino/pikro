@@ -60,8 +60,23 @@
         <!-- Setup form -->
         <form v-else class="flex flex-col gap-4" @submit.prevent="connect">
           <label class="flex flex-col gap-1">
+            <span class="font-medium">{{ t('settings.cloud.ownerCountry') }}</span>
+            <select v-model="ownerCountry" class="input-select" required>
+              <option v-for="c in countries.main" :key="c.code" :value="c.code">{{ c.name }}</option>
+              <optgroup :label="t('settings.cloud.allCountries')">
+                <option v-for="c in countries.other" :key="c.code" :value="c.code">{{ c.name }}</option>
+              </optgroup>
+            </select>
+          </label>
+          <label class="flex flex-col gap-1">
             <span class="font-medium">{{ t('settings.cloud.ownerPhone') }}</span>
-            <input v-model="ownerPhone" class="input" inputmode="tel" placeholder="+228 90 00 00 00" required />
+            <span class="join">
+              <span class="inline-flex items-center px-3 border-2 border-ink rounded-control bg-ground font-mono text-sm">+{{ getCountryCallingCode(ownerCountry) }}</span>
+              <input v-model="ownerPhone" class="input min-w-0" inputmode="tel" :placeholder="phoneExample" required />
+            </span>
+            <span v-if="ownerPhone && !parsedPhone?.isValid()" class="text-xs text-danger-text">
+              {{ t('settings.cloud.invalidPhone', { country: countryName(ownerCountry) }) }}
+            </span>
             <span class="text-xs text-text-muted">{{ t('settings.cloud.ownerPhoneHint') }}</span>
           </label>
 
@@ -95,7 +110,7 @@
             <button
               type="submit"
               class="btn btn-primary min-h-12.5 text-[15px]"
-              :disabled="!canSetUp || connecting || !selected.length || !ownerPhone || !routerCloud.currency"
+              :disabled="!canSetUp || connecting || !selected.length || !parsedPhone?.isValid() || !routerCloud.currency"
             >
               <span v-if="connecting" class="spinner spinner--sm" />
               {{ connecting ? t('settings.cloud.connecting') : t('settings.cloud.connect') }}
@@ -158,7 +173,7 @@
             {{ codeSent ? t('settings.cloud.signIn') : t('settings.cloud.sendCode') }}
           </button>
           <button v-if="codeSent" type="button" class="btn" :disabled="busy" @click="codeSent = false; code = ''">
-            {{ t('settings.cloud.otherNumber') }}
+            {{ t('settings.cloud.otherEmail') }}
           </button>
         </div>
       </form>
@@ -193,6 +208,8 @@ import {
 } from '@/api'
 import AppDialog from '@/components/AppDialog.vue'
 import { qrSvg } from '@/utils/voucherTemplates/qr'
+import { getCountries, getCountryCallingCode, getExampleNumber, parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js'
+import examples from 'libphonenumber-js/mobile/examples'
 
 const emit = defineEmits<{ openLoginPage: [] }>()
 
@@ -200,8 +217,6 @@ const { t, locale } = useI18n()
 const store = useRoutersStore()
 
 const errorText = (e: any, fallback: string) => e?.response?.data?.error ?? e?.message ?? fallback
-// "+228 90 00 00 00" -> "+22890000000", the form Cloud expects.
-const compactPhone = (s: string) => s.replace(/[\s.-]/g, '')
 const formatDate = (iso?: string) =>
   iso ? new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium' }).format(new Date(iso)) : ''
 
@@ -262,7 +277,23 @@ const routerCloud = ref<RouterCloud | null>(null)
 const loadingRouter = ref(false)
 const routerError = ref('')
 const editing = ref(false)
+const ownerCountry = ref<CountryCode>('TG')
+// Typed without the country code, which comes from ownerCountry; a number
+// typed with its own +code is kept as typed.
 const ownerPhone = ref('')
+const parsedPhone = computed(() => parsePhoneNumberFromString(ownerPhone.value, ownerCountry.value))
+const phoneExample = computed(() => getExampleNumber(ownerCountry.value, examples)?.formatNational() ?? '')
+
+// Pikro Cloud's payment markets first, then every other country by name.
+const MAIN_COUNTRIES: CountryCode[] = ['TG', 'BJ', 'BF', 'CI', 'SN', 'ML', 'NE', 'GN', 'GH', 'NG', 'CM']
+const countryName = (code: string) => new Intl.DisplayNames([locale.value], { type: 'region' }).of(code) ?? code
+const countries = computed(() => {
+  const named = (codes: CountryCode[]) => codes.map(code => ({ code, name: countryName(code) }))
+  return {
+    main: named(MAIN_COUNTRIES),
+    other: named(getCountries().filter(c => !MAIN_COUNTRIES.includes(c))).sort((a, b) => a.name.localeCompare(b.name, locale.value)),
+  }
+})
 const selected = ref<string[]>([])
 const connecting = ref(false)
 const connectError = ref('')
@@ -321,7 +352,7 @@ async function connect() {
   connectError.value = ''
   result.value = null
   try {
-    result.value = await connectRouterToCloud(store.activeId, compactPhone(ownerPhone.value), selected.value)
+    result.value = await connectRouterToCloud(store.activeId, parsedPhone.value!.number, selected.value)
     if (result.value.steps.every(s => s.ok)) {
       const kept = result.value
       await loadRouter()
