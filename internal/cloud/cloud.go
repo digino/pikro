@@ -1,5 +1,5 @@
-// Package cloud talks to Pikro Cloud (the separate pikro-cloud service) for
-// the opt-in Cloud setup a certified technician runs on an owner's router.
+// Package cloud is the client for Pikro Cloud, used by the opt-in Cloud
+// setup a certified technician runs on an owner's router.
 package cloud
 
 import (
@@ -13,10 +13,13 @@ import (
 	"time"
 )
 
-// URL is where Pikro Cloud runs. Empty until its domain is chosen: set
-// PIKRO_CLOUD_URL (e.g. http://localhost:8081 for a local broker).
+// URL is where Pikro Cloud runs. PIKRO_CLOUD_URL overrides it, e.g.
+// http://localhost:8081 for a local broker.
 func URL() string {
-	return strings.TrimRight(os.Getenv("PIKRO_CLOUD_URL"), "/")
+	if u := os.Getenv("PIKRO_CLOUD_URL"); u != "" {
+		return strings.TrimRight(u, "/")
+	}
+	return "https://cloud.getpikro.com"
 }
 
 type Client struct {
@@ -66,8 +69,9 @@ type Registration struct {
 	HardwareID      string `json:"hardware_id"`
 	RouterOSVersion string `json:"routeros_version"`
 	OwnerPhone      string `json:"owner_phone"`
-	Name            string `json:"name"` // the hotspot's name, shown on the buy page
-	Plans          []Plan `json:"plans"`
+	Name            string `json:"name"`         // the hotspot's name, shown on the buy page
+	RouterToken     string `json:"router_token"` // from the router's sync script; "" on first setup
+	Plans           []Plan `json:"plans"`
 }
 
 type Registered struct {

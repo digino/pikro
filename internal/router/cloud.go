@@ -68,8 +68,7 @@ func pickHardwareID(routerboard, license map[string]string) string {
 	return ""
 }
 
-// cloudStartTime spreads routers' syncs over the interval, so a hundred
-// routers don't all reach Cloud on the same minute.
+// cloudStartTime spreads routers' syncs over the interval.
 func cloudStartTime(offset time.Duration) string {
 	s := int(offset.Seconds())
 	return fmt.Sprintf("%02d:%02d:%02d", s/3600, s/60%60, s%60)

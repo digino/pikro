@@ -286,7 +286,7 @@ export const rebootRouter = (id: string) =>
 export const runSpeedTest = (id: string, target = '10') =>
   api.post<Record<string, string>>(`/routers/${id}/speedtest`, { target }).then(r => r.data)
 
-// Pikro Cloud (opt-in, certified technicians) — see pikro-cloud's docs/cloud-setup.md
+// Pikro Cloud (opt-in, certified technicians)
 export interface CloudSession {
   configured: boolean
   signedIn: boolean

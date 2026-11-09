@@ -249,9 +249,7 @@ async function sendCode() {
     await sendCloudCode(email.value.trim())
     codeSent.value = true
   } catch (e: any) {
-    // 429: a code sent less than a minute ago is still valid — let them type it.
-    if (e?.response?.status === 429) codeSent.value = true
-    else signInError.value = errorText(e, t('settings.cloud.failed'))
+    signInError.value = errorText(e, t('settings.cloud.failed'))
   } finally {
     busy.value = false
   }
@@ -292,7 +290,7 @@ const phoneExample = computed(() => fakeNumber(getExampleNumber(ownerCountry.val
 // so only the first group (the prefix) is kept.
 const fakeNumber = (s: string) => s.replace(/(\s.*)/, rest => rest.replace(/\d/g, '0'))
 
-// Pikro Cloud's payment markets first, then every other country by name.
+// West and Central African countries first, then every other country by name.
 const MAIN_COUNTRIES: CountryCode[] = ['TG', 'BJ', 'BF', 'CI', 'SN', 'ML', 'NE', 'GN', 'GH', 'NG', 'CM']
 const countryName = (code: string) => new Intl.DisplayNames([locale.value], { type: 'region' }).of(code) ?? code
 const countries = computed(() => {

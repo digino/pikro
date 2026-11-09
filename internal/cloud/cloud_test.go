@@ -9,7 +9,20 @@ import (
 	"testing"
 )
 
-// fakeCloud answers like pikro-cloud's broker for one technician session.
+func TestURL(t *testing.T) {
+	tests := []struct{ env, want string }{
+		{"", "https://cloud.getpikro.com"},
+		{"http://localhost:8081/", "http://localhost:8081"},
+	}
+	for _, tt := range tests {
+		t.Setenv("PIKRO_CLOUD_URL", tt.env)
+		if got := URL(); got != tt.want {
+			t.Errorf("PIKRO_CLOUD_URL=%q: URL() = %q, want %q", tt.env, got, tt.want)
+		}
+	}
+}
+
+// fakeCloud stands in for Pikro Cloud for one technician session.
 func fakeCloud(t *testing.T) *Client {
 	t.Helper()
 	mux := http.NewServeMux()

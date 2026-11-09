@@ -16,7 +16,6 @@ import (
 )
 
 // Pikro Cloud setup, run by a certified technician signed in to Cloud.
-// Flow and screens: pikro-cloud's docs/cloud-setup.md.
 
 type cloudSessionView struct {
 	Configured bool       `json:"configured"` // PIKRO_CLOUD_URL is set
@@ -258,6 +257,7 @@ func PostRouterCloud(w http.ResponseWriter, r *http.Request) {
 	}
 	if err == nil {
 		reg.HardwareID, reg.RouterOSVersion = status.HardwareID, status.RouterOSVersion
+		reg.RouterToken, err = client.CloudToken()
 	}
 	var registered *cloud.Registered
 	if err == nil {
@@ -300,8 +300,7 @@ func PostRouterCloudButton(w http.ResponseWriter, r *http.Request) {
 // DeleteRouterCloud takes the router off Cloud: first tells Cloud to stop
 // selling for it (with the router's token, read from its script before the
 // script goes), then cleans the router. If Cloud can't be reached the router
-// is cleaned anyway and cloudNotified is false: its codes stay on sale until
-// Cloud notices the router stopped syncing.
+// is cleaned anyway and cloudNotified is false.
 func DeleteRouterCloud(w http.ResponseWriter, r *http.Request) {
 	client, err := clientFromRequest(r)
 	if err != nil {
@@ -335,9 +334,8 @@ func DeleteRouterCloud(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]bool{"cloudNotified": notified})
 }
 
-// withoutCloudVouchers drops unsold Pikro Cloud pool vouchers from a user
-// list: they belong to Cloud's stock, so they aren't counted, edited or
-// printed in Pikro. Once sold and used, the on-login script prefixes the
+// withoutCloudVouchers drops unsold Pikro Cloud vouchers from a user list,
+// so they aren't counted, edited or printed in Pikro. Once sold and used, the on-login script prefixes the
 // comment, so the voucher shows like any other. Returns how many it hid.
 func withoutCloudVouchers(users []map[string]any) ([]map[string]any, int) {
 	shown := make([]map[string]any, 0, len(users))
