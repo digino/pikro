@@ -43,7 +43,7 @@
             <div class="flex flex-col gap-2 min-w-0 flex-1">
               <span class="font-medium">{{ t('settings.cloud.buyLink') }}</span>
               <div class="flex items-center gap-2.5">
-                <code class="text-xs break-all flex-1">{{ routerCloud.status.buyUrl }}</code>
+                <code class="text-xs break-all flex-1">{{ buyLink }}</code>
                 <button type="button" class="btn shrink-0" @click="copyBuyUrl">
                   {{ copied ? t('settings.cloud.copied') : t('settings.cloud.copy') }}
                 </button>
@@ -52,6 +52,9 @@
             </div>
           </div>
           <div class="flex flex-wrap gap-2.5">
+            <button v-if="qr" type="button" class="btn" @click="printCard">
+              <PrinterIcon class="size-4.5" /> {{ t('settings.cloud.printCard') }}
+            </button>
             <button type="button" class="btn" :disabled="!canSetUp" @click="editing = true">{{ t('settings.cloud.changePlans') }}</button>
             <button type="button" class="btn" @click="confirmingDisconnect = true">{{ t('settings.cloud.disconnect') }}</button>
           </div>
@@ -199,7 +202,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
-import { CheckIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { PrinterIcon, CheckIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { useRoutersStore } from '@/stores/routers'
 import {
   getCloudSession, sendCloudCode, signInToCloud, signOutOfCloud,
@@ -208,6 +211,8 @@ import {
 } from '@/api'
 import AppDialog from '@/components/AppDialog.vue'
 import { qrSvg } from '@/utils/voucherTemplates/qr'
+import { hotspotLoginUrl, printHtml } from '@/utils/vouchers'
+import { cloudCardHtml } from '@/utils/cloudCard'
 import { getCountries, getCountryCallingCode, getExampleNumber, parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js'
 import examples from 'libphonenumber-js/mobile/examples'
 
@@ -314,6 +319,7 @@ async function loadRouter() {
   editing.value = false
   try {
     routerCloud.value = await getRouterCloud(store.activeId)
+    loginUrl.value = await hotspotLoginUrl(store.activeId)
     selected.value = routerCloud.value.plans.filter(p => p.price).map(p => p.profile)
   } catch (e: any) {
     routerError.value = errorText(e, t('settings.cloud.failed'))
@@ -322,14 +328,27 @@ async function loadRouter() {
   }
 }
 
+// The buy link for the QR code and the copy button. It carries the hotspot's
+// login page, so after paying, "Se connecter au WiFi" can log the guest in;
+// the login page's own button passes it from the router instead.
+const loginUrl = ref('')
+const buyLink = computed(() => {
+  const url = routerCloud.value?.status.buyUrl ?? ''
+  return url && loginUrl.value ? `${url}?login=${encodeURIComponent(loginUrl.value)}` : url
+})
+
 const qr = ref('')
-watch(() => routerCloud.value?.status.buyUrl, async url => {
+watch(buyLink, async url => {
   qr.value = url ? await qrSvg(url, 256) : ''
 })
 
+async function printCard() {
+  printHtml(await cloudCardHtml(store.active()?.hotspotSettings?.hotspotName ?? '', buyLink.value))
+}
+
 const copied = ref(false)
 async function copyBuyUrl() {
-  await navigator.clipboard.writeText(routerCloud.value!.status.buyUrl)
+  await navigator.clipboard.writeText(buyLink.value)
   copied.value = true
   setTimeout(() => (copied.value = false), 2000)
 }
