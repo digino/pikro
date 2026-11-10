@@ -1324,6 +1324,10 @@ function isUptimeExhausted(u: Record<string, string>): boolean {
 
 function extractExpEpoch(comment: string | undefined): number | null {
   if (!comment) return null;
+  // The on-login script stamps "exp:<epoch>" on RouterOS 7.12+, and the
+  // router's local time "exp:YYYY-MM-DD HH:MM:SS" before.
+  const date = comment.match(/^exp:(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/);
+  if (date) return Math.floor(new Date(`${date[1]}T${date[2]}`).getTime() / 1000);
   const m = comment.match(/^exp:(\d+)/);
   if (!m) return null;
   return parseInt(m[1]);
@@ -1418,7 +1422,7 @@ function formatSeconds(secs: number): string {
 
 function displayComment(comment: string | undefined): string {
   if (!comment) return "—";
-  return comment.replace(/^exp:\d+\s*/, "") || "—";
+  return comment.replace(/^exp:(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}|\d+)\s*/, "") || "—";
 }
 
 function formatBytes(val: string | undefined): string {
