@@ -1,9 +1,5 @@
 <template>
-  <div v-if="session && !session.configured" class="card p-6 text-sm text-text-secondary">
-    {{ t('settings.cloud.notConfigured') }}
-  </div>
-
-  <div v-else-if="session" class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-7 items-start">
+  <div v-if="session" class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-7 items-start">
     <!-- This router -->
     <section class="card p-7 flex flex-col gap-4.5">
       <div class="flex flex-wrap items-center gap-3">
@@ -206,12 +202,12 @@ import { PrinterIcon, CheckIcon, ExclamationTriangleIcon, XMarkIcon } from '@her
 import { useRoutersStore } from '@/stores/routers'
 import {
   getCloudSession, sendCloudCode, signInToCloud, signOutOfCloud,
-  getRouterCloud, connectRouterToCloud, addCloudBuyButton, disconnectRouterFromCloud,
+  getRouterCloud, connectRouterToCloud, addCloudBuyButton, disconnectRouterFromCloud, hotspotPreflight,
   type CloudSession, type RouterCloud, type CloudConnectResult,
 } from '@/api'
 import AppDialog from '@/components/AppDialog.vue'
 import { qrSvg } from '@/utils/voucherTemplates/qr'
-import { hotspotLoginUrl, printHtml } from '@/utils/vouchers'
+import { printHtml } from '@/utils/vouchers'
 import { cloudCardHtml } from '@/utils/cloudCard'
 import { getCountries, getCountryCallingCode, getExampleNumber, parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js'
 import examples from 'libphonenumber-js/mobile/examples'
@@ -237,7 +233,7 @@ async function loadSession() {
   try {
     session.value = await getCloudSession()
   } catch (e: any) {
-    session.value = { configured: true, signedIn: false }
+    session.value = { signedIn: false }
     signInError.value = errorText(e, t('settings.cloud.failed'))
   }
 }
@@ -317,7 +313,9 @@ async function loadRouter() {
   editing.value = false
   try {
     routerCloud.value = await getRouterCloud(store.activeId)
-    loginUrl.value = await hotspotLoginUrl(store.activeId)
+    // The hotspot's own address, like the login page's buy button.
+    const address = (await hotspotPreflight(store.activeId).catch(() => null))?.hotspotAddress
+    loginUrl.value = address ? `http://${address}/login` : ''
     selected.value = routerCloud.value.plans.filter(p => p.price).map(p => p.profile)
   } catch (e: any) {
     routerError.value = errorText(e, t('settings.cloud.failed'))

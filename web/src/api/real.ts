@@ -288,7 +288,6 @@ export const runSpeedTest = (id: string, target = '10') =>
 
 // Pikro Cloud (opt-in, certified technicians)
 export interface CloudSession {
-  configured: boolean
   signedIn: boolean
   email?: string
   name?: string

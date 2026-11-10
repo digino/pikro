@@ -18,16 +18,15 @@ import (
 // Pikro Cloud setup, run by a certified technician signed in to Cloud.
 
 type cloudSessionView struct {
-	Configured bool       `json:"configured"` // PIKRO_CLOUD_URL is set
-	SignedIn   bool       `json:"signedIn"`
-	Email      string     `json:"email,omitempty"`
-	Name       string     `json:"name,omitempty"`
-	ExpiresAt  *time.Time `json:"expiresAt,omitempty"`
-	Revoked    bool       `json:"revoked,omitempty"` // signed in, but no longer certified
+	SignedIn  bool       `json:"signedIn"`
+	Email     string     `json:"email,omitempty"`
+	Name      string     `json:"name,omitempty"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+	Revoked   bool       `json:"revoked,omitempty"` // signed in, but no longer certified
 }
 
 func sessionView(s *config.CloudSession) cloudSessionView {
-	v := cloudSessionView{Configured: cloud.URL() != ""}
+	var v cloudSessionView
 	if s != nil && time.Now().Before(s.ExpiresAt) {
 		v.SignedIn, v.Email, v.Name, v.ExpiresAt = true, s.Email, s.Name, &s.ExpiresAt
 	}

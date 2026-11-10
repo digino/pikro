@@ -90,9 +90,6 @@ func (c *Client) call(ctx context.Context, method, path, token string, body, out
 }
 
 func (c *Client) send(ctx context.Context, method, path string, header map[string]string, body, out any) error {
-	if c.BaseURL == "" {
-		return &Error{Status: 0, Message: "not configured (set PIKRO_CLOUD_URL)"}
-	}
 	var buf bytes.Buffer
 	if body != nil {
 		if err := json.NewEncoder(&buf).Encode(body); err != nil {

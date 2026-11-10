@@ -264,8 +264,9 @@ var (
 	formEndRe = regexp.MustCompile(`(?i)</form>`)
 )
 
-// cloudLoginParam is how the router tells the buy page where to log in.
-const cloudLoginParam = "?login=$(link-login-only-esc)"
+// cloudLoginParam is how the router tells the buy page where to log in: the
+// hotspot's own address, which works with or without a DNS name.
+const cloudLoginParam = "?login=http://$(server-address)/login"
 
 // cloudBuyURL is the Cloud buy page for a router; the router fills in its own
 // login URL. "" when Cloud's URL or the router id is unknown.

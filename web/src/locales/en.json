@@ -556,7 +556,6 @@
       "failed": "Migration failed"
     },
     "cloud": {
-      "notConfigured": "Pikro Cloud isn't available in this version of Pikro yet.",
       "heading": "Pikro Cloud",
       "intro": "Let customers buy vouchers with mobile money from the hotspot login page. Only certified technicians can connect a router.",
       "connected": "Connected to Pikro Cloud — {n} vouchers ready on the router",

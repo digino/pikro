@@ -556,7 +556,6 @@
       "failed": "Échec de la migration"
     },
     "cloud": {
-      "notConfigured": "Pikro Cloud n'est pas encore disponible dans cette version de Pikro.",
       "heading": "Pikro Cloud",
       "intro": "Permettez aux clients d'acheter des tickets par mobile money depuis la page de connexion du hotspot. Seuls les techniciens certifiés peuvent connecter un routeur.",
       "connected": "Connecté à Pikro Cloud — {n} tickets prêts sur le routeur",

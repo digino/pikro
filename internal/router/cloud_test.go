@@ -78,7 +78,7 @@ func TestCloudStartTime(t *testing.T) {
 }
 
 func TestWithCloudBuyButton(t *testing.T) {
-	const buy = "https://cloud.test/r/abc-1?login=$(link-login-only-esc)"
+	const buy = "https://cloud.test/r/abc-1?login=http://$(server-address)/login"
 	tests := []struct {
 		name, html, buyURL string
 		wantButton         bool
@@ -134,8 +134,8 @@ func TestWithCloudBuyButtonIsIdempotentAndRemovable(t *testing.T) {
 
 func TestCloudBuyURL(t *testing.T) {
 	tests := []struct{ name, base, id, want string }{
-		{"plain", "https://cloud.test", "b9c9-44", "https://cloud.test/r/b9c9-44?login=$(link-login-only-esc)"},
-		{"id is path-escaped", "https://cloud.test", "a/b", "https://cloud.test/r/a%2Fb?login=$(link-login-only-esc)"},
+		{"plain", "https://cloud.test", "b9c9-44", "https://cloud.test/r/b9c9-44?login=http://$(server-address)/login"},
+		{"id is path-escaped", "https://cloud.test", "a/b", "https://cloud.test/r/a%2Fb?login=http://$(server-address)/login"},
 		{"no cloud url", "", "b9c9-44", ""},
 		{"not connected", "https://cloud.test", "", ""},
 	}
