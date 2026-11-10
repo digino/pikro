@@ -1,123 +1,77 @@
 package router
 
 import (
-	"bytes"
 	"fmt"
-	"text/template"
+	"strings"
 
 	"github.com/digino/pikro/internal/assets"
 )
-
-// defaultLoginPageParams holds the visual customisation options for the
-// built-in fallback login page used during initial hotspot setup, before
-// the admin has picked a template in Settings.
-type defaultLoginPageParams struct {
-	Title       string // page heading / logo text, default "Sign in to continue"
-	Subtitle    string // subtitle below the heading, default "$(hostname)"
-	AccentColor string // CSS hex color for button + focus ring, default "#111827"
-}
-
-// renderDefaultLoginPage applies params to the embedded hotspot_login.html
-// template. Uses text/template so user-supplied values are not HTML-escaped.
-func renderDefaultLoginPage(p defaultLoginPageParams) (string, error) {
-	if p.Title == "" {
-		p.Title = "Sign in to continue"
-	}
-	if p.Subtitle == "" {
-		p.Subtitle = "$(hostname)"
-	}
-	if p.AccentColor == "" {
-		p.AccentColor = "#ffbf00"
-	}
-
-	tmpl, err := template.New("login").Parse(string(assets.HotspotLoginHTML))
-	if err != nil {
-		return "", err
-	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, p); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
 
 type hotspotFile struct {
 	name    string
 	content string
 }
 
-// hotspotFiles maps each page to its file, using the built-in page for any
-// left empty.
-func hotspotFiles(content LoginPageContent) ([]hotspotFile, error) {
-	if content.Login == "" {
-		rendered, err := renderDefaultLoginPage(defaultLoginPageParams{})
-		if err != nil {
-			return nil, err
-		}
-		content.Login = rendered
-	}
-	if content.Logout == "" {
-		content.Logout = string(assets.HotspotLogoutHTML)
-	}
-	if content.Status == "" {
-		content.Status = string(assets.HotspotStatusHTML)
-	}
-	if content.Redirect == "" {
-		content.Redirect = string(assets.HotspotRedirectHTML)
-	}
-	if content.Alogin == "" {
-		content.Alogin = string(assets.HotspotAloginHTML)
-	}
-	files := []hotspotFile{
+// hotspotFiles maps each page to its file. A page left empty is not uploaded:
+// the router keeps its own. error.html is always the fixed built-in page.
+func hotspotFiles(content LoginPageContent) []hotspotFile {
+	var files []hotspotFile
+	for _, f := range []hotspotFile{
 		{"hotspot/login.html", content.Login},
 		{"hotspot/logout.html", content.Logout},
 		{"hotspot/status.html", content.Status},
 		{"hotspot/alogin.html", content.Alogin},
 		{"hotspot/error.html", string(assets.HotspotErrorHTML)},
 		{"hotspot/redirect.html", content.Redirect},
+		// Only pages that link them need these. Both already exist in a new
+		// hotspot's folder, which matters on RouterOS 6: it can overwrite
+		// files over the API but not create them.
+		{"hotspot/css/style.css", content.Style},
+		{"hotspot/md5.js", content.MD5},
+	} {
+		if f.content != "" {
+			files = append(files, f)
+		}
 	}
-	// Only pages that link them need these, and the built-in pages don't.
-	// Both already exist in a new hotspot's folder, which matters on
-	// RouterOS 6: it can overwrite files over the API but not create them.
-	if content.Style != "" {
-		files = append(files, hotspotFile{"hotspot/css/style.css", content.Style})
+	return files
+}
+
+// maxPageBytes is the largest file RouterOS 6 stores through the API; it
+// answers "new contents too long" above it.
+const maxPageBytes = 4095
+
+// checkPageSizes refuses the upload, before anything is written, when a page
+// is over maxPageBytes, so the hotspot is never left half updated.
+func checkPageSizes(files []hotspotFile) error {
+	for _, f := range files {
+		if len(f.content) > maxPageBytes {
+			return fmt.Errorf("%s is %d bytes, but the router accepts at most %d per page: shorten the title, subtitle or price list",
+				strings.TrimPrefix(f.name, "hotspot/"), len(f.content), maxPageBytes)
+		}
 	}
-	if content.MD5 != "" {
-		files = append(files, hotspotFile{"hotspot/md5.js", content.MD5})
-	}
-	return files, nil
+	return nil
 }
 
 // LoginPageContent holds the fully-rendered HTML for each customizable
-// hotspot page (built by the frontend from one of its template presets).
-// Any field left empty falls back to the built-in fixed default for that
-// page — this is the path taken during initial hotspot setup, before an
-// admin has picked a template in Settings, and also covers alogin/error,
-// which are never customizable and always use their fixed default.
+// hotspot page, built by the frontend (loginPageTemplates.ts), both at
+// hotspot setup and from Settings > Login page.
 type LoginPageContent struct {
-	Login    string
-	Logout   string
-	Status   string
-	Redirect string
-	Alogin   string // shown right after a successful login
-	Style    string // stylesheet the pages link, kept out of them for size
-	MD5      string // CHAP hash script the login page links
+	Login    string `json:"login"`
+	Logout   string `json:"logout"`
+	Status   string `json:"status"`
+	Redirect string `json:"redirect"`
+	Alogin   string `json:"alogin"` // shown right after a successful login
+	Style    string `json:"css"`    // stylesheet the pages link, kept out of them for size
+	MD5      string `json:"md5Js"`  // CHAP hash script the login page links
 
 	// CloudURL is Pikro Cloud's base URL. When set and the router is connected
 	// to Cloud, the login page gets the buy button; see withCloudBuyButton.
-	CloudURL string
+	CloudURL string `json:"-"`
 }
 
-// UploadLoginPage uploads the given (or default, if empty) rendered hotspot
-// pages — login, logout, status, alogin, error, redirect — to the router's
-// hotspot/ directory. alogin and error are never customizable and always use
-// their fixed built-in design.
+// UploadLoginPage uploads the given rendered hotspot pages to the router's
+// hotspot/ directory, plus the fixed error page.
 func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) error {
-	files, err := hotspotFiles(content)
-	if err != nil {
-		return err
-	}
-
 	conn, err := c.connect()
 	if err != nil {
 		return err
@@ -125,8 +79,14 @@ func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) e
 	defer conn.Close()
 
 	// A page uploaded over a connected router keeps its buy button.
-	routerID := cloudRouterID(firstMap(conn, "/system/script/print", "?name="+cloudScriptName)["source"])
-	files[0].content = withCloudBuyButton(files[0].content, cloudBuyURL(content.CloudURL, routerID))
+	if content.Login != "" {
+		routerID := cloudRouterID(firstMap(conn, "/system/script/print", "?name="+cloudScriptName)["source"])
+		content.Login = withCloudBuyButton(content.Login, cloudBuyURL(content.CloudURL, routerID))
+	}
+	files := hotspotFiles(content)
+	if err := checkPageSizes(files); err != nil {
+		return err
+	}
 
 	// List all files once to build a name → id/index map.
 	idByName := map[string]string{}

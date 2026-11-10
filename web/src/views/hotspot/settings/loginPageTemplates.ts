@@ -41,7 +41,6 @@ export interface GuestPageOptions {
   mode: LoginMode;
   language: GuestLanguage;
   prices: { name: string; price: string }[];
-  contact: string;
 }
 
 export interface GuestPages {
@@ -83,7 +82,6 @@ const GUEST_CSS = [
   ".row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 14px; }",
   ".row + .row { border-top: 1px dashed #ccc; }",
   ".row b { font-variant-numeric: tabular-nums; white-space: nowrap; }",
-  ".buy { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; border: 2px solid #111; border-radius: 12px; background: #ffbf00; color: #111; font-weight: 700; font-size: 14px; text-decoration: none; }",
   ".ok { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #157f3b; }",
   '.ok::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #157f3b; }',
   ".foot { font-size: 11px; color: #999; margin-top: 6px; }",
@@ -144,10 +142,6 @@ export function renderGuestPages(o: GuestPageOptions): GuestPages {
         "<\/div>",
       ].join("\n")
     : "";
-  const tel = o.contact.replace(/[^\d+]/g, "");
-  const contact = tel
-    ? `<a class="buy" href="tel:${tel}">${t("guestPage.buy")} · ${esc(o.contact)}<\/a>`
-    : "";
 
   const form =
     o.mode === "code"
@@ -199,7 +193,6 @@ export function renderGuestPages(o: GuestPageOptions): GuestPages {
     '$(if error)<p class="err" id="err" role="alert">$(error)<\/p>$(endif)',
     form,
     prices,
-    contact,
     foot,
     "<\/main>",
     errorScript({
@@ -242,7 +235,6 @@ export function renderGuestPages(o: GuestPageOptions): GuestPages {
     `  <button type="submit" class="btn">${t("guestPage.logout")}<\/button>`,
     "<\/form>",
     "$(endif)",
-    contact,
     foot,
     "<\/main>",
     "<\/body>",
@@ -270,7 +262,6 @@ export function renderGuestPages(o: GuestPageOptions): GuestPages {
     `  <button type="submit" class="btn">${t("guestPage.signInAgain")}<\/button>`,
     "<\/form>",
     prices,
-    contact,
     foot,
     "<\/main>",
     "<\/body>",

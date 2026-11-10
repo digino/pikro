@@ -722,10 +722,11 @@ import { useRoutersStore } from "@/stores/routers";
 import { friendlyError } from "@/utils/errors";
 import { HOTSPOT_EXTENSION_OPTIONS } from "@/utils/hotspotExtensions";
 import { CLEANUP_INTERVAL_OPTIONS } from "@/utils/cleanupIntervals";
+import { renderGuestPages } from "./loginPageTemplates";
 import AppDialog from "@/components/AppDialog.vue";
 import AppSelect, { type SelectOption } from "@/components/AppSelect.vue";
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const emit = defineEmits<{ openLoginPage: [] }>();
 
@@ -956,6 +957,15 @@ async function runSetup() {
       hotspotName: form.value.hotspotName,
       extension: form.value.hotspotExtension,
       cleanupInterval: form.value.cleanupInterval,
+      // Pikro's guest pages with their defaults, as Settings > Login page
+      // makes them until the operator changes them there.
+      pages: renderGuestPages({
+        title: "Wi-Fi",
+        subtitle: "$(hostname)",
+        mode: "code",
+        language: locale.value === "fr" ? "fr" : "en",
+        prices: [],
+      }),
       ...(needsBridge.value
         ? { newBridgeName: bridge.value.name, bridgePorts: bridge.value.ports }
         : {}),

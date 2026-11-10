@@ -6,6 +6,4 @@ import type { SelectOption } from '@/components/AppSelect.vue'
 export const HOTSPOT_EXTENSION_OPTIONS: SelectOption[] = [
   { value: '.spot', label: '.spot' },
   { value: '.hotspot', label: '.hotspot' },
-  { value: '.info', label: '.info' },
-  { value: '.wifi', label: '.wifi' },
 ]

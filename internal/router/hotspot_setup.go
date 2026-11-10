@@ -49,6 +49,9 @@ type SetupRequest struct {
 	NewBridgeName   string   `json:"newBridgeName,omitempty"`
 	BridgePorts     []string `json:"bridgePorts,omitempty"`
 	CleanupInterval string   `json:"cleanupInterval,omitempty"`
+	// Pages are Pikro's guest pages, rendered by the frontend like those of
+	// Settings > Login page.
+	Pages LoginPageContent `json:"pages"`
 }
 
 type SetupStepResult struct {
@@ -141,7 +144,7 @@ var validHotspotName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}$`)
 // domain. Kept to a fixed set since these are fake/local-only TLDs resolved
 // by the router's own DNS, not real ones.
 var validExtensions = map[string]bool{
-	".spot": true, ".hotspot": true, ".info": true, ".wifi": true,
+	".spot": true, ".hotspot": true,
 }
 
 // SetupHotspot runs all setup steps and always returns a populated SetupResult.
@@ -169,7 +172,7 @@ func (c *Client) SetupHotspot(req SetupRequest) (*SetupResult, error) {
 			ext = ".spot"
 		}
 		if !validExtensions[ext] {
-			return nil, fmt.Errorf("invalid extension: must be one of .spot, .hotspot, .info, .wifi")
+			return nil, fmt.Errorf("invalid extension: must be .spot or .hotspot")
 		}
 		dnsName = req.HotspotName + ext
 	}
@@ -240,7 +243,7 @@ func (c *Client) SetupHotspot(req SetupRequest) (*SetupResult, error) {
 	// once the hotspot server is active, and if this fails, everything else
 	// (network, NAT, DNS, cleanup) is already correctly configured — the
 	// hotspot just falls back to RouterOS's own default login page.
-	run(c.stepUploadLoginPage(profileName))
+	run(c.stepUploadLoginPage(profileName, req.Pages))
 
 	success := true
 	for _, s := range steps {
@@ -513,11 +516,11 @@ func (c *Client) stepInstallCleanupScheduler(interval string) SetupStepResult {
 
 // stepUploadLoginPage uploads the Pikro login page after the hotspot server
 // is active (the hotspot/ directory only exists once /ip/hotspot/add has run).
-func (c *Client) stepUploadLoginPage(profileName string) SetupStepResult {
+func (c *Client) stepUploadLoginPage(profileName string, pages LoginPageContent) SetupStepResult {
 	name := "Upload login page"
-	if err := c.UploadLoginPage(profileName, LoginPageContent{}); err != nil {
+	if err := c.UploadLoginPage(profileName, pages); err != nil {
 		// Non-fatal: the hotspot works with the default page if this fails.
-		return SetupStepResult{Name: name, OK: true, Skipped: true}
+		return SetupStepResult{Name: name, OK: true, Warning: "The hotspot keeps RouterOS's own login page: " + err.Error()}
 	}
 	return SetupStepResult{Name: name, OK: true}
 }

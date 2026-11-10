@@ -1,4 +1,5 @@
 import axios from 'axios'
+import type { GuestPages } from '@/views/hotspot/settings/loginPageTemplates'
 import type {
   RouterProfile, NewRouterProfile,
   NewHotspotUser, UpdateHotspotUser,
@@ -221,6 +222,7 @@ export const setupHotspot = (id: string, body: {
   newBridgeName?: string
   bridgePorts?: string[]
   cleanupInterval?: string
+  pages: GuestPages
 }) =>
   api.post<SetupResult>(`/routers/${id}/hotspot/setup`, body).then(r => r.data)
 

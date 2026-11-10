@@ -46,7 +46,6 @@ type LoginPageSettings struct {
 	LoginMode  string     `json:"loginMode,omitempty"` // "code" | "password"
 	Language   string     `json:"language,omitempty"`  // "en" | "fr"
 	ShowPrices bool       `json:"showPrices,omitempty"`
-	Contact    string     `json:"contact,omitempty"` // phone number guests call to buy a ticket
 	UploadedAt *time.Time `json:"uploadedAt,omitempty"`
 }
 

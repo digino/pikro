@@ -125,21 +125,6 @@
         </span>
       </div>
 
-      <label class="flex flex-col gap-1.5">
-        <span class="eyebrow">{{ t("settings.loginPage.contact") }}</span>
-        <input
-          v-model="form.contact"
-          class="input"
-          type="tel"
-          inputmode="tel"
-          autocomplete="off"
-          placeholder="+225 07 00 00 00 00"
-        />
-        <span class="text-xs text-text-muted">{{
-          t("settings.loginPage.contactHint")
-        }}</span>
-      </label>
-
       <div
         class="flex items-start gap-2.5 p-3 rounded-control bg-ground text-sm leading-snug"
       >
@@ -315,7 +300,6 @@ function fromSaved(lp: LoginPageSettings = {}) {
     title: lp.title ?? "",
     subtitle: lp.subtitle ?? "",
     showPrices: lp.showPrices ?? false,
-    contact: lp.contact ?? "",
   };
 }
 
@@ -348,7 +332,6 @@ const pages = computed<GuestPages>(() =>
     mode: form.value.mode,
     language: form.value.language,
     prices: form.value.showPrices ? priceList.value : [],
-    contact: form.value.contact.trim(),
   }),
 );
 const previewPage = ref<(typeof PREVIEW_PAGES)[number]>("login");
@@ -420,7 +403,6 @@ async function upload() {
       loginMode: f.mode,
       language: f.language,
       showPrices: f.showPrices,
-      contact: f.contact.trim(),
       uploadedAt: new Date().toISOString(),
     };
     // Re-read so a Profiles or Routers change made meanwhile isn't overwritten.
