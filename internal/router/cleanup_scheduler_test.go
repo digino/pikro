@@ -238,6 +238,32 @@ func TestCleanupScripts_containUptimeQuotaLogic(t *testing.T) {
 	}
 }
 
+// Removing a hotspot user leaves its open session running, and a device
+// logged in by MAC cookie stays online past its validity. Found on a 6.49.13
+// router: an expired voucher was removed and still connected an hour later.
+func TestCleanupScripts_endSessionsOfRemovedUsers(t *testing.T) {
+	tests := []struct {
+		name, script, active, cookie, user string
+	}{
+		{"cleanupScriptV7", cleanupScriptV7, "/ip/hotspot/active/remove [find where user=$name]",
+			"/ip/hotspot/cookie/remove [find where user=$name]", "/ip/hotspot/user/remove $u"},
+		{"cleanupScriptV6", cleanupScriptV6, "/ip hotspot active remove [find where user=$name]",
+			"/ip hotspot cookie remove [find where user=$name]", "/ip hotspot user remove $u"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, want := range []string{tc.active, tc.cookie} {
+				if !strings.Contains(tc.script, want) {
+					t.Errorf("script lacks %q", want)
+				}
+			}
+			if strings.Contains(tc.script, tc.user) {
+				t.Errorf("script still removes a user alone (%q): its session would stay online", tc.user)
+			}
+		})
+	}
+}
+
 // TestCleanupScripts_defineDurationToSecsOnce verifies both script variants embed
 // exactly one copy of the shared durationToSecsFn snippet. A future refactor could
 // accidentally duplicate or drop this shared local-function definition (e.g. if
