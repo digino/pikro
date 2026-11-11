@@ -243,7 +243,7 @@ func (c *Client) CloudInstall(script, cloudHost string) SetupStepResult {
 const (
 	cloudLoginStart = "<!-- pikro-cloud -->"
 	cloudLoginEnd   = "<!-- /pikro-cloud -->"
-	cloudLoginHTML  = cloudLoginStart + `<a href="%s" style="display:table;margin:16px auto;padding:12px 18px;background:#ffbf00;color:#111;border:2px solid #111;box-shadow:3px 3px 0 #111;font:700 15px system-ui,sans-serif;text-decoration:none">Acheter avec mobile money</a>` +
+	cloudLoginHTML  = cloudLoginStart + `<a href="%s" style="display:table;margin:16px auto;padding:12px 18px;background:#ffbf00;color:#111;border:2px solid #111;box-shadow:3px 3px 0 #111;font:700 15px sans-serif;text-decoration:none;white-space:nowrap">Acheter ticket par Flooz / T-Money</a>` +
 		`<script>!function(){var m=/[?&]voucher=([^&#]+)/.exec(location),f=document.login;` +
 		`if($(if error)1$(else)0$(endif)||!m||!f)return;m=decodeURIComponent(m[1].replace(/\+/g," "));` +
 		`f.code?f.code.value=m:f.username.value=f.password.value=m;` +
@@ -398,8 +398,16 @@ func (c *Client) CloudLoginPage(cloudURL string) SetupStepResult {
 	return SetupStepResult{Name: name, OK: true}
 }
 
-// CloudFirstSync runs the sync once, so the pool is filled before the
-// technician leaves, and reports how many vouchers arrived.
+// firstSyncTries and firstSyncWait bound the first sync: right after setup
+// it can fail for a moment (the clock just set by NTP, the certificate just
+// imported) and work a few seconds later.
+const (
+	firstSyncTries = 3
+	firstSyncWait  = 5 * time.Second
+)
+
+// CloudFirstSync runs the sync, retrying a little, so the pool is filled
+// before the technician leaves, and reports how many vouchers arrived.
 func (c *Client) CloudFirstSync() (SetupStepResult, int) {
 	name := "First sync with Pikro Cloud"
 	conn, err := c.connect()
@@ -408,17 +416,22 @@ func (c *Client) CloudFirstSync() (SetupStepResult, int) {
 	}
 	defer conn.Close()
 
-	if _, err := conn.RunArgs([]string{"/system/script/run", "=number=" + cloudScriptName}); err != nil {
-		return SetupStepResult{Name: name, Error: err.Error()}, 0
+	for try := 1; ; try++ {
+		if _, err := conn.RunArgs([]string{"/system/script/run", "=number=" + cloudScriptName}); err != nil {
+			return SetupStepResult{Name: name, Error: err.Error()}, 0
+		}
+		n, err := poolVouchers(conn)
+		if err != nil {
+			return SetupStepResult{Name: name, Error: err.Error()}, 0
+		}
+		if n > 0 {
+			return SetupStepResult{Name: name, OK: true}, n
+		}
+		if try == firstSyncTries {
+			return SetupStepResult{Name: name, Error: "no vouchers arrived yet: the router retries by itself every 10 minutes. If they still don't come, check its log for \"pikro-cloud: sync failed\""}, 0
+		}
+		time.Sleep(firstSyncWait)
 	}
-	n, err := poolVouchers(conn)
-	if err != nil {
-		return SetupStepResult{Name: name, Error: err.Error()}, 0
-	}
-	if n == 0 {
-		return SetupStepResult{Name: name, Error: "no vouchers arrived: the router could not reach Pikro Cloud"}, 0
-	}
-	return SetupStepResult{Name: name, OK: true}, n
 }
 
 // CloudRemove takes the router off Cloud: scheduler, script, walled-garden

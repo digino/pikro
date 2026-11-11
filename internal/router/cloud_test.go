@@ -95,7 +95,7 @@ func TestWithCloudBuyButton(t *testing.T) {
 			if has := strings.Contains(got, `href="`+buy+`"`); has != tt.wantButton {
 				t.Errorf("button present = %v, want %v:\n%s", has, tt.wantButton, got)
 			}
-			if tt.wantButton && !strings.Contains(got, "Acheter avec mobile money") {
+			if tt.wantButton && !strings.Contains(got, "Acheter ticket par Flooz / T-Money") {
 				t.Errorf("button label missing:\n%s", got)
 			}
 			if tt.wantTail != "" && !strings.HasSuffix(got, tt.wantTail) {
