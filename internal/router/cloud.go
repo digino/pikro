@@ -325,10 +325,30 @@ func completePage(size int, printed string, read func(offset, n int) (string, er
 	return page.String(), true
 }
 
+// loginPagePath is the login page the hotspot actually serves: login.html in
+// the HTML directory of the first hotspot server's profile, the profile
+// UploadLoginPage writes to. Owners often keep their own template folder.
+func loginPagePath(conn *ros.Client) string {
+	profile := firstMap(conn, "/ip/hotspot/print")["profile"]
+	if profile == "" {
+		profile = "default"
+	}
+	return loginPageFile(firstMap(conn, "/ip/hotspot/profile/print", "?name="+profile)["html-directory"])
+}
+
+// loginPageFile is login.html in an HTML directory as RouterOS reports it.
+func loginPageFile(dir string) string {
+	dir = strings.Trim(dir, "/")
+	if dir == "" {
+		dir = "hotspot"
+	}
+	return dir + "/login.html"
+}
+
 // readLoginPage returns the login page's /file id ("" when there is none) and
 // its content; ok is false when the content can't be read completely.
 func readLoginPage(conn *ros.Client) (id, html string, ok bool) {
-	const file = "hotspot/login.html"
+	file := loginPagePath(conn)
 	page := firstMap(conn, "/file/print", "?name="+file, "=.proplist=.id,size,contents")
 	size, err := strconv.Atoi(page["size"])
 	if page[".id"] == "" || err != nil {
@@ -360,7 +380,7 @@ func (c *Client) CloudLoginPage(cloudURL string) SetupStepResult {
 	routerID := cloudRouterID(firstMap(conn, "/system/script/print", "?name="+cloudScriptName)["source"])
 	id, current, ok := readLoginPage(conn)
 	if id == "" {
-		return fail(fmt.Errorf("hotspot/login.html not found: run hotspot setup first"))
+		return fail(fmt.Errorf("%s not found: run hotspot setup first", loginPagePath(conn)))
 	}
 	if !ok {
 		return SetupStepResult{Name: name, OK: true, Warning: "The login page is a custom page that Pikro can't read completely on this router, so it was left as it is, without the buy button."}

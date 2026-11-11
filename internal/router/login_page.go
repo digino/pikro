@@ -177,16 +177,17 @@ func (c *Client) GetLoginPageHTML() (string, error) {
 	}
 	defer conn.Close()
 
+	file := loginPagePath(conn)
 	reply, err := conn.RunArgs([]string{
 		"/file/print",
-		"?name=hotspot/login.html",
+		"?name=" + file,
 		"=.proplist=contents",
 	})
 	if err != nil {
 		return "", err
 	}
 	if len(reply.Re) == 0 {
-		return "", fmt.Errorf("hotspot/login.html not found — run hotspot setup first")
+		return "", fmt.Errorf("%s not found — run hotspot setup first", file)
 	}
 	return reply.Re[0].Map["contents"], nil
 }

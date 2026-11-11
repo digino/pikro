@@ -208,8 +208,8 @@
     "colUptime": "Online for",
     "colDown": "Down",
     "colUp": "Up",
-    "colLeft": "Left",
     "noSessions": "No one is online",
+    "planRadius": "User Manager",
     "disconnect": "Disconnect",
     "cloudVouchersHidden": "{n} Pikro Cloud vouchers are not shown: they are sold online and managed by Pikro Cloud."
   },

@@ -132,6 +132,23 @@ func TestWithCloudBuyButtonIsIdempotentAndRemovable(t *testing.T) {
 	}
 }
 
+func TestLoginPageFile(t *testing.T) {
+	tests := []struct{ name, dir, want string }{
+		{"default folder", "hotspot", "hotspot/login.html"},
+		{"owner's own template", "template-oklm", "template-oklm/login.html"},
+		{"on flash", "flash/hotspot", "flash/hotspot/login.html"},
+		{"leading slash", "/flash/hotspot", "flash/hotspot/login.html"},
+		{"unset", "", "hotspot/login.html"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := loginPageFile(tt.dir); got != tt.want {
+				t.Errorf("loginPageFile(%q) = %q, want %q", tt.dir, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCloudBuyURL(t *testing.T) {
 	tests := []struct{ name, base, id, want string }{
 		{"plain", "https://cloud.test", "b9c9-44", "https://cloud.test/r/b9c9-44?login=http://$(server-address)/login"},

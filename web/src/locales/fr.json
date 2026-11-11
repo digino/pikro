@@ -208,8 +208,8 @@
     "colUptime": "En ligne depuis",
     "colDown": "Reçu",
     "colUp": "Envoyé",
-    "colLeft": "Restant",
     "noSessions": "Personne n'est en ligne",
+    "planRadius": "User Manager",
     "disconnect": "Déconnecter",
     "cloudVouchersHidden": "{n} tickets Pikro Cloud ne sont pas affichés : ils sont vendus en ligne et gérés par Pikro Cloud."
   },
