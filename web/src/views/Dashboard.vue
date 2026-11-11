@@ -37,7 +37,7 @@
       <i18n-t
         keypath="dashboard.heroTitle"
         tag="h1"
-        class="type-display m-0 text-[clamp(28px,3vw,40px)] leading-tight"
+        class="type-display m-0 text-[clamp(24px,2.6vw,36px)] leading-tight"
       >
         <template #highlight>
           <span
