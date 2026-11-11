@@ -744,7 +744,7 @@ const form = ref({
   subnet: "192.168.88.0/24",
   hotspotName: "",
   hotspotExtension: ".spot",
-  cleanupInterval: "7d",
+  cleanupInterval: "1h",
 });
 
 const extensionOptions = HOTSPOT_EXTENSION_OPTIONS;

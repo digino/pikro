@@ -57,10 +57,8 @@
       "runsEvery": "Fréquence",
       "every": {
         "10m": "10 min",
-        "1h": "1 h",
-        "1d": "1 jour",
-        "7d": "7 jours",
-        "30d": "30 jours"
+        "30m": "30 min",
+        "1h": "1 h"
       },
       "statusOn": "Activé. Les tickets expirés sont retirés automatiquement.",
       "statusOff": "Désactivé. Les utilisateurs expirés s'accumulent jusqu'à ce que vous les supprimiez.",

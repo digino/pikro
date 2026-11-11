@@ -236,7 +236,7 @@ func (c *Client) SetupHotspot(req SetupRequest) (*SetupResult, error) {
 	run(c.stepEnableDNS())
 	cleanupInterval := req.CleanupInterval
 	if cleanupInterval == "" {
-		cleanupInterval = "7d"
+		cleanupInterval = "1h"
 	}
 	run(c.stepInstallCleanupScheduler(cleanupInterval))
 	// Upload the custom login page last: the hotspot/ directory only exists
