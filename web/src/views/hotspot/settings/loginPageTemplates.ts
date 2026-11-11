@@ -66,7 +66,7 @@ const GUEST_CSS = [
   "*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }",
   'body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f2f2ef; color: #111; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 20px; }',
   ".wrap { width: 100%; max-width: 340px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }",
-  "h1 { font-size: 22px; font-weight: 800; line-height: 1.15; letter-spacing: -.01em; }",
+  "h1 { font-size: 26px; font-weight: 800; line-height: 1.15; letter-spacing: -.01em; }",
   ".sub { font-size: 13px; color: #555; }",
   "form { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }",
   "label { text-align: left; font-size: 12px; font-weight: 600; color: #555; }",
