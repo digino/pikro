@@ -185,7 +185,13 @@ func GetRouterCloud(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
 	}
-	jsonOK(w, map[string]any{"status": status, "plans": plans, "currency": settings.Currency})
+	// The owner's number and plans chosen at the last connect, if this
+	// computer made it: Cloud holds them, not the router.
+	var link *config.CloudLink
+	if profile, err := findProfile(r.PathValue("id")); err == nil {
+		link = profile.Cloud
+	}
+	jsonOK(w, map[string]any{"status": status, "plans": plans, "currency": settings.Currency, "link": link})
 }
 
 // PostRouterCloud connects the router to Cloud: automatic time, Let's Encrypt
@@ -274,6 +280,10 @@ func PostRouterCloud(w http.ResponseWriter, r *http.Request) {
 		done(0, "")
 		return
 	}
+	// Kept to pre-fill "Change plans"; the connect goes on if it can't be saved.
+	if err := config.SetCloudLink(r.PathValue("id"), &config.CloudLink{OwnerPhone: body.OwnerPhone, Profiles: body.Profiles}); err != nil {
+		log.Printf("cloud: save link: %v", err)
+	}
 
 	cloudURL, _ := url.Parse(cloud.URL())
 	// A warning on the buy button doesn't stop the connect: the page stays as it is.
@@ -325,6 +335,9 @@ func DeleteRouterCloud(w http.ResponseWriter, r *http.Request) {
 	if err := client.CloudRemove(); err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
+	}
+	if err := config.SetCloudLink(r.PathValue("id"), nil); err != nil {
+		log.Printf("cloud: forget link: %v", err)
 	}
 	if s := client.CloudLoginPage(""); s.Error != "" {
 		jsonError(w, s.Error, http.StatusBadGateway)

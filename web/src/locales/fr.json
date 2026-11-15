@@ -568,6 +568,7 @@
       "ownerCountry": "Pays du propriétaire",
       "allCountries": "Tous les pays",
       "invalidPhone": "Saisissez un numéro valide pour : {country}.",
+      "ownerPhoneAgain": "Saisissez à nouveau le numéro du propriétaire : cet ordinateur ne le connaît pas pour ce routeur.",
       "ownerPhone": "Numéro mobile money du propriétaire",
       "ownerPhoneHint": "Les ventes sont payées sur ce numéro. Le propriétaire reçoit un SMS pour activer son tableau de bord.",
       "plans": "Forfaits vendus en ligne",

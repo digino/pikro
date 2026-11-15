@@ -76,6 +76,7 @@
             <span v-if="ownerPhone && !parsedPhone?.isValid()" class="text-xs text-danger-text">
               {{ t('settings.cloud.invalidPhone', { country: countryName(ownerCountry) }) }}
             </span>
+            <span v-else-if="editing && !ownerPhone" class="text-xs text-danger-text">{{ t('settings.cloud.ownerPhoneAgain') }}</span>
             <span class="text-xs text-text-muted">{{ t('settings.cloud.ownerPhoneHint') }}</span>
           </label>
 
@@ -316,7 +317,13 @@ async function loadRouter() {
     // The hotspot's own address, like the login page's buy button.
     const address = (await hotspotPreflight(store.activeId).catch(() => null))?.hotspotAddress
     loginUrl.value = address ? `http://${address}/login` : ''
-    selected.value = routerCloud.value.plans.filter(p => p.price).map(p => p.profile)
+    // "Change plans" starts from the last connect, when this computer made it.
+    const link = routerCloud.value.link
+    const priced = routerCloud.value.plans.filter(p => p.price).map(p => p.profile)
+    selected.value = link ? priced.filter(p => link.profiles.includes(p)) : priced
+    const saved = link ? parsePhoneNumberFromString(link.ownerPhone) : undefined
+    ownerCountry.value = saved?.country ?? ownerCountry.value
+    ownerPhone.value = saved ? saved.formatNational() : ''
   } catch (e: any) {
     routerError.value = errorText(e, t('settings.cloud.failed'))
   } finally {

@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -66,6 +67,30 @@ type RouterProfile struct {
 	UseTLS          bool             `json:"useTls"`
 	MAC             string           `json:"mac,omitempty"` // filled from discovery or the first connection
 	HotspotSettings *HotspotSettings `json:"hotspotSettings,omitempty"`
+	Cloud           *CloudLink       `json:"cloud,omitempty"`
+}
+
+// CloudLink is what the technician chose when connecting the router to Pikro
+// Cloud. Cloud holds it, not the router, so it is kept here to pre-fill
+// "Change plans".
+type CloudLink struct {
+	OwnerPhone string   `json:"ownerPhone"`
+	Profiles   []string `json:"profiles"`
+}
+
+// SetCloudLink records a router's Cloud link; nil forgets it (disconnected).
+func SetCloudLink(routerID string, link *CloudLink) error {
+	cfg, err := Load()
+	if err != nil {
+		return err
+	}
+	for i := range cfg.Routers {
+		if cfg.Routers[i].ID == routerID {
+			cfg.Routers[i].Cloud = link
+			return Save(cfg)
+		}
+	}
+	return fmt.Errorf("router %s not found", routerID)
 }
 
 // CloudSession is the certified technician signed in to Pikro Cloud from

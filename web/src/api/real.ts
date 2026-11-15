@@ -324,6 +324,8 @@ export interface RouterCloud {
   }
   plans: { profile: string; price: number }[]
   currency: string
+  /** The owner's number and plans chosen at the last connect from this computer; null otherwise. */
+  link: { ownerPhone: string; profiles: string[] } | null
 }
 
 export interface CloudStep { name: string; ok: boolean; error?: string; skipped?: boolean; warning?: string }

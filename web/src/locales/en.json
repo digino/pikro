@@ -568,6 +568,7 @@
       "ownerCountry": "Owner's country",
       "allCountries": "All countries",
       "invalidPhone": "Enter a valid {country} number.",
+      "ownerPhoneAgain": "Enter the owner's number again: this computer doesn't know it for this router.",
       "ownerPhone": "Owner's mobile money number",
       "ownerPhoneHint": "Sales are paid to this number. The owner gets an SMS to claim their dashboard.",
       "plans": "Plans sold online",
