@@ -495,7 +495,7 @@
       "subtitleHint": "Laissez vide pour afficher l'adresse du hotspot.",
       "contact": "Ligne de contact",
       "contactPlaceholder": "Contactez-nous : 90 00 00 00",
-      "contactHint": "Facultatif. Affichée sous le bouton de connexion, par exemple un numéro de téléphone.",
+      "contactHint": "Facultatif. Affichée en bas de la page de connexion, par exemple un numéro de téléphone.",
       "showPrices": "Afficher les tarifs",
       "showPricesHint": "Repris de vos forfaits (page Profils). Renvoyez la page après un changement de prix.",
       "noPrices": "Aucun forfait n'a de prix. Fixez les prix sur la page Profils.",

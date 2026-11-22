@@ -495,7 +495,7 @@
       "subtitleHint": "Leave blank to show the hotspot address.",
       "contact": "Contact line",
       "contactPlaceholder": "Contact us: 90 00 00 00",
-      "contactHint": "Optional. Shown under the login button, e.g. a phone number.",
+      "contactHint": "Optional. Shown at the bottom of the login page, e.g. a phone number.",
       "showPrices": "Show prices",
       "showPricesHint": "From your plans on the Profiles page. Upload again after changing a price.",
       "noPrices": "No plan has a price yet. Set prices on the Profiles page.",
