@@ -151,8 +151,8 @@ func TestLoginPageFile(t *testing.T) {
 
 func TestCloudBuyURL(t *testing.T) {
 	tests := []struct{ name, base, id, want string }{
-		{"plain", "https://cloud.test", "b9c9-44", "https://cloud.test/r/b9c9-44?login=http://$(server-address)/login"},
-		{"id is path-escaped", "https://cloud.test", "a/b", "https://cloud.test/r/a%2Fb?login=http://$(server-address)/login"},
+		{"plain", "https://cloud.test", "b9c9-44", "https://cloud.test/r/b9c9-44?login=http://$(server-address)/login&mac=$(mac)"},
+		{"id is path-escaped", "https://cloud.test", "a/b", "https://cloud.test/r/a%2Fb?login=http://$(server-address)/login&mac=$(mac)"},
 		{"no cloud url", "", "b9c9-44", ""},
 		{"not connected", "https://cloud.test", "", ""},
 	}

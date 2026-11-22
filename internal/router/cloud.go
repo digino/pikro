@@ -265,8 +265,9 @@ var (
 )
 
 // cloudLoginParam is how the router tells the buy page where to log in: the
-// hotspot's own address, which works with or without a DNS name.
-const cloudLoginParam = "?login=http://$(server-address)/login"
+// hotspot's own address, which works with or without a DNS name. $(mac) is
+// the guest's device, so the buy page can find its tickets again.
+const cloudLoginParam = "?login=http://$(server-address)/login&mac=$(mac)"
 
 // cloudBuyURL is the Cloud buy page for a router; the router fills in its own
 // login URL. "" when Cloud's URL or the router id is unknown.
