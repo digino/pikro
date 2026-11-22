@@ -38,7 +38,6 @@
 
     <template v-else-if="settings">
       <SettingsLoginPage v-if="tab === 'login'" :settings="settings" @saved="settings = $event" />
-      <SettingsSetup v-else-if="tab === 'setup'" @open-login-page="tab = 'login'" />
       <SettingsCloud v-else-if="tab === 'cloud'" @open-login-page="tab = 'login'" />
       <SettingsMigration v-else />
     </template>
@@ -56,12 +55,13 @@ import NoRouterSelected from '@/components/NoRouterSelected.vue'
 import SettingsLoginPage from './settings/SettingsLoginPage.vue'
 import SettingsMigration from './settings/SettingsMigration.vue'
 import SettingsCloud from './settings/SettingsCloud.vue'
-import SettingsSetup from './settings/SettingsSetup.vue'
 
 const { t } = useI18n()
 const store = useRoutersStore()
 
-const TABS = ['login', 'setup', 'cloud', 'migration'] as const
+// Hotspot setup (settings/SettingsSetup.vue) is hidden for now: users report
+// setups that don't work as expected. Add 'setup' back here to show it again.
+const TABS = ['login', 'cloud', 'migration'] as const
 const tab = ref<(typeof TABS)[number]>('login')
 
 const loading = ref(false)

@@ -34,6 +34,18 @@ const CHAP_HIDDEN_FORM = [
 
 export type LoginMode = "code" | "password";
 export type GuestLanguage = "en" | "fr";
+export type GuestBackground = "light" | "tint" | "dark";
+
+export const DEFAULT_ACCENT = "#111111";
+export const ACCENT_PRESETS = [
+  { key: "ink", hex: DEFAULT_ACCENT },
+  { key: "amber", hex: "#ffbf00" },
+  { key: "ocean", hex: "#1d4ed8" },
+  { key: "forest", hex: "#15803d" },
+  { key: "berry", hex: "#be185d" },
+  { key: "sunset", hex: "#ea580c" },
+] as const;
+export const CONTACT_MAX = 60;
 
 export interface GuestPageOptions {
   title: string;
@@ -41,6 +53,11 @@ export interface GuestPageOptions {
   mode: LoginMode;
   language: GuestLanguage;
   prices: { name: string; price: string }[];
+  /** Button colour, "#rrggbb"; Pikro's ink when absent or malformed. */
+  accent?: string;
+  background?: GuestBackground;
+  /** Short line under the login button, e.g. a phone number. */
+  contact?: string;
 }
 
 export interface GuestPages {
@@ -62,30 +79,82 @@ function esc(s: string) {
 }
 
 // Uploaded as the router's css/style.css and linked, for the same 4 KB reason.
+// Colours come from the :root variables guestThemeVars writes in front.
 const GUEST_CSS = [
   "*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }",
-  'body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f2f2ef; color: #111; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 20px; }',
+  'body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 20px; }',
   ".wrap { width: 100%; max-width: 340px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }",
   "h1 { font-size: 26px; font-weight: 800; line-height: 1.15; letter-spacing: -.01em; }",
-  ".sub { font-size: 13px; color: #555; }",
+  ".sub { font-size: 13px; color: var(--muted); }",
   "form { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }",
-  "label { text-align: left; font-size: 12px; font-weight: 600; color: #555; }",
-  "input { width: 100%; height: 52px; padding: 0 14px; border: 2px solid #111; border-radius: 12px; background: #fff; color: #111; font-size: 16px; font-weight: 500; font-family: inherit; -webkit-appearance: none; }",
+  "label { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); }",
+  "input { width: 100%; height: 52px; padding: 0 14px; border: 2px solid var(--ink); border-radius: 12px; background: var(--card); color: var(--ink); font-size: 16px; font-weight: 500; font-family: inherit; -webkit-appearance: none; }",
   'input.code { text-align: center; font: 600 20px ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: .12em; }',
-  "input:focus { outline: 3px solid #ffbf00; outline-offset: 1px; }",
-  ".btn { display: flex; align-items: center; justify-content: center; width: 100%; height: 50px; border: 0; border-radius: 12px; background: #111; color: #fff; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; text-decoration: none; }",
-  ".hint { font-size: 12px; color: #666; }",
-  ".hint a { color: #111; font-weight: 600; }",
+  "input:focus { outline: 3px solid var(--focus); outline-offset: 1px; }",
+  ".btn { display: flex; align-items: center; justify-content: center; width: 100%; height: 50px; border: 0; border-radius: 12px; background: var(--accent); color: var(--on); font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; text-decoration: none; }",
+  ".hint { font-size: 12px; color: var(--muted); }",
+  ".hint a { color: var(--ink); font-weight: 600; }",
+  ".contact { font-size: 13px; font-weight: 600; }",
   ".err { width: 100%; padding: 10px 12px; border: 2px solid #b42318; border-radius: 12px; background: #fdecea; color: #b42318; font-size: 13px; font-weight: 600; }",
-  ".box { width: 100%; border: 2px solid #111; border-radius: 12px; background: #fff; padding: 12px 14px; text-align: left; }",
-  ".box h2 { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 6px; }",
+  ".box { width: 100%; border: 2px solid var(--ink); border-radius: 12px; background: var(--card); padding: 12px 14px; text-align: left; }",
+  ".box h2 { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }",
   ".row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 14px; }",
-  ".row + .row { border-top: 1px dashed #ccc; }",
+  ".row + .row { border-top: 1px dashed var(--rule); }",
   ".row b { font-variant-numeric: tabular-nums; white-space: nowrap; }",
-  ".ok { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #157f3b; }",
-  '.ok::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #157f3b; }',
-  ".foot { font-size: 11px; color: #999; margin-top: 6px; }",
+  ".ok { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: var(--ok); }",
+  '.ok::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); }',
+  ".foot { font-size: 11px; color: var(--faint); margin-top: 6px; }",
 ].join("\n");
+
+const HEX = /^#[0-9a-f]{6}$/i;
+
+function rgb(hex: string) {
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+}
+
+// WCAG relative luminance and contrast ratio.
+function luminance(hex: string) {
+  const [r, g, b] = rgb(hex).map((v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrast(a: string, b: string) {
+  const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+}
+
+// `weight` of a over b.
+function mix(a: string, b: string, weight: number) {
+  const bb = rgb(b);
+  return (
+    "#" +
+    rgb(a)
+      .map((v, i) => Math.round(v * weight + bb[i] * (1 - weight)).toString(16).padStart(2, "0"))
+      .join("")
+  );
+}
+
+/** The :root colours of style.css for a button colour and background. */
+export function guestThemeVars(accentIn = DEFAULT_ACCENT, background: GuestBackground = "light") {
+  const accent = HEX.test(accentIn) ? accentIn.toLowerCase() : DEFAULT_ACCENT;
+  const dark = background === "dark";
+  const v = dark
+    ? { bg: "#141414", ink: "#f2f2ef", muted: "#b5b3ad", card: "#1f1f1f", rule: "#3a3936", faint: "#8a8883", ok: "#5bd68a" }
+    : {
+        bg: background === "tint" ? mix(accent, "#ffffff", 0.12) : "#f2f2ef",
+        ink: "#111111", muted: "#555555", card: "#ffffff", rule: "#cccccc", faint: "#999999", ok: "#157f3b",
+      };
+  // A button that would vanish into the page (ink on dark) takes the text colour.
+  const button = contrast(accent, v.bg) < 1.2 ? v.ink : accent;
+  const on = contrast(button, "#ffffff") >= contrast(button, "#111111") ? "#ffffff" : "#111111";
+  // Pikro's amber focus ring unless the operator picked a colour.
+  const focus = accent === DEFAULT_ACCENT ? "#ffbf00" : accent;
+  const vars = { ...v, accent: button, on, focus };
+  return `:root{${Object.entries(vars).map(([k, c]) => `--${k}:${c}`).join(";")}}`;
+}
 const STYLESHEET = '<link rel="stylesheet" href="/css/style.css" />';
 
 function head(lang: GuestLanguage, title: string, extra = "") {
@@ -142,6 +211,8 @@ export function renderGuestPages(o: GuestPageOptions): GuestPages {
         "<\/div>",
       ].join("\n")
     : "";
+  const contactText = (o.contact ?? "").trim().slice(0, CONTACT_MAX);
+  const contact = contactText ? `<p class="contact">${esc(contactText)}<\/p>` : "";
 
   const form =
     o.mode === "code"
@@ -192,6 +263,7 @@ export function renderGuestPages(o: GuestPageOptions): GuestPages {
     header,
     '$(if error)<p class="err" id="err" role="alert">$(error)<\/p>$(endif)',
     form,
+    contact,
     prices,
     foot,
     "<\/main>",
@@ -316,7 +388,7 @@ export function renderGuestPages(o: GuestPageOptions): GuestPages {
     logout,
     redirect,
     alogin,
-    css: GUEST_CSS,
+    css: guestThemeVars(o.accent, o.background) + "\n" + GUEST_CSS,
     md5Js: MD5_JS,
   };
 }
@@ -331,9 +403,9 @@ const PREVIEW_SAMPLES: Record<string, string> = {
   ip: "10.5.50.23",
 };
 
-export function previewHtml(html: string) {
+export function previewHtml(html: string, css = guestThemeVars() + "\n" + GUEST_CSS) {
   return html
-    .replace(STYLESHEET, `<style>${GUEST_CSS}<\/style>`) // the iframe can't fetch the router's file
+    .replace(STYLESHEET, `<style>${css}<\/style>`) // the iframe can't fetch the router's file
     .replace(/\$\(if error\)[\s\S]*?\$\(endif\)/g, "")
     .replace(/\$\((?:if|elif) [^)]*\)|\$\((?:else|endif)\)/g, "")
     .replace(

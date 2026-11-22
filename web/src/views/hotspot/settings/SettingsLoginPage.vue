@@ -101,6 +101,20 @@
         </label>
       </div>
 
+      <label class="flex flex-col gap-1.5">
+        <span class="eyebrow">{{ t("settings.loginPage.contact") }}</span>
+        <input
+          v-model="form.contact"
+          class="input"
+          :maxlength="CONTACT_MAX"
+          :placeholder="t('settings.loginPage.contactPlaceholder')"
+        />
+        <span class="flex justify-between gap-3 text-xs text-text-muted">
+          <span>{{ t("settings.loginPage.contactHint") }}</span>
+          <span>{{ form.contact.length }}/{{ CONTACT_MAX }}</span>
+        </span>
+      </label>
+
       <div class="flex flex-col gap-1.5">
         <div class="flex items-center justify-between gap-4">
           <label :for="pricesId" class="eyebrow">{{
@@ -123,6 +137,72 @@
               : t("settings.loginPage.noPrices")
           }}
         </span>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <span :id="accentLabelId" class="eyebrow">{{
+          t("settings.loginPage.accent")
+        }}</span>
+        <div
+          role="group"
+          :aria-labelledby="accentLabelId"
+          class="flex flex-wrap items-center gap-2.5"
+        >
+          <button
+            v-for="p in ACCENT_PRESETS"
+            :key="p.key"
+            type="button"
+            :aria-pressed="form.accent === p.hex"
+            :aria-label="t(`settings.loginPage.presets.${p.key}`)"
+            :title="t(`settings.loginPage.presets.${p.key}`)"
+            class="size-11 rounded-full border-2 border-ink cursor-pointer"
+            :class="form.accent === p.hex && 'outline-3 outline-offset-2 outline-ink'"
+            :style="{ background: p.hex }"
+            @click="form.accent = p.hex"
+          />
+          <label
+            class="inline-flex items-center gap-2 min-h-11 px-3 rounded-full border-2 border-ink text-sm font-semibold cursor-pointer"
+            :class="customAccent ? 'bg-primary text-primary-fg' : 'bg-paper text-ink hover:bg-primary-wash'"
+          >
+            <input
+              v-model="form.accent"
+              type="color"
+              class="size-6 p-0 border-0 bg-transparent cursor-pointer"
+            />
+            {{ t("settings.loginPage.customColour") }}
+          </label>
+        </div>
+        <p class="m-0 text-xs text-text-muted">
+          {{ t("settings.loginPage.accentHint") }}
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <span :id="bgLabelId" class="eyebrow">{{
+          t("settings.loginPage.background")
+        }}</span>
+        <div
+          role="group"
+          :aria-labelledby="bgLabelId"
+          class="flex self-start border-2 border-ink rounded-control overflow-hidden bg-paper"
+        >
+          <button
+            v-for="(b, i) in BACKGROUNDS"
+            :key="b"
+            type="button"
+            :aria-pressed="form.background === b"
+            class="min-h-10 px-4 text-sm font-semibold cursor-pointer"
+            :class="[
+              i > 0 && 'border-l-2 border-ink',
+              form.background === b
+                ? 'bg-primary text-primary-fg'
+                : 'text-ink hover:bg-primary-wash',
+            ]"
+            @click="form.background = b"
+          >
+            {{ t(`settings.loginPage.backgrounds.${b}`) }}
+          </button>
+        </div>
       </div>
 
       <div
@@ -178,7 +258,7 @@
         class="w-80 h-150 p-2.5 rounded-[40px] border-[3px] border-black bg-black shadow-[8px_8px_0_var(--color-shadow)]"
       >
         <iframe
-          :srcdoc="previewHtml(showingLive ? liveHTML : pages[previewPage])"
+          :srcdoc="showingLive ? previewHtml(liveHTML) : previewHtml(pages[previewPage], pages.css)"
           class="size-full rounded-[30px] border-0 bg-white"
           sandbox=""
           :title="t('settings.loginPage.preview')"
@@ -263,8 +343,12 @@ import { inkIcon } from "@/utils/inkIcons";
 import {
   renderGuestPages,
   previewHtml,
+  ACCENT_PRESETS,
+  CONTACT_MAX,
+  DEFAULT_ACCENT,
   type LoginMode,
   type GuestLanguage,
+  type GuestBackground,
   type GuestPages,
 } from "./loginPageTemplates";
 
@@ -278,6 +362,8 @@ const toast = useToastStore();
 const modeLabelId = useId();
 const langLabelId = useId();
 const pricesId = useId();
+const accentLabelId = useId();
+const bgLabelId = useId();
 
 const MODES: LoginMode[] = ["password", "code"];
 const LANGUAGES: { key: GuestLanguage; label: string }[] = [
@@ -285,6 +371,11 @@ const LANGUAGES: { key: GuestLanguage; label: string }[] = [
   { key: "fr", label: "Français" },
 ];
 const PREVIEW_PAGES = ["login", "status", "logout"] as const;
+const BACKGROUNDS: GuestBackground[] = ["light", "tint", "dark"];
+
+const customAccent = computed(
+  () => !ACCENT_PRESETS.some((p) => p.hex === form.value.accent),
+);
 
 // Pages saved before the login-mode choice only stored a design: the
 // "voucher" design was the code-only one.
@@ -300,6 +391,9 @@ function fromSaved(lp: LoginPageSettings = {}) {
     title: lp.title ?? "",
     subtitle: lp.subtitle ?? "",
     showPrices: lp.showPrices ?? false,
+    accent: lp.accent ?? DEFAULT_ACCENT,
+    background: lp.background ?? ("light" as GuestBackground),
+    contact: lp.contact ?? "",
   };
 }
 
@@ -332,6 +426,9 @@ const pages = computed<GuestPages>(() =>
     mode: form.value.mode,
     language: form.value.language,
     prices: form.value.showPrices ? priceList.value : [],
+    accent: form.value.accent,
+    background: form.value.background,
+    contact: form.value.contact,
   }),
 );
 const previewPage = ref<(typeof PREVIEW_PAGES)[number]>("login");
@@ -403,6 +500,9 @@ async function upload() {
       loginMode: f.mode,
       language: f.language,
       showPrices: f.showPrices,
+      accent: f.accent,
+      background: f.background,
+      contact: f.contact.trim(),
       uploadedAt: new Date().toISOString(),
     };
     // Re-read so a Profiles or Routers change made meanwhile isn't overwritten.

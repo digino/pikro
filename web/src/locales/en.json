@@ -64,7 +64,7 @@
       "statusOff": "Off. Expired users pile up until you remove them.",
       "deviceModeTitle": "Scheduler blocked by RouterOS device-mode",
       "deviceModeBody": "Your router runs RouterOS 7.17+ with the scheduler disabled. Run the command below in Winbox Terminal or SSH, then press the physical button on your router (or cold-reboot) to confirm.",
-      "deviceModeAfter": "After confirming, re-run hotspot setup to install the scheduler."
+      "deviceModeAfter": "After confirming, turn auto-cleanup on again here."
     },
     "turnOffAutoCleanupTitle": "Turn off auto-cleanup?",
     "turnOffAutoCleanupBody": "Expired and quota-exhausted vouchers will no longer be removed automatically — they'll accumulate until you delete them manually.",
@@ -313,7 +313,7 @@
     },
     "loginLocked": "The Voucher ticket prints a single code, so guests log in with the code only.",
     "example": "Guests will type:",
-    "qrMissing": "This hotspot has no login address yet, so tickets will print without a QR code. Run hotspot setup to fix it.",
+    "qrMissing": "This hotspot has no login address yet, so tickets will print without a QR code. Set up the hotspot in WinBox to fix it.",
     "timeLimitHint": "Optional cap on total time online. The plan validity still applies.",
     "dataLimitHint": "Optional cap on total data each voucher can use.",
     "commentHint": "Saved on each voucher so you can find this batch in Users. Not printed."
@@ -493,9 +493,29 @@
       "titleHint": "Leave blank to use your hotspot name.",
       "subtitle": "Subtitle",
       "subtitleHint": "Leave blank to show the hotspot address.",
+      "contact": "Contact line",
+      "contactPlaceholder": "Contact us: 90 00 00 00",
+      "contactHint": "Optional. Shown under the login button, e.g. a phone number.",
       "showPrices": "Show prices",
       "showPricesHint": "From your plans on the Profiles page. Upload again after changing a price.",
       "noPrices": "No plan has a price yet. Set prices on the Profiles page.",
+      "accent": "Button colour",
+      "customColour": "Custom",
+      "accentHint": "The button text turns black or white by itself, so it stays readable.",
+      "presets": {
+        "ink": "Ink",
+        "amber": "Amber",
+        "ocean": "Ocean",
+        "forest": "Forest",
+        "berry": "Berry",
+        "sunset": "Sunset"
+      },
+      "background": "Background",
+      "backgrounds": {
+        "light": "Light",
+        "tint": "Tinted",
+        "dark": "Dark"
+      },
       "routerNote": "Hotspot name and currency are set per router in",
       "routersLink": "Routers",
       "upload": "Upload to router",

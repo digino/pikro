@@ -64,7 +64,7 @@
       "statusOff": "Désactivé. Les utilisateurs expirés s'accumulent jusqu'à ce que vous les supprimiez.",
       "deviceModeTitle": "Planificateur bloqué par le device-mode de RouterOS",
       "deviceModeBody": "Votre routeur utilise RouterOS 7.17+ avec le planificateur désactivé. Exécutez la commande ci-dessous dans le terminal Winbox ou en SSH, puis appuyez sur le bouton physique du routeur (ou redémarrez-le à froid) pour confirmer.",
-      "deviceModeAfter": "Après confirmation, relancez la configuration du hotspot pour installer le planificateur."
+      "deviceModeAfter": "Après confirmation, réactivez ici le nettoyage automatique."
     },
     "turnOffAutoCleanupTitle": "Désactiver le nettoyage automatique ?",
     "turnOffAutoCleanupBody": "Les tickets expirés ou épuisés ne seront plus supprimés automatiquement — ils s'accumuleront jusqu'à ce que vous les supprimiez manuellement.",
@@ -313,7 +313,7 @@
     },
     "loginLocked": "Le ticket « Ticket » n’imprime qu’un seul code : les clients se connectent avec ce code uniquement.",
     "example": "Les clients saisiront :",
-    "qrMissing": "Ce hotspot n’a pas encore d’adresse de connexion : les tickets seront imprimés sans QR code. Lancez la configuration du hotspot pour corriger cela.",
+    "qrMissing": "Ce hotspot n’a pas encore d’adresse de connexion : les tickets seront imprimés sans QR code. Configurez le hotspot dans WinBox pour corriger cela.",
     "timeLimitHint": "Plafond facultatif du temps de connexion total. La validité du forfait s’applique toujours.",
     "dataLimitHint": "Plafond facultatif de données utilisables par ticket.",
     "commentHint": "Enregistré sur chaque ticket pour retrouver ce lot dans Utilisateurs. Non imprimé."
@@ -493,9 +493,29 @@
       "titleHint": "Laissez vide pour utiliser le nom du hotspot.",
       "subtitle": "Sous-titre",
       "subtitleHint": "Laissez vide pour afficher l'adresse du hotspot.",
+      "contact": "Ligne de contact",
+      "contactPlaceholder": "Contactez-nous : 90 00 00 00",
+      "contactHint": "Facultatif. Affichée sous le bouton de connexion, par exemple un numéro de téléphone.",
       "showPrices": "Afficher les tarifs",
       "showPricesHint": "Repris de vos forfaits (page Profils). Renvoyez la page après un changement de prix.",
       "noPrices": "Aucun forfait n'a de prix. Fixez les prix sur la page Profils.",
+      "accent": "Couleur du bouton",
+      "customColour": "Personnalisée",
+      "accentHint": "Le texte du bouton passe en noir ou en blanc tout seul, pour rester lisible.",
+      "presets": {
+        "ink": "Encre",
+        "amber": "Ambre",
+        "ocean": "Océan",
+        "forest": "Forêt",
+        "berry": "Framboise",
+        "sunset": "Orange"
+      },
+      "background": "Arrière-plan",
+      "backgrounds": {
+        "light": "Clair",
+        "tint": "Teinté",
+        "dark": "Sombre"
+      },
       "routerNote": "Le nom du hotspot et la devise se règlent pour chaque routeur dans",
       "routersLink": "Routeurs",
       "upload": "Envoyer au routeur",

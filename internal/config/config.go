@@ -47,6 +47,9 @@ type LoginPageSettings struct {
 	LoginMode  string     `json:"loginMode,omitempty"` // "code" | "password"
 	Language   string     `json:"language,omitempty"`  // "en" | "fr"
 	ShowPrices bool       `json:"showPrices,omitempty"`
+	Accent     string     `json:"accent,omitempty"`     // button colour, "#rrggbb"
+	Background string     `json:"background,omitempty"` // "light" | "tint" | "dark"
+	Contact    string     `json:"contact,omitempty"`    // short line under the login button
 	UploadedAt *time.Time `json:"uploadedAt,omitempty"`
 }
 
