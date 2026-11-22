@@ -78,25 +78,25 @@ func TestCloudStartTime(t *testing.T) {
 }
 
 func TestWithCloudBuyButton(t *testing.T) {
-	const buy = "https://cloud.test/r/abc-1?login=http://$(server-address)/login"
+	const buy = "https://cloud.test/r/abc-1?login=http://$(server-address)/login&mac=$(mac)"
 	tests := []struct {
-		name, html, buyURL string
-		wantButton         bool
-		wantTail           string // what must follow the snippet, "" to skip
+		name, html, cloudURL string
+		wantButton           bool
+		wantTail             string // what must follow the snippet, "" to skip
 	}{
-		{"inserted before the closing body tag", "<html><body><form name=\"login\"></form></body></html>", buy, true, "</body></html>"},
-		{"closing tag in any case", "<BODY>x</BODY>", buy, true, "</BODY>"},
-		{"page without a body tag gets it appended", "<form name=\"login\"></form>", buy, true, ""},
+		{"inserted before the closing body tag", "<html><body><form name=\"login\"></form></body></html>", "https://cloud.test", true, "</body></html>"},
+		{"closing tag in any case", "<BODY>x</BODY>", "https://cloud.test", true, "</BODY>"},
+		{"page without a body tag gets it appended", "<form name=\"login\"></form>", "https://cloud.test", true, ""},
 		{"empty url adds nothing", "<body>x</body>", "", false, "<body>x</body>"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := withCloudBuyButton(tt.html, tt.buyURL)
-			if has := strings.Contains(got, `href="`+buy+`"`); has != tt.wantButton {
-				t.Errorf("button present = %v, want %v:\n%s", has, tt.wantButton, got)
-			}
-			if tt.wantButton && !strings.Contains(got, "Acheter ticket par Flooz / T-Money") {
-				t.Errorf("button label missing:\n%s", got)
+			got := withCloudBuyButton(tt.html, tt.cloudURL, "abc-1")
+			// The plain link that the buttons script, from Cloud, styles.
+			for _, part := range []string{`<a id="pikro-buy" href="` + buy + `">Acheter ticket par Flooz / T-Money</a>`, `<script src="https://cloud.test/buttons.js" async></script>`} {
+				if has := strings.Contains(got, part); has != tt.wantButton {
+					t.Errorf("%s present = %v, want %v:\n%s", part, has, tt.wantButton, got)
+				}
 			}
 			if tt.wantTail != "" && !strings.HasSuffix(got, tt.wantTail) {
 				t.Errorf("page = %q, want suffix %q", got, tt.wantTail)
@@ -113,15 +113,15 @@ func TestWithCloudBuyButtonIsIdempotentAndRemovable(t *testing.T) {
 		want string
 	}{
 		{"applying twice equals once", func(s string) string {
-			return withCloudBuyButton(withCloudBuyButton(s, "https://c.test/r/1?login=$(x)"), "https://c.test/r/1?login=$(x)")
-		}, withCloudBuyButton(page, "https://c.test/r/1?login=$(x)")},
+			return withCloudBuyButton(withCloudBuyButton(s, "https://c.test", "1"), "https://c.test", "1")
+		}, withCloudBuyButton(page, "https://c.test", "1")},
 		{"a new url replaces the old one", func(s string) string {
-			return withCloudBuyButton(withCloudBuyButton(s, "https://old.test/r/9"), "https://c.test/r/1?login=$(x)")
-		}, withCloudBuyButton(page, "https://c.test/r/1?login=$(x)")},
+			return withCloudBuyButton(withCloudBuyButton(s, "https://old.test", "9"), "https://c.test", "1")
+		}, withCloudBuyButton(page, "https://c.test", "1")},
 		{"empty url restores the original page", func(s string) string {
-			return withCloudBuyButton(withCloudBuyButton(s, "https://c.test/r/1"), "")
+			return withCloudBuyButton(withCloudBuyButton(s, "https://c.test", "1"), "", "1")
 		}, page},
-		{"removing from a clean page changes nothing", func(s string) string { return withCloudBuyButton(s, "") }, page},
+		{"removing from a clean page changes nothing", func(s string) string { return withCloudBuyButton(s, "", "1") }, page},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -215,14 +215,13 @@ func TestCompletePageReadsInChunksOf4000(t *testing.T) {
 
 func TestCloudSnippetIsSmall(t *testing.T) {
 	// RouterOS 6 refuses a login page over 4095 bytes. Pikro's largest page
-	// (about 3.2 KB) plus this and its url (about 95 bytes) must still fit.
-	if n := len(fmt.Sprintf(cloudLoginHTML, "")); n > 580 {
-		t.Errorf("snippet without its url is %d bytes, want <= 580", n)
+	// (about 3.2 KB) plus this and its urls (about 130 bytes) must still fit.
+	if n := len(fmt.Sprintf(cloudLoginHTML, "", "")); n > 450 {
+		t.Errorf("snippet without its urls is %d bytes, want <= 450", n)
 	}
 }
 
 func TestCloudButtonPlacementAndRemoval(t *testing.T) {
-	const buy = "https://c.test/r/1?login=$(x)"
 	tests := []struct {
 		name, page string
 		after      string // what must directly precede the snippet
@@ -237,14 +236,14 @@ func TestCloudButtonPlacementAndRemoval(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			added := withCloudBuyButton(tt.page, buy)
+			added := withCloudBuyButton(tt.page, "https://c.test", "1")
 			if !strings.Contains(added, tt.after+cloudLoginStart) {
 				t.Errorf("snippet not right after %q:\n%s", tt.after, added)
 			}
-			if got := withCloudBuyButton(added, ""); got != tt.page {
+			if got := withCloudBuyButton(added, "", "1"); got != tt.page {
 				t.Errorf("removal = %q, want the original %q", got, tt.page)
 			}
-			if again := withCloudBuyButton(added, buy); again != added {
+			if again := withCloudBuyButton(added, "https://c.test", "1"); again != added {
 				t.Errorf("re-adding changed the page:\n%s", again)
 			}
 		})

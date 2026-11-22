@@ -240,10 +240,15 @@ func (c *Client) CloudInstall(script, cloudHost string) SetupStepResult {
 // login.username and login.password. It submits through the form's own
 // onsubmit, so CHAP hashing still applies. Skipped when the page is showing
 // a login error, so a wrong voucher can't loop.
+//
+// The buy link is plain: Cloud's buttons.js styles it and adds "Récupérer mon
+// ticket", so the buttons change without touching the router. Without that
+// script (no internet yet, a phone too old for its certificate), the link
+// still works. The auto-login stays here: it must not wait for Cloud.
 const (
 	cloudLoginStart = "<!-- pikro-cloud -->"
 	cloudLoginEnd   = "<!-- /pikro-cloud -->"
-	cloudLoginHTML  = cloudLoginStart + `<a href="%s" style="display:table;margin:16px auto;padding:12px 18px;background:#ffbf00;color:#111;border:2px solid #111;box-shadow:3px 3px 0 #111;font:700 15px sans-serif;text-decoration:none;white-space:nowrap">Acheter ticket par Flooz / T-Money</a>` +
+	cloudLoginHTML  = cloudLoginStart + `<p><a id="pikro-buy" href="%s">Acheter ticket par Flooz / T-Money</a></p><script src="%s/buttons.js" async></script>` +
 		`<script>!function(){var m=/[?&]voucher=([^&#]+)/.exec(location),f=document.login;` +
 		`if($(if error)1$(else)0$(endif)||!m||!f)return;m=decodeURIComponent(m[1].replace(/\+/g," "));` +
 		`f.code?f.code.value=m:f.username.value=f.password.value=m;` +
@@ -279,14 +284,15 @@ func cloudBuyURL(cloudURL, routerID string) string {
 }
 
 // withCloudBuyButton returns the login page with the Cloud buy button and
-// auto-login for buyURL, replacing any earlier one; with "" it returns the
-// page without them.
-func withCloudBuyButton(html, buyURL string) string {
+// auto-login for the router, replacing any earlier one; with a cloudURL or
+// routerID of "" it returns the page without them.
+func withCloudBuyButton(html, cloudURL, routerID string) string {
 	html = cloudLoginRe.ReplaceAllString(html, "")
+	buyURL := cloudBuyURL(cloudURL, routerID)
 	if buyURL == "" {
 		return html
 	}
-	snippet := fmt.Sprintf(cloudLoginHTML, buyURL) + "\n"
+	snippet := fmt.Sprintf(cloudLoginHTML, buyURL, cloudURL) + "\n"
 	if at := strings.Index(html, cloudBuyMarker); at >= 0 {
 		at += len(cloudBuyMarker)
 		return html[:at] + snippet + html[at:]
@@ -386,7 +392,7 @@ func (c *Client) CloudLoginPage(cloudURL string) SetupStepResult {
 	if !ok {
 		return SetupStepResult{Name: name, OK: true, Warning: "The login page is a custom page that Pikro can't read completely on this router, so it was left as it is, without the buy button."}
 	}
-	html := withCloudBuyButton(current, cloudBuyURL(cloudURL, routerID))
+	html := withCloudBuyButton(current, cloudURL, routerID)
 	if html == current {
 		return SetupStepResult{Name: name, OK: true, Skipped: true}
 	}

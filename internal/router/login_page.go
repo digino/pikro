@@ -81,7 +81,7 @@ func (c *Client) UploadLoginPage(profileName string, content LoginPageContent) e
 	// A page uploaded over a connected router keeps its buy button.
 	if content.Login != "" {
 		routerID := cloudRouterID(firstMap(conn, "/system/script/print", "?name="+cloudScriptName)["source"])
-		content.Login = withCloudBuyButton(content.Login, cloudBuyURL(content.CloudURL, routerID))
+		content.Login = withCloudBuyButton(content.Login, content.CloudURL, routerID)
 	}
 	files := hotspotFiles(content)
 	if err := checkPageSizes(files); err != nil {
