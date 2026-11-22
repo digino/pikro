@@ -245,10 +245,10 @@ func TestCleanupScripts_endSessionsOfRemovedUsers(t *testing.T) {
 	tests := []struct {
 		name, script, active, cookie, user string
 	}{
-		{"cleanupScriptV7", cleanupScriptV7, "/ip/hotspot/active/remove [find where user=$name]",
-			"/ip/hotspot/cookie/remove [find where user=$name]", "/ip/hotspot/user/remove $u"},
-		{"cleanupScriptV6", cleanupScriptV6, "/ip hotspot active remove [find where user=$name]",
-			"/ip hotspot cookie remove [find where user=$name]", "/ip hotspot user remove $u"},
+		{"cleanupScriptV7", cleanupScriptV7, "/ip/hotspot/active/remove [find where user=$who]",
+			"/ip/hotspot/cookie/remove [find where user=$who]", "/ip/hotspot/user/remove $u"},
+		{"cleanupScriptV6", cleanupScriptV6, "/ip hotspot active remove [find where user=$who]",
+			"/ip hotspot cookie remove [find where user=$who]", "/ip hotspot user remove $u"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -370,5 +370,38 @@ func TestPikroOnLoginValiditySecs(t *testing.T) {
 		if _, ok := pikroOnLoginValiditySecs(script); ok {
 			t.Errorf("%q read as a Pikro script", script)
 		}
+	}
+}
+
+// TestScripts_noPropertyNamedVariableInFind guards against a RouterOS trap: in
+// `find where name=$name` RouterOS reads $name as the item's own name
+// property, so the filter matches every item. On RouterOS 6 that made the
+// cleanup try to remove all hotspot users at once (refused because of
+// default-trial), so it removed none and stopped at the first expired voucher.
+func TestScripts_noPropertyNamedVariableInFind(t *testing.T) {
+	filter := regexp.MustCompile(`find where ([a-z-]+)=\$([a-zA-Z-]+)`)
+	tests := []struct{ name, script string }{
+		{"cleanupScriptV7", cleanupScriptV7},
+		{"cleanupScriptV6", cleanupScriptV6},
+		{"on-login 7.25", buildOnLoginScript(3600, "7.25")},
+		{"on-login 6.49", buildOnLoginScript(3600, "6.49.13")},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, m := range filter.FindAllStringSubmatch(tc.script, -1) {
+				if m[1] == m[2] {
+					t.Errorf("%q compares the %s property with itself: it matches every item", m[0], m[1])
+				}
+			}
+		})
+	}
+}
+
+// TestCleanupV7_readsStampBeforeNote: the on-login script keeps an existing
+// comment after the stamp ("exp:1793794523 pikro-cloud"), so the cleanup must
+// read the 10 digits only; the rest of the comment isn't a number.
+func TestCleanupV7_readsStampBeforeNote(t *testing.T) {
+	if !strings.Contains(cleanupScriptV7, "[:tonum [:pick $comment 4 14]]") {
+		t.Error("cleanupScriptV7 doesn't read exactly the 10-digit epoch after exp:")
 	}
 }

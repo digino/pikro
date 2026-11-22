@@ -1076,20 +1076,23 @@ var cleanupScriptV7 = `:local nowEpoch ([:tonsec [:timestamp]] / 1000000000)
 ` + durationToSecsFn + `
 # Removing a user leaves its open session running: end it and its MAC
 # cookie too, or the device stays online past its validity.
+# The parameter isn't $name: in find where, $name reads as each item's own
+# name, matching every user.
 :local dropUser do={
-  /ip/hotspot/active/remove [find where user=$name]
-  /ip/hotspot/cookie/remove [find where user=$name]
-  /ip/hotspot/user/remove [find where name=$name]
+  /ip/hotspot/active/remove [find where user=$who]
+  /ip/hotspot/cookie/remove [find where user=$who]
+  /ip/hotspot/user/remove [find where name=$who]
 }
 :foreach u in=[/ip/hotspot/user/find] do={
   :local uname [:tostr [/ip/hotspot/user/get $u name]]
   :local comment [:tostr [/ip/hotspot/user/get $u comment]]
   :local removed false
   :if ([:len $comment] > 4 && [:pick $comment 0 4] = "exp:") do={
-    :local expEpoch [:tonum [:pick $comment 4 [:len $comment]]]
+    # Ten digits: the on-login script keeps any older comment after the stamp.
+    :local expEpoch [:tonum [:pick $comment 4 14]]
     :if ($expEpoch > 0 && $expEpoch < $nowEpoch) do={
       :log info ("pikro-cleanup: removing $uname (exp: comment expired, exp=$expEpoch now=$nowEpoch)")
-      $dropUser name=$uname
+      $dropUser who=$uname
       :set removed true
     }
   }
@@ -1099,7 +1102,7 @@ var cleanupScriptV7 = `:local nowEpoch ([:tonsec [:timestamp]] / 1000000000)
     :if ([:len $limit] > 0 && [:len $used] > 0) do={
       :if ([$durationToSecs $used] >= [$durationToSecs $limit]) do={
         :log info ("pikro-cleanup: removing $uname (uptime quota exhausted, uptime=$used limit=$limit)")
-        $dropUser name=$uname
+        $dropUser who=$uname
       }
     }
   }
@@ -1125,10 +1128,12 @@ var cleanupScriptV6 = `:local dateint do={
 ` + durationToSecsFn + `
 # Removing a user leaves its open session running: end it and its MAC
 # cookie too, or the device stays online past its validity.
+# The parameter isn't $name: in find where, $name reads as each item's own
+# name, matching every user.
 :local dropUser do={
-  /ip hotspot active remove [find where user=$name]
-  /ip hotspot cookie remove [find where user=$name]
-  /ip hotspot user remove [find where name=$name]
+  /ip hotspot active remove [find where user=$who]
+  /ip hotspot cookie remove [find where user=$who]
+  /ip hotspot user remove [find where name=$who]
 }
 :local date [/system clock get date]
 :local time [/system clock get time]
@@ -1151,7 +1156,7 @@ var cleanupScriptV6 = `:local dateint do={
       :local expt [$timeint t=[:pick $s 11 19]]
       :if (($expd < $today) || ($expd = $today && $expt < $curtime)) do={
         :log info ("pikro-cleanup: removing $uname (exp: comment expired, exp=$s now=$date $time)")
-        $dropUser name=$uname
+        $dropUser who=$uname
         :set removed true
       }
     }
@@ -1162,7 +1167,7 @@ var cleanupScriptV6 = `:local dateint do={
     :if ([:len $limit] > 0 && [:len $used] > 0) do={
       :if ([$durationToSecs $used] >= [$durationToSecs $limit]) do={
         :log info ("pikro-cleanup: removing $uname (uptime quota exhausted, uptime=$used limit=$limit)")
-        $dropUser name=$uname
+        $dropUser who=$uname
       }
     }
   }
