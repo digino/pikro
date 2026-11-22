@@ -150,6 +150,10 @@
         </div>
       </div>
 
+      <p v-if="cloudVouchers > 0" class="m-0 -mt-2 text-sm text-text-secondary">
+        {{ t('users.cloudVouchersHidden', { n: cloudVouchers }) }}
+      </p>
+
       <section class="card overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full min-w-215 text-sm">
@@ -219,16 +223,7 @@
                   <span class="chip">{{ u.profile || 'default' }}</span>
                 </td>
                 <td class="px-4 py-3">
-                  <div v-if="timeLeft(u)" class="flex items-center gap-2.5">
-                    <div class="w-18 h-2 shrink-0 rounded-full border-[1.5px] border-ink bg-paper overflow-hidden">
-                      <div
-                        class="h-full"
-                        :class="timeLeft(u)!.pct < 40 ? 'bg-primary' : 'bg-ink'"
-                        :style="{ width: `${timeLeft(u)!.pct}%` }"
-                      />
-                    </div>
-                    <span class="text-[13px]">{{ timeLeft(u)!.label }}</span>
-                  </div>
+                  <TimeLeftBar v-if="timeLeft(u)" v-bind="timeLeft(u)!" />
                   <span v-else class="text-text-muted">—</span>
                 </td>
                 <td class="px-4 py-3 font-mono text-[13px]">{{ dataUsage(u) }}</td>
@@ -372,18 +367,19 @@
           <thead>
             <tr class="border-b-2 border-ink">
               <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colUser') }}</th>
+              <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colPlan') }}</th>
+              <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colTimeLeft') }}</th>
               <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colIp') }}</th>
               <th class="eyebrow text-left px-4 py-3.5">{{ t('users.colMac') }}</th>
               <th class="eyebrow text-right px-4 py-3.5">{{ t('users.colUptime') }}</th>
               <th class="eyebrow text-right px-4 py-3.5">{{ t('users.colDown') }}</th>
               <th class="eyebrow text-right px-4 py-3.5">{{ t('users.colUp') }}</th>
-              <th class="eyebrow text-right px-4 py-3.5">{{ t('users.colLeft') }}</th>
               <th class="px-4 py-3.5"><span class="sr-only">{{ t('users.colActions') }}</span></th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="active.length === 0">
-              <td colspan="8" class="px-4 py-10 text-center text-text-muted">{{ t('users.noSessions') }}</td>
+              <td colspan="9" class="px-4 py-10 text-center text-text-muted">{{ t('users.noSessions') }}</td>
             </tr>
             <tr
               v-for="s in pagedActive"
@@ -391,12 +387,21 @@
               class="border-b border-hairline last:border-0"
             >
               <td class="px-4 py-3 font-mono font-semibold">{{ s.user }}</td>
+              <td class="px-4 py-3">
+                <span class="chip">{{ sessionPlan(s) }}</span>
+              </td>
+              <td class="px-4 py-3">
+                <TimeLeftBar v-if="sessionTimeLeft(s)" v-bind="sessionTimeLeft(s)!" />
+                <span v-else-if="parseUptimeSeconds(s['session-time-left'])" class="text-[13px]">
+                  {{ formatSeconds(parseUptimeSeconds(s['session-time-left'])) }}
+                </span>
+                <span v-else class="text-text-muted">—</span>
+              </td>
               <td class="px-4 py-3 font-mono">{{ s.address }}</td>
               <td class="px-4 py-3 font-mono text-text-muted">{{ s['mac-address'] || '—' }}</td>
               <td class="px-4 py-3 text-right font-mono">{{ s.uptime || '—' }}</td>
               <td class="px-4 py-3 text-right font-mono">{{ formatBytes(s['bytes-in']) }}</td>
               <td class="px-4 py-3 text-right font-mono text-text-secondary">{{ formatBytes(s['bytes-out']) }}</td>
-              <td class="px-4 py-3 text-right font-mono text-text-secondary">{{ s['session-time-left'] || '—' }}</td>
               <td class="px-4 py-3">
                 <div class="flex items-center justify-end gap-2">
                   <template v-if="userIdByName(s.user)">
@@ -747,7 +752,7 @@ import { RouterLink, useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useRoutersStore } from "@/stores/routers";
 import {
-  listHotspotUsers,
+  listHotspotUsersWithCloudCount,
   listHotspotActive,
   listHotspotProfiles,
   createHotspotUser,
@@ -763,6 +768,7 @@ import {
 import { friendlyError } from "@/utils/errors";
 import AppDialog from "@/components/AppDialog.vue";
 import PrintTemplateDialog from "@/components/PrintTemplateDialog.vue";
+import TimeLeftBar from "@/components/TimeLeftBar.vue";
 import { hotspotLoginUrl, type VoucherEntry } from "@/utils/vouchers";
 import { inkIcon } from "@/utils/inkIcons";
 
@@ -806,6 +812,8 @@ const tabs = [
   { key: "active" as const, label: "users.tabActive" },
 ];
 const users = ref<Record<string, string>[]>([]);
+// Unsold Pikro Cloud vouchers: hidden from this list by the backend.
+const cloudVouchers = ref(0);
 const active = ref<Record<string, string>[]>([]);
 
 // Active sessions are keyed by username, not the user record's .id — this
@@ -818,6 +826,21 @@ const userIdByNameMap = computed(() => {
 });
 function userIdByName(name: string) {
   return userIdByNameMap.value.get(name);
+}
+
+const userByName = computed(() => new Map(users.value.map((u) => [u.name, u])));
+// A session's plan: the local user's profile, or User Manager when the
+// router logged it in through RADIUS (its plan lives there, not here).
+function sessionPlan(s: Record<string, string>) {
+  if (s.radius === "true") return t("users.planRadius");
+  const u = userByName.value.get(s.user);
+  return u ? u.profile || "default" : "—";
+}
+// Time left as in "All users", for sessions of a local user. A RADIUS
+// session shows only the router's session-time-left, which has no total.
+function sessionTimeLeft(s: Record<string, string>) {
+  const u = userByName.value.get(s.user);
+  return u ? timeLeft(u) : null;
 }
 
 const searchQuery = ref("");
@@ -1160,8 +1183,8 @@ async function loadUsers() {
   loading.value = true;
   error.value = "";
   try {
-    const [u, p, m, s] = await Promise.all([
-      listHotspotUsers(store.activeId),
+    const [u, p, m, s, a] = await Promise.all([
+      listHotspotUsersWithCloudCount(store.activeId),
       listHotspotProfiles(store.activeId),
       getProfileMetas(store.activeId).catch(
         () => ({}) as Record<string, ProfileMeta>,
@@ -1170,8 +1193,12 @@ async function loadUsers() {
         () =>
           ({ hotspotName: "", currency: "" }) as HotspotSettings,
       ),
+      // So the "Online now" tab shows its count before it is opened.
+      listHotspotActive(store.activeId).catch(() => active.value),
     ]);
-    users.value = u;
+    users.value = u.users;
+    active.value = a;
+    cloudVouchers.value = u.cloudVouchers;
     profiles.value = p;
     profileMetas.value = m;
     hotspotSettings.value = s;
@@ -1317,6 +1344,10 @@ function isUptimeExhausted(u: Record<string, string>): boolean {
 
 function extractExpEpoch(comment: string | undefined): number | null {
   if (!comment) return null;
+  // The on-login script stamps "exp:<epoch>" on RouterOS 7.12+, and the
+  // router's local time "exp:YYYY-MM-DD HH:MM:SS" before.
+  const date = comment.match(/^exp:(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/);
+  if (date) return Math.floor(new Date(`${date[1]}T${date[2]}`).getTime() / 1000);
   const m = comment.match(/^exp:(\d+)/);
   if (!m) return null;
   return parseInt(m[1]);
@@ -1411,7 +1442,7 @@ function formatSeconds(secs: number): string {
 
 function displayComment(comment: string | undefined): string {
   if (!comment) return "—";
-  return comment.replace(/^exp:\d+\s*/, "") || "—";
+  return comment.replace(/^exp:(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}|\d+)\s*/, "") || "—";
 }
 
 function formatBytes(val: string | undefined): string {

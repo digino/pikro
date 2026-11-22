@@ -26,6 +26,7 @@ docs/poc
 .env.*.local
 web/.env.local
 *.pem
+!internal/router/isrgrootx1.pem
 *.key
 .pikro.json
 

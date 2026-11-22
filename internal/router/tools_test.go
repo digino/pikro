@@ -1,6 +1,7 @@
 package router
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -103,6 +104,28 @@ func TestGatewayAddress(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := gatewayAddress(tt.route); got != tt.want {
 				t.Errorf("gatewayAddress() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNTPClientArgs(t *testing.T) {
+	tests := []struct {
+		name   string
+		client map[string]string
+		want   string
+	}{
+		{"RouterOS 7", map[string]string{"enabled": "false", "servers": ""},
+			"=enabled=yes =servers=pool.ntp.org"},
+		{"RouterOS 6 built-in client", map[string]string{"enabled": "false", "mode": "broadcast", "primary-ntp": "0.0.0.0", "server-dns-names": ""},
+			"=enabled=yes =server-dns-names=pool.ntp.org"},
+		{"RouterOS 6 ntp package: addresses only", map[string]string{"enabled": "false", "mode": "unicast", "primary-ntp": "0.0.0.0", "secondary-ntp": "0.0.0.0", "dynamic-servers": ""},
+			"=enabled=yes =primary-ntp=162.159.200.1 =secondary-ntp=162.159.200.123"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := strings.Join(ntpClientArgs(tt.client), " "); got != tt.want {
+				t.Errorf("ntpClientArgs() = %q, want %q", got, tt.want)
 			}
 		})
 	}

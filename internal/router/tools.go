@@ -243,14 +243,7 @@ func (c *Client) EnableAutoTime(now time.Time) error {
 	if err != nil || len(r.Re) == 0 {
 		return fmt.Errorf("read NTP client: %w", err)
 	}
-	if _, v7 := r.Re[0].Map["servers"]; v7 {
-		_, err = conn.Run("/system/ntp/client/set", "=enabled=yes", "=servers="+ntpServer)
-	} else {
-		// RouterOS 6 refuses "mode" over the API but switches to unicast by
-		// itself once it has a server name.
-		_, err = conn.Run("/system/ntp/client/set", "=enabled=yes", "=server-dns-names="+ntpServer)
-	}
-	if err != nil {
+	if _, err = conn.RunArgs(append([]string{"/system/ntp/client/set"}, ntpClientArgs(r.Re[0].Map)...)); err != nil {
 		return err
 	}
 
@@ -262,6 +255,21 @@ func (c *Client) EnableAutoTime(now time.Time) error {
 	date, tod := routerClockStrings(now, m["gmt-offset"], isoDate.MatchString(m["date"]))
 	_, err = conn.Run("/system/clock/set", "=date="+date, "=time="+tod)
 	return err
+}
+
+// ntpClientArgs turns the NTP client on, in whichever form the router has.
+func ntpClientArgs(client map[string]string) []string {
+	if _, v7 := client["servers"]; v7 {
+		return []string{"=enabled=yes", "=servers=" + ntpServer}
+	}
+	if _, sntp := client["server-dns-names"]; sntp {
+		// RouterOS 6 refuses "mode" over the API but switches to unicast by
+		// itself once it has a server name.
+		return []string{"=enabled=yes", "=server-dns-names=" + ntpServer}
+	}
+	// RouterOS 6 with the separate ntp package takes addresses only:
+	// time.cloudflare.com's anycast pair, which doesn't change.
+	return []string{"=enabled=yes", "=primary-ntp=162.159.200.1", "=secondary-ntp=162.159.200.123"}
 }
 
 var (

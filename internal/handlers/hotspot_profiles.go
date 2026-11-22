@@ -2,8 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/digino/pikro/internal/config"
 	"github.com/digino/pikro/internal/router"
@@ -21,8 +25,8 @@ func CreateHotspotProfile(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "invalid body", http.StatusBadRequest)
 		return
 	}
-	if body.Name == "" {
-		jsonError(w, "name is required", http.StatusBadRequest)
+	if err := body.validate(); err != nil {
+		jsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	result, err := client.CreateHotspotProfile(body.toParams())
@@ -50,6 +54,10 @@ func UpdateHotspotProfile(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "invalid body", http.StatusBadRequest)
 		return
 	}
+	if err := body.validate(); err != nil {
+		jsonError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	if err := client.UpdateHotspotProfile(profileID, body.toParams()); err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
@@ -70,7 +78,9 @@ func DeleteHotspotProfile(w http.ResponseWriter, r *http.Request) {
 	profileID := r.PathValue("profileID")
 	// We need the profile name to delete its metadata — read it from body if provided,
 	// otherwise skip meta cleanup (leftover metadata is harmless).
-	var body struct{ Name string `json:"name"` }
+	var body struct {
+		Name string `json:"name"`
+	}
 	json.NewDecoder(r.Body).Decode(&body)
 
 	if err := client.DeleteHotspotProfile(profileID); err != nil {
@@ -133,6 +143,45 @@ type profileBody struct {
 	// Local metadata — stored in config, NOT sent to RouterOS
 	Validity string `json:"validity"`
 	Price    string `json:"price"`
+}
+
+var (
+	profilePriceRe     = regexp.MustCompile(`^\d+(\.\d{1,2})?$`)
+	profileValidityRe  = regexp.MustCompile(`^(\d+[wdhm])+$`)
+	profileRateLimitRe = regexp.MustCompile(`^\d+[kKMG]?(/\d+[kKMG]?)?( \S+)*$`) // rx/tx, then RouterOS burst fields
+)
+
+// validate checks the form before anything reaches the router or the config.
+func (b profileBody) validate() error {
+	name := strings.TrimSpace(b.Name)
+	switch {
+	case name == "":
+		return errors.New("name is required")
+
+	// ";", and a quote would break the RouterOS command creating the voucher.
+	case strings.ContainsAny(name, `;,"`):
+		return errors.New(`name can't contain ; , or "`)
+	case b.Price != "" && (!profilePriceRe.MatchString(b.Price) || strings.Trim(b.Price, "0.") == ""):
+		return errors.New("price must be a positive number, e.g. 500 or 1.50")
+	case b.Validity != "" && (!profileValidityRe.MatchString(b.Validity) || config.ValiditySecs(b.Validity) == 0):
+		return errors.New("validity must look like 1d, 4h, 2h30m or 1w")
+	case b.RateLimit != "" && !profileRateLimitRe.MatchString(b.RateLimit):
+		return errors.New("speed limit must look like 2M/4M")
+	}
+	switch v := b.SharedUsers.(type) {
+	case nil:
+	case float64:
+		if v < 1 || v != float64(int(v)) {
+			return errors.New("devices per voucher must be a whole number, 1 or more")
+		}
+	case string:
+		if n, err := strconv.Atoi(v); v != "" && v != "unlimited" && (err != nil || n < 1) {
+			return errors.New("devices per voucher must be a whole number, 1 or more")
+		}
+	default:
+		return errors.New("devices per voucher must be a number")
+	}
+	return nil
 }
 
 func (b profileBody) toParams() router.HotspotProfileParams {

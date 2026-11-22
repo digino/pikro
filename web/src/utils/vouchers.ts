@@ -67,6 +67,11 @@ export async function printVouchers(entries: VoucherEntry[], opts: PrintVouchers
     loginUrlSupportsCredentials,
   });
 
+  printHtml(html);
+}
+
+/** Opens the print dialog for a whole HTML page, from a hidden iframe. */
+export function printHtml(html: string) {
   const iframe = document.createElement("iframe");
   iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px";
   document.body.appendChild(iframe);

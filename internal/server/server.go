@@ -4,17 +4,58 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/digino/pikro/internal/handlers"
 )
 
+// Start serves Pikro to this computer only: it holds router passwords and
+// the technician's Cloud session, so nothing else on the network may use it.
 func Start(port int, webFS fs.FS) error {
 	mux := http.NewServeMux()
 	registerAPI(mux)
 	registerSPA(mux, webFS)
-	return http.ListenAndServe(fmt.Sprintf(":%d", port), requestLogger(mux))
+	srv := &http.Server{Handler: localOnly(requestLogger(mux)), ReadHeaderTimeout: 10 * time.Second}
+
+	// "localhost" may resolve to either loopback address, so listen on both.
+	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	if err != nil {
+		return err
+	}
+	if ln6, err := net.Listen("tcp", fmt.Sprintf("[::1]:%d", port)); err == nil {
+		go srv.Serve(ln6)
+	}
+	return srv.Serve(ln)
+}
+
+// localOnly refuses requests not addressed to localhost (a website pointing
+// its own name at 127.0.0.1) and requests sent from another site's page.
+func localOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !isLoopback(r.Host) {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		if origin := r.Header.Get("Origin"); origin != "" {
+			u, err := url.Parse(origin)
+			if err != nil || !isLoopback(u.Host) {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func isLoopback(hostport string) bool {
+	host := hostport
+	if h, _, err := net.SplitHostPort(hostport); err == nil {
+		host = h
+	}
+	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
 func requestLogger(next http.Handler) http.Handler {
@@ -88,6 +129,15 @@ func registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("PATCH /api/routers/{id}/hotspot/profiles/{profileID}", handlers.UpdateHotspotProfile)
 	mux.HandleFunc("DELETE /api/routers/{id}/hotspot/profiles/{profileID}", handlers.DeleteHotspotProfile)
 	mux.HandleFunc("GET /api/routers/{id}/address-pools", handlers.ListAddressPools)
+
+	mux.HandleFunc("GET /api/cloud/session", handlers.GetCloudSession)
+	mux.HandleFunc("POST /api/cloud/code", handlers.PostCloudCode)
+	mux.HandleFunc("POST /api/cloud/session", handlers.PostCloudSession)
+	mux.HandleFunc("DELETE /api/cloud/session", handlers.DeleteCloudSession)
+	mux.HandleFunc("GET /api/routers/{id}/cloud", handlers.GetRouterCloud)
+	mux.HandleFunc("POST /api/routers/{id}/cloud", handlers.PostRouterCloud)
+	mux.HandleFunc("DELETE /api/routers/{id}/cloud", handlers.DeleteRouterCloud)
+	mux.HandleFunc("POST /api/routers/{id}/cloud/button", handlers.PostRouterCloudButton)
 
 	mux.HandleFunc("POST /api/routers/{id}/speedtest", handlers.RunSpeedTest)
 	mux.HandleFunc("GET /api/routers/{id}/tools/internet-check", handlers.GetInternetCheck)

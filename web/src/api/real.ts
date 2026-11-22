@@ -1,4 +1,5 @@
 import axios from 'axios'
+import type { GuestPages } from '@/views/hotspot/settings/loginPageTemplates'
 import type {
   RouterProfile, NewRouterProfile,
   NewHotspotUser, UpdateHotspotUser,
@@ -119,6 +120,13 @@ export const migrateFromMikhmon = (id: string) =>
 export const listHotspotUsers = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/hotspot/users`).then(r => r.data)
 
+/** Users plus how many unsold Pikro Cloud vouchers the backend left out. */
+export const listHotspotUsersWithCloudCount = (id: string) =>
+  api.get<Record<string, string>[]>(`/routers/${id}/hotspot/users`).then(r => ({
+    users: r.data,
+    cloudVouchers: Number(r.headers['x-pikro-cloud-vouchers'] ?? 0),
+  }))
+
 export const listHotspotActive = (id: string) =>
   api.get<Record<string, string>[]>(`/routers/${id}/hotspot/active`).then(r => r.data)
 
@@ -214,6 +222,7 @@ export const setupHotspot = (id: string, body: {
   newBridgeName?: string
   bridgePorts?: string[]
   cleanupInterval?: string
+  pages: GuestPages
 }) =>
   api.post<SetupResult>(`/routers/${id}/hotspot/setup`, body).then(r => r.data)
 
@@ -278,3 +287,64 @@ export const rebootRouter = (id: string) =>
 
 export const runSpeedTest = (id: string, target = '10') =>
   api.post<Record<string, string>>(`/routers/${id}/speedtest`, { target }).then(r => r.data)
+
+// Pikro Cloud (opt-in, certified technicians)
+export interface CloudSession {
+  signedIn: boolean
+  email?: string
+  name?: string
+  expiresAt?: string
+  revoked?: boolean
+}
+
+export const getCloudSession = () =>
+  api.get<CloudSession>('/cloud/session').then(r => r.data)
+
+export const sendCloudCode = (email: string) =>
+  api.post('/cloud/code', { email })
+
+export const signInToCloud = (email: string, code: string) =>
+  api.post<CloudSession>('/cloud/session', { email, code }).then(r => r.data)
+
+export const signOutOfCloud = () =>
+  api.delete<CloudSession>('/cloud/session').then(r => r.data)
+
+export interface RouterCloud {
+  status: {
+    connected: boolean
+    cloudRouterId: string
+    poolVouchers: number
+    hardwareId: string
+    routerOsVersion: string
+    hasHotspot: boolean
+    /** The page guests open before logging in; "" when not connected. */
+    buyUrl: string
+    /** "unknown": the login page can't be read completely. */
+    buyButton: 'present' | 'missing' | 'unknown'
+  }
+  plans: { profile: string; price: number }[]
+  currency: string
+  /** The owner's number and plans chosen at the last connect from this computer; null otherwise. */
+  link: { ownerPhone: string; profiles: string[] } | null
+}
+
+export interface CloudStep { name: string; ok: boolean; error?: string; skipped?: boolean; warning?: string }
+
+export interface CloudConnectResult {
+  steps: CloudStep[]
+  vouchers: number
+  cloudRouterId: string
+}
+
+export const getRouterCloud = (id: string) =>
+  api.get<RouterCloud>(`/routers/${id}/cloud`).then(r => r.data)
+
+export const connectRouterToCloud = (id: string, ownerPhone: string, profiles: string[]) =>
+  api.post<CloudConnectResult>(`/routers/${id}/cloud`, { ownerPhone, profiles }).then(r => r.data)
+
+export const addCloudBuyButton = (id: string) =>
+  api.post<CloudStep>(`/routers/${id}/cloud/button`).then(r => r.data)
+
+/** cloudNotified is false when Cloud couldn't be reached: the router is clean, but Cloud keeps selling its vouchers until it notices the router stopped syncing. */
+export const disconnectRouterFromCloud = (id: string) =>
+  api.delete<{ cloudNotified: boolean }>(`/routers/${id}/cloud`).then(r => r.data)

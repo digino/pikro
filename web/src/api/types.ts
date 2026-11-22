@@ -102,6 +102,8 @@ export interface LoginPageSettings {
   loginMode?: 'code' | 'password'
   language?: 'en' | 'fr'
   showPrices?: boolean
+  accent?: string
+  background?: 'light' | 'tint' | 'dark'
   contact?: string
   uploadedAt?: string
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/digino/pikro/internal/cloud"
 	"github.com/digino/pikro/internal/config"
 	"github.com/digino/pikro/internal/router"
 )
@@ -69,6 +70,7 @@ func UploadLoginPage(w http.ResponseWriter, r *http.Request) {
 		Alogin:   input.AloginHTML,
 		Style:    input.CSS,
 		MD5:      input.MD5JS,
+		CloudURL: cloud.URL(),
 	}); err != nil {
 		jsonError(w, err.Error(), http.StatusBadGateway)
 		return
