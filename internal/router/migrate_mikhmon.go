@@ -275,28 +275,24 @@ func mikhmonProfileValiditySecs(onLogin string) (secs int64, ok bool) {
 	return secs, true
 }
 
-// parseRouterOSDuration parses durations like "2h", "24h", "7d", "14d", "30d".
+// parseRouterOSDuration parses durations like "2h", "30d" or "1d12h".
 func parseRouterOSDuration(s string) (int64, error) {
-	if len(s) < 2 {
+	if s == "" || !durationRe.MatchString(s) {
 		return 0, fmt.Errorf("invalid duration %q", s)
 	}
-	unit := s[len(s)-1]
-	n, err := strconv.ParseInt(s[:len(s)-1], 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("invalid duration %q: %w", s, err)
+	unitSecs := map[string]int64{"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 7 * 86400}
+	var total int64
+	for _, part := range durationPartRe.FindAllStringSubmatch(s, -1) {
+		n, err := strconv.ParseInt(part[1], 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid duration %q: %w", s, err)
+		}
+		total += n * unitSecs[part[2]]
 	}
-	switch unit {
-	case 's':
-		return n, nil
-	case 'm':
-		return n * 60, nil
-	case 'h':
-		return n * 3600, nil
-	case 'd':
-		return n * 86400, nil
-	case 'w':
-		return n * 7 * 86400, nil
-	default:
-		return 0, fmt.Errorf("unknown duration unit in %q", s)
-	}
+	return total, nil
 }
+
+var (
+	durationRe     = regexp.MustCompile(`^(\d+[smhdw])+$`)
+	durationPartRe = regexp.MustCompile(`(\d+)([smhdw])`)
+)

@@ -261,6 +261,8 @@ func buildOnLoginScript(validitySecs int64, rosVersion string) string {
     # year, "mmm/dd/yyyy HH:MM:SS" in another year, or YYYY-MM-DD HH:MM:SS on 7.10+.
     # Month names are already lowercase, and RouterOS 6 has no :tolower.
     :if ($xlen = 8) do={ :set expStr ($today . " " . $exp) }
+    # 7.10-7.11 write "11-26 17:02:15" later in the same year.
+    :if ($xlen = 14) do={ :set expStr ([:pick $today 0 4] . "-" . $exp) }
     :if ($xlen = 15) do={
       :local mo [:pick $exp 0 3]
       :set expStr ([:pick $today 0 4] . "-" . ($months->$mo) . "-" . [:pick $exp 4 6] . " " . [:pick $exp 7 15])

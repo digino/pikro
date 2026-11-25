@@ -405,3 +405,23 @@ func TestCleanupV7_readsStampBeforeNote(t *testing.T) {
 		t.Error("cleanupScriptV7 doesn't read exactly the 10-digit epoch after exp:")
 	}
 }
+
+// TestOnLoginBefore712_readsEveryNextRunForm: the pre-7.12 on-login script
+// turns a scheduler's next-run into a date; RouterOS writes it in a different
+// form per version and distance (seen on CHR 6.48–7.11). 7.10–7.11 write
+// "11-26 17:02:15" later in the same year: without that form, a voucher
+// lasting past midnight was never stamped, so it never expired.
+func TestOnLoginBefore712_readsEveryNextRunForm(t *testing.T) {
+	script := buildOnLoginScript(86400, "7.11.2")
+	for _, tc := range []struct{ form, check string }{
+		{"17:04:13 (today)", ":if ($xlen = 8)"},
+		{"11-26 17:02:15 (7.10-7.11, this year)", ":if ($xlen = 14)"},
+		{"nov/26 17:02:01 (this year)", ":if ($xlen = 15)"},
+		{"2027-01-04 17:02:16 (7.10+, another year)", ":if ($xlen = 19)"},
+		{"jan/04/2027 17:02:03 (another year)", ":if ($xlen = 20)"},
+	} {
+		if !strings.Contains(script, tc.check) {
+			t.Errorf("no branch for next-run %s", tc.form)
+		}
+	}
+}
