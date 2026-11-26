@@ -136,6 +136,31 @@ func poolVouchers(conn *ros.Client) (int, error) {
 	return strconv.Atoi(r.Done.Map["ret"])
 }
 
+// deviceModeBlocksFetch reports whether RouterOS device-mode forbids fetch,
+// which the sync script needs: the "home" mode of 7.17+ turns it off.
+// Routers without device-mode, or without a fetch setting, allow it.
+func deviceModeBlocksFetch(mode map[string]string) bool {
+	return mode["fetch"] == "false"
+}
+
+// CloudCheckFetch stops the setup before anything changes on a router whose
+// device-mode forbids fetch: every sync would fail there. Only someone at the
+// router can allow it.
+func (c *Client) CloudCheckFetch() SetupStepResult {
+	name := "Check the router allows downloads"
+	conn, err := c.connect()
+	if err != nil {
+		return SetupStepResult{Name: name, Error: err.Error()}
+	}
+	defer conn.Close()
+	if deviceModeBlocksFetch(firstMap(conn, "/system/device-mode/print")) {
+		return SetupStepResult{Name: name, Error: "RouterOS device-mode doesn't allow downloads (fetch), which Pikro Cloud needs. " +
+			"In WinBox, open New Terminal and run: /system device-mode update fetch=yes — then, within 5 minutes, " +
+			"briefly press the router's reset button or unplug its power and plug it back in. Then run this setup again."}
+	}
+	return SetupStepResult{Name: name, OK: true}
+}
+
 // CloudImportCert imports Let's Encrypt's root if the router lacks it.
 func (c *Client) CloudImportCert() SetupStepResult {
 	name := "Install the security certificate"

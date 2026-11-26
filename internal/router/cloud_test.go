@@ -249,3 +249,23 @@ func TestCloudButtonPlacementAndRemoval(t *testing.T) {
 		})
 	}
 }
+
+func TestDeviceModeBlocksFetch(t *testing.T) {
+	tests := []struct {
+		name string
+		mode map[string]string
+		want bool
+	}{
+		{"7.17+ home mode, fetch off", map[string]string{"mode": "home", "fetch": "false", "scheduler": "true"}, true},
+		{"fetch allowed", map[string]string{"mode": "home", "fetch": "true"}, false},
+		{"device-mode without a fetch setting (before 7.17)", map[string]string{"mode": "enterprise"}, false},
+		{"no device-mode at all (RouterOS 6)", nil, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := deviceModeBlocksFetch(tt.mode); got != tt.want {
+				t.Errorf("deviceModeBlocksFetch(%v) = %v, want %v", tt.mode, got, tt.want)
+			}
+		})
+	}
+}
