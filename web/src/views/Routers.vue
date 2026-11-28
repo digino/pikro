@@ -303,8 +303,13 @@ function deviceName(d: DiscoveredDevice): string {
   return d.identity || d.board || "MikroTik";
 }
 
+// By MAC: every MikroTik ships as 192.168.88.1, so many routers share an IP.
+// A saved router whose MAC Pikro hasn't learnt yet falls back to its IP.
 function savedRouter(d: DiscoveredDevice): RouterProfile | undefined {
-  return store.routers.find((r) => r.host === d.ip);
+  const mac = d.mac?.toLowerCase();
+  return store.routers.find((r) =>
+    r.mac ? r.mac.toLowerCase() === mac : r.host === d.ip,
+  );
 }
 
 function hotspotLine(r: RouterProfile): string {
