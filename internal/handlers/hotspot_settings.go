@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
+	"maps"
 	"net/http"
 
 	"github.com/digino/pikro/internal/cloud"
@@ -24,6 +26,9 @@ func GetHotspotSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetProfileMetas returns the locally-stored metadata (validity, price) for all profiles.
+// A validity this computer doesn't have comes from the profile's Pikro on-login
+// script on the router, so a plan set up on another PC isn't shown (and then
+// saved) as unlimited.
 func GetProfileMetas(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	profile, err := findProfile(id)
@@ -31,11 +36,35 @@ func GetProfileMetas(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "router not found", http.StatusNotFound)
 		return
 	}
-	if profile.HotspotSettings == nil || profile.HotspotSettings.ProfileMetas == nil {
-		jsonOK(w, map[string]config.ProfileMeta{})
-		return
+	var local map[string]config.ProfileMeta
+	if profile.HotspotSettings != nil {
+		local = profile.HotspotSettings.ProfileMetas
 	}
-	jsonOK(w, profile.HotspotSettings.ProfileMetas)
+	client := router.NewClient(profile.Host, profile.Port, profile.Username, profile.Password, profile.UseTLS)
+	profiles, err := client.HotspotProfiles()
+	if err != nil {
+		log.Printf("router %s: profile validities from the router: %v", id, err)
+	}
+	jsonOK(w, withRouterValidities(local, profiles))
+}
+
+// withRouterValidities fills in, from the router's on-login scripts, the
+// validity of each Pikro profile that local has none for.
+func withRouterValidities(local map[string]config.ProfileMeta, profiles []map[string]any) map[string]config.ProfileMeta {
+	out := make(map[string]config.ProfileMeta, len(local))
+	maps.Copy(out, local)
+	for _, p := range profiles {
+		name, _ := p["name"].(string)
+		onLogin, _ := p["on-login"].(string)
+		secs, ok := router.PikroOnLoginValiditySecs(onLogin)
+		if !ok || out[name].Validity != "" {
+			continue
+		}
+		meta := out[name]
+		meta.Validity = config.ValidityString(secs)
+		out[name] = meta
+	}
+	return out
 }
 
 func UploadLoginPage(w http.ResponseWriter, r *http.Request) {

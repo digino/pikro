@@ -219,7 +219,7 @@ func TestMikhmonMigrationCHR(t *testing.T) {
 			t.Errorf("%s-new unused voucher: %v", p.name, n)
 		}
 		prof := get("/ip/hotspot/user/profile", p.name)
-		if secs, ok := pikroOnLoginValiditySecs(prof["on-login"]); p.secs > 0 && (!ok || secs != p.secs) {
+		if secs, ok := PikroOnLoginValiditySecs(prof["on-login"]); p.secs > 0 && (!ok || secs != p.secs) {
 			t.Errorf("plan %s: Pikro on-login validity %d (ok=%v), want %d", p.name, secs, ok, p.secs)
 		} else if p.secs == 0 && prof["on-login"] != "" {
 			t.Errorf("plan %s (no expiry) still has an on-login", p.name)

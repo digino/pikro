@@ -18,3 +18,24 @@ func TestValiditySecs(t *testing.T) {
 		})
 	}
 }
+
+func TestValidityString(t *testing.T) {
+	tests := []struct {
+		secs int64
+		want string
+	}{
+		{0, ""}, {1800, "30m"}, {3600, "1h"}, {18000, "5h"}, {86400, "1d"},
+		{129600, "1d12h"}, {604800, "7d"}, {2592000, "30d"}, {9000, "2h30m"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.want, func(t *testing.T) {
+			got := ValidityString(tc.secs)
+			if got != tc.want {
+				t.Errorf("ValidityString(%d) = %q, want %q", tc.secs, got, tc.want)
+			}
+			if ValiditySecs(got) != tc.secs {
+				t.Errorf("%q reads back as %d seconds, want %d", got, ValiditySecs(got), tc.secs)
+			}
+		})
+	}
+}

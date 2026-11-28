@@ -359,7 +359,7 @@ func TestPikroOnLoginValiditySecs(t *testing.T) {
 	for _, version := range []string{"7.25 (stable)", "7.11.2 (stable)", "6.49.23 (stable)"} {
 		for _, secs := range []int64{120, 3600, 2592000} {
 			t.Run(version, func(t *testing.T) {
-				got, ok := pikroOnLoginValiditySecs(buildOnLoginScript(secs, version))
+				got, ok := PikroOnLoginValiditySecs(buildOnLoginScript(secs, version))
 				if !ok || got != secs {
 					t.Errorf("validity = %d, %v, want %d", got, ok, secs)
 				}
@@ -367,7 +367,7 @@ func TestPikroOnLoginValiditySecs(t *testing.T) {
 		}
 	}
 	for _, script := range []string{"", `:put (",rem,500,1d,500,,Disable,")`} {
-		if _, ok := pikroOnLoginValiditySecs(script); ok {
+		if _, ok := PikroOnLoginValiditySecs(script); ok {
 			t.Errorf("%q read as a Pikro script", script)
 		}
 	}

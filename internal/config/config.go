@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -38,6 +39,22 @@ func ValiditySecs(s string) int64 {
 		}
 	}
 	return total
+}
+
+// ValidityString is the inverse of ValiditySecs, in days, hours and minutes
+// ("7d", not "1w", like Pikro's own validity presets). "" for 0.
+func ValidityString(secs int64) string {
+	var b strings.Builder
+	for _, u := range []struct {
+		unit string
+		secs int64
+	}{{"d", 86400}, {"h", 3600}, {"m", 60}} {
+		if n := secs / u.secs; n > 0 {
+			fmt.Fprintf(&b, "%d%s", n, u.unit)
+			secs %= u.secs
+		}
+	}
+	return b.String()
 }
 
 type LoginPageSettings struct {

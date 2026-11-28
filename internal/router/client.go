@@ -287,9 +287,9 @@ func buildOnLoginScript(validitySecs int64, rosVersion string) string {
 // script: "($nowEpoch + 3600)" on 7.12+, interval="3600s" before.
 var pikroOnLoginValidityRe = regexp.MustCompile(`\$nowEpoch \+ (\d+)\)|interval="(\d+)s"`)
 
-// pikroOnLoginValiditySecs reports the validity of an on-login script written
+// PikroOnLoginValiditySecs reports the validity of an on-login script written
 // by any Pikro version, or false when Pikro did not write it.
-func pikroOnLoginValiditySecs(onLogin string) (int64, bool) {
+func PikroOnLoginValiditySecs(onLogin string) (int64, bool) {
 	m := pikroOnLoginValidityRe.FindStringSubmatch(onLogin)
 	if m == nil || !strings.Contains(onLogin, "pikro-on-login:") {
 		return 0, false
@@ -1285,7 +1285,7 @@ func (c *Client) RefreshPikroScripts() (int, error) {
 	}
 	for _, s := range profiles.Re {
 		onLogin := s.Map["on-login"]
-		secs, ok := pikroOnLoginValiditySecs(onLogin)
+		secs, ok := PikroOnLoginValiditySecs(onLogin)
 		if !ok {
 			continue
 		}

@@ -1,6 +1,12 @@
 package handlers
 
-import "testing"
+import (
+	"fmt"
+	"reflect"
+	"testing"
+
+	"github.com/digino/pikro/internal/config"
+)
 
 func TestProfileBodyValidate(t *testing.T) {
 	valid := profileBody{Name: "1-jour", SharedUsers: float64(1), RateLimit: "2M/4M", Validity: "1d", Price: "300"}
@@ -38,6 +44,40 @@ func TestProfileBodyValidate(t *testing.T) {
 			tt.change(&b)
 			if err := b.validate(); (err == nil) != tt.ok {
 				t.Errorf("validate() = %v, want ok=%v", err, tt.ok)
+			}
+		})
+	}
+}
+
+func TestWithRouterValidities(t *testing.T) {
+	onLogin := func(secs int64) string {
+		return fmt.Sprintf(":local nowEpoch ([:tonsec [:timestamp]] / 1000000000)\n:local expEpoch ($nowEpoch + %d)\n:log info (\"pikro-on-login: stamping $user\")", secs)
+	}
+	profiles := []map[string]any{
+		{"name": "5-H", "on-login": onLogin(18000)},
+		{"name": "24-H", "on-login": onLogin(86400)},
+		{"name": "free", "on-login": ""},
+		{"name": "mikhmon", "on-login": `:put (",rem,100,1d,,,Disable,")`},
+	}
+	tests := []struct {
+		name  string
+		local map[string]config.ProfileMeta
+		want  map[string]config.ProfileMeta
+	}{
+		{"another PC: nothing stored, validities come from the router",
+			nil,
+			map[string]config.ProfileMeta{"5-H": {Validity: "5h"}, "24-H": {Validity: "1d"}}},
+		{"price kept, missing validity filled",
+			map[string]config.ProfileMeta{"5-H": {Price: "200"}},
+			map[string]config.ProfileMeta{"5-H": {Validity: "5h", Price: "200"}, "24-H": {Validity: "1d"}}},
+		{"this PC's own validity wins",
+			map[string]config.ProfileMeta{"24-H": {Validity: "24h", Price: "500"}},
+			map[string]config.ProfileMeta{"5-H": {Validity: "5h"}, "24-H": {Validity: "24h", Price: "500"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := withRouterValidities(tt.local, profiles); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got %v, want %v", got, tt.want)
 			}
 		})
 	}
