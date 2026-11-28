@@ -149,6 +149,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import NoRouterSelected from '@/components/NoRouterSelected.vue'
 import BandwidthChart from '@/components/BandwidthChart.vue'
 import { formatBytes } from '@/utils/bytes'
+import { startPolling } from '@/utils/polling'
 
 type Status = 'up' | 'down' | 'disabled'
 interface BwPoint { down: number; up: number }
@@ -322,18 +323,18 @@ async function poll() {
   }
 }
 
-let pollTimer: ReturnType<typeof setInterval> | undefined
+let stopPolling: (() => void) | undefined
 
 function stopTimer() {
-  clearInterval(pollTimer)
-  pollTimer = undefined
+  stopPolling?.()
+  stopPolling = undefined
 }
 
 function startTimer() {
   stopTimer()
   if (!live.value || !store.activeId) return
   poll()
-  pollTimer = setInterval(() => { if (!document.hidden) poll() }, POLL_MS)
+  stopPolling = startPolling(poll, POLL_MS)
 }
 
 watch(() => store.activeId, () => {

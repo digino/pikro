@@ -602,6 +602,10 @@ func wanInterface(routes []map[string]string) string {
 
 // Poll opens one connection and fetches resource, interface traffic, and clock together.
 // monitor-traffic with =once= blocks ~1s on the router side before returning.
+// Each query asks only for the fields the Dashboard and Monitor show: on a
+// small router (hAP lite, RouterOS 7) a full /interface or /system/resource
+// print takes seconds of CPU, a trimmed one milliseconds, and the dashboard
+// polls every few seconds.
 func (c *Client) Poll() (*PollSnapshot, error) {
 	conn, err := c.connect()
 	if err != nil {
@@ -621,17 +625,17 @@ func (c *Client) Poll() (*PollSnapshot, error) {
 	}
 
 	// Resource
-	if r, err := conn.Run("/system/resource/print"); err == nil && len(r.Re) > 0 {
+	if r, err := conn.Run("/system/resource/print", "=.proplist=cpu-load,free-memory,total-memory,uptime,board-name,version"); err == nil && len(r.Re) > 0 {
 		snap.Resource = r.Re[0].Map
 	}
 
 	// Interfaces — link status (running/disabled/link-downs) plus names for traffic monitoring
-	ifReply, err := conn.Run("/interface/print")
+	ifReply, err := conn.Run("/interface/print", "=.proplist=name,type,running,disabled,comment,last-link-up-time,rx-byte,tx-byte")
 	if err == nil && len(ifReply.Re) > 0 {
 		names := make([]string, 0, len(ifReply.Re))
 		for _, s := range ifReply.Re {
 			snap.Interfaces = append(snap.Interfaces, s.Map)
-			if n := s.Map["name"]; n != "" {
+			if n := s.Map["name"]; n != "" && s.Map["type"] != "loopback" {
 				names = append(names, n)
 			}
 		}
@@ -640,6 +644,7 @@ func (c *Client) Poll() (*PollSnapshot, error) {
 				"/interface/monitor-traffic",
 				"=interface=" + strings.Join(names, ","),
 				"=once=",
+				"=.proplist=name,rx-bits-per-second,tx-bits-per-second",
 			}
 			if tr, err := conn.Run(args...); err == nil {
 				for _, s := range tr.Re {
@@ -650,30 +655,30 @@ func (c *Client) Poll() (*PollSnapshot, error) {
 	}
 
 	// IP addresses per interface
-	if r, err := conn.Run("/ip/address/print"); err == nil {
+	if r, err := conn.Run("/ip/address/print", "=.proplist=interface,address"); err == nil {
 		for _, s := range r.Re {
 			snap.Addresses = append(snap.Addresses, s.Map)
 		}
 	}
 
 	// Clock
-	if r, err := conn.Run("/system/clock/print"); err == nil && len(r.Re) > 0 {
+	if r, err := conn.Run("/system/clock/print", "=.proplist=date,time"); err == nil && len(r.Re) > 0 {
 		snap.Clock = r.Re[0].Map
 	}
 
-	if r, err := conn.Run("/ip/route/print", "?dst-address=0.0.0.0/0"); err == nil {
+	if r, err := conn.Run("/ip/route/print", "?dst-address=0.0.0.0/0", "=.proplist=active,immediate-gw,gateway-status"); err == nil {
 		routes := make([]map[string]string, 0, len(r.Re))
 		for _, s := range r.Re {
 			routes = append(routes, s.Map)
 		}
 		snap.WANInterface = wanInterface(routes)
 	}
-	if r, err := conn.Run("/ip/hotspot/print"); err == nil {
+	if r, err := conn.Run("/ip/hotspot/print", "=.proplist=interface"); err == nil {
 		for _, s := range r.Re {
 			snap.HotspotInterfaces = append(snap.HotspotInterfaces, s.Map["interface"])
 		}
 	}
-	if r, err := conn.Run("/interface/bridge/port/print"); err == nil {
+	if r, err := conn.Run("/interface/bridge/port/print", "=.proplist=interface,bridge"); err == nil {
 		for _, s := range r.Re {
 			snap.BridgePorts[s.Map["interface"]] = s.Map["bridge"]
 		}

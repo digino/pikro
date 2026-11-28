@@ -224,6 +224,7 @@ import AppDialog from "@/components/AppDialog.vue";
 import BandwidthChart from "@/components/BandwidthChart.vue";
 import AutoCleanupCard from "@/components/AutoCleanupCard.vue";
 import SystemHealthCard from "@/components/SystemHealthCard.vue";
+import { startPolling } from "@/utils/polling";
 
 const store = useRoutersStore();
 const toast = useToastStore();
@@ -405,17 +406,14 @@ async function poll() {
       routerDate.value = snap.clock["date"];
     }
     if (snap.traffic.length > 0) {
-      const totalRx = snap.traffic.reduce(
-        (s, i) => s + (parseInt(i["rx-bits-per-second"] ?? "0") || 0),
-        0,
-      );
-      const totalTx = snap.traffic.reduce(
-        (s, i) => s + (parseInt(i["tx-bits-per-second"] ?? "0") || 0),
-        0,
-      );
+      // The WAN only: the bridge and the ports in it carry the same guest
+      // traffic again, so adding every interface counted it two or three times.
+      const wan = snap.traffic.find((i) => i.name === snap.wanInterface);
+      const rx = parseInt(wan?.["rx-bits-per-second"] ?? "0") || 0;
+      const tx = parseInt(wan?.["tx-bits-per-second"] ?? "0") || 0;
       bwHistory.value = [
         ...bwHistory.value.slice(1),
-        { down: totalRx / 1_000_000, up: totalTx / 1_000_000 },
+        { down: rx / 1_000_000, up: tx / 1_000_000 },
       ];
     }
   } catch {
@@ -423,14 +421,12 @@ async function poll() {
   }
 }
 
-let pollTimer: ReturnType<typeof setInterval>;
+let stopPolling: (() => void) | undefined;
 let hotspotTimer: ReturnType<typeof setInterval>;
 let salesTimer: ReturnType<typeof setInterval>;
 
 function startTimers() {
-  pollTimer = setInterval(() => {
-    if (!document.hidden) poll();
-  }, 5000);
+  stopPolling = startPolling(poll, 5000);
   hotspotTimer = setInterval(() => {
     if (!document.hidden) loadHotspot();
   }, 15_000);
@@ -440,7 +436,7 @@ function startTimers() {
 }
 
 function stopTimers() {
-  clearInterval(pollTimer);
+  stopPolling?.();
   clearInterval(hotspotTimer);
   clearInterval(salesTimer);
 }
