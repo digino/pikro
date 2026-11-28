@@ -247,6 +247,10 @@ func PostRouterCloud(w http.ResponseWriter, r *http.Request) {
 		return s.Error == ""
 	}
 
+	if !step(client.CloudCheckFetch()) {
+		done(0, "")
+		return
+	}
 	clock := router.SetupStepResult{Name: "Turn on automatic time", OK: true}
 	if err := client.EnableAutoTime(time.Now().UTC()); err != nil {
 		clock = router.SetupStepResult{Name: clock.Name, Error: err.Error()}

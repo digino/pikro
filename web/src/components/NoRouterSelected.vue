@@ -30,10 +30,8 @@ import {
   MagnifyingGlassIcon,
   PlusIcon,
 } from "@heroicons/vue/24/outline";
-import { useRoutersStore } from "@/stores/routers";
 import AddRouterDialog from "@/components/AddRouterDialog.vue";
 
-const store = useRoutersStore();
 const vueRouter = useRouter();
 const showAdd = ref(false);
 
@@ -41,10 +39,9 @@ function goScan() {
   vueRouter.push({ path: '/routers', query: { scan: '1' } })
 }
 
-async function onAdded(ip: string) {
-  await store.load();
-  const found = store.routers.find((r) => r.host === ip);
-  if (found) store.select(found.id);
+// store.add has already selected the new router, by id: routers often share
+// an IP (every MikroTik ships as 192.168.88.1).
+function onAdded() {
   showAdd.value = false;
 }
 </script>
